@@ -36,9 +36,9 @@ class ItemSection extends JPanel
 	private final JPanel body;
 
 	/**
-	 * @param stats label and value pairs, shown two per row
+	 * @param stats label and value pairs, shown two per row, each with a hover explanation
 	 */
-	ItemSection(ItemManager itemManager, String title, List<ItemView> items, String emptyText, List<String[]> stats)
+	ItemSection(ItemManager itemManager, String title, List<ItemView> items, String emptyText, List<SectionStat> stats)
 	{
 		this.title = title;
 		setLayout(new BorderLayout(0, 3));
@@ -76,10 +76,11 @@ class ItemSection extends JPanel
 		{
 			JPanel statGrid = new JPanel(new GridLayout(0, 2, 6, 0));
 			statGrid.setOpaque(false);
-			for (String[] stat : stats)
+			for (SectionStat stat : stats)
 			{
-				JLabel label = new JLabel(UiFormat.pair(stat[0], stat[1]));
+				JLabel label = new JLabel(UiFormat.pair(stat.getLabel(), stat.getValue(), stat.getValueColor()));
 				label.setFont(FontManager.getRunescapeSmallFont());
+				label.setToolTipText(stat.getTooltip() == null ? null : UiFormat.tooltip(stat.getTooltip()));
 				statGrid.add(label);
 			}
 			header.add(statGrid, BorderLayout.CENTER);

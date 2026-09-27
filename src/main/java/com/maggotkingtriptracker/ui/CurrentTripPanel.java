@@ -3,6 +3,7 @@ package com.maggotkingtriptracker.ui;
 import com.maggotkingtriptracker.model.TripEndReason;
 import com.maggotkingtriptracker.view.PanelState;
 import com.maggotkingtriptracker.view.TripView;
+import java.awt.BorderLayout;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
@@ -17,6 +18,8 @@ class CurrentTripPanel extends JPanel
 	private final GoalCard goalCard;
 	private final JLabel status = new JLabel();
 	private final TripSummaryCard summary = new TripSummaryCard();
+	private final LuckCard luckCard = new LuckCard();
+	private final JPanel luckHolder = new JPanel(new BorderLayout());
 	private final JPanel detailsHolder = new JPanel();
 	private boolean live;
 	private TripView shownDetails;
@@ -47,6 +50,11 @@ class CurrentTripPanel extends JPanel
 		add(goalSpacer);
 		add(status);
 		add(summary);
+		luckHolder.setOpaque(false);
+		luckHolder.setAlignmentX(LEFT_ALIGNMENT);
+		luckHolder.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
+		luckHolder.add(luckCard, BorderLayout.CENTER);
+		add(luckHolder);
 		add(detailsHolder);
 	}
 
@@ -56,6 +64,11 @@ class CurrentTripPanel extends JPanel
 		live = state.getStatus() == PanelState.Status.IN_TRIP;
 		goalCard.setVisible(state.getLifetime() != null);
 		goalCard.setGoal(state.getGoal(), now);
+		luckHolder.setVisible(state.getLifetime() != null);
+		if (state.getLifetime() != null)
+		{
+			luckCard.update(state.getLifetime().getDryness());
+		}
 		status.setText(statusText(state));
 
 		summary.setVisible(trip != null);

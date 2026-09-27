@@ -43,4 +43,18 @@ public class DrynessView
 	 */
 	double eggPetChance;
 	int petsFromEggs;
+	/**
+	 * Highest kill count seen in tracked kills; null if none reported one.
+	 */
+	Integer currentKc;
+	/**
+	 * Kill count of the most recent unique; null if none was tracked.
+	 */
+	Integer lastUniqueKc;
+	/**
+	 * Kill count of the first tracked kill, the start of the plugin's records.
+	 */
+	Integer firstTrackedKc;
+	int uniquesReceived;
+	double expectedUniques;
 }

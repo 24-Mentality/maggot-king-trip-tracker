@@ -70,7 +70,22 @@ final class UiFormat
 	 */
 	static String pair(String label, String value)
 	{
-		return "<html><font color='#a5a5a5'>" + html(label) + ":</font> <font color='#ffffff'>" + html(value) + "</font></html>";
+		return pair(label, value, null);
+	}
+
+	static String pair(String label, String value, Color valueColor)
+	{
+		String color = valueColor == null ? "#ffffff"
+			: String.format("#%02x%02x%02x", valueColor.getRed(), valueColor.getGreen(), valueColor.getBlue());
+		return "<html><font color='#a5a5a5'>" + html(label) + ":</font> <font color='" + color + "'>" + html(value) + "</font></html>";
+	}
+
+	/**
+	 * Wraps plain text as a tooltip no wider than the sidebar allows comfortably.
+	 */
+	static String tooltip(String text)
+	{
+		return "<html><div style='width:180px'>" + html(text).replace("\n", "<br>") + "</div></html>";
 	}
 
 	static String html(String text)

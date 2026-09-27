@@ -184,6 +184,10 @@ public class ViewBuilder
 		int stomachKills = 0;
 		int sinceUnique = 0;
 		int petsFromKills = 0;
+		Integer currentKc = null;
+		Integer lastUniqueKc = null;
+		Integer firstTrackedKc = null;
+		int uniquesReceived = 0;
 		Map<Integer, List<Integer>> received = new LinkedHashMap<>();
 		for (int uniqueId : MaggotKingRates.UNIQUES.keySet())
 		{
@@ -197,6 +201,14 @@ public class ViewBuilder
 				if (kill.isPet())
 				{
 					petsFromKills++;
+				}
+				if (kill.getKillCount() != null)
+				{
+					currentKc = currentKc == null ? kill.getKillCount() : Math.max(currentKc, kill.getKillCount());
+					if (firstTrackedKc == null)
+					{
+						firstTrackedKc = kill.getKillCount();
+					}
 				}
 				if (kill.getChoice() != CorpseChoice.STOMACH)
 				{
@@ -212,8 +224,13 @@ public class ViewBuilder
 						for (long i = 0; i < entry.getQuantity(); i++)
 						{
 							kcs.add(kill.getKillCount());
+							uniquesReceived++;
 						}
 						sinceUnique = 0;
+						if (kill.getKillCount() != null)
+						{
+							lastUniqueKc = kill.getKillCount();
+						}
 					}
 				}
 			}
@@ -253,7 +270,8 @@ public class ViewBuilder
 		}
 
 		return new DrynessView(stomachKills, sinceUnique, Math.pow(1 - MaggotKingRates.ANY_UNIQUE, sinceUnique),
-			uniques, stomachKills * MaggotKingRates.PET_PER_STOMACH, petsFromKills, tiers, 1 - noPetFromEggs, petsFromEggs);
+			uniques, stomachKills * MaggotKingRates.PET_PER_STOMACH, petsFromKills, tiers, 1 - noPetFromEggs, petsFromEggs,
+			currentKc, lastUniqueKc, firstTrackedKc, uniquesReceived, stomachKills * MaggotKingRates.ANY_UNIQUE);
 	}
 
 	private List<PolishView> polish(AccountHistory history)

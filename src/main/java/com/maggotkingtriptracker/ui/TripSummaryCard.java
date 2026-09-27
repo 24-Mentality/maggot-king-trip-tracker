@@ -15,17 +15,28 @@ import net.runelite.client.ui.ColorScheme;
  */
 class TripSummaryCard extends JPanel
 {
-	private final StatCell time = new StatCell("Time", false);
-	private final StatCell kills = new StatCell("Kills", false);
-	private final StatCell averageKill = new StatCell("Avg kill", false);
-	private final StatCell fastestKill = new StatCell("Fastest", false);
+	private final StatCell time = new StatCell("Time", false)
+		.help("Time spent inside the lair this trip. Time outside (banking, logged out) isn't counted.");
+	private final StatCell kills = new StatCell("Kills", false)
+		.help("Kills this trip, from the game's kill-count message.");
+	private final StatCell averageKill = new StatCell("Avg kill", false)
+		.help("Average of the game's \"Fight duration\" for this trip's kills.");
+	private final StatCell fastestKill = new StatCell("Fastest", false)
+		.help("Shortest \"Fight duration\" this trip.");
 
-	private final StatCell net = new StatCell("Net profit", true);
-	private final StatCell gpPerHour = new StatCell("GP/hr", true);
-	private final StatCell loot = new StatCell("Loot", false);
-	private final StatCell costs = new StatCell("Costs", false);
-	private final StatCell split = new StatCell("Stom / Eggs", false);
-	private final StatCell deaths = new StatCell("Deaths", false);
+	private final StatCell net = new StatCell("Net profit", true)
+		.help("Loot minus costs (supplies, dropped items and death costs), at the GE prices recorded at the time.");
+	private final StatCell gpPerHour = new StatCell("GP/hr", true)
+		.help("Net profit per hour of time inside the lair.");
+	private final StatCell loot = new StatCell("Loot", false)
+		.help("GE value of everything received, including overflow picked up from the ground. Tarnished drops count"
+			+ " once polished.");
+	private final StatCell costs = new StatCell("Costs", false)
+		.help("Supplies used + items dropped and left behind + death costs. Hover the value for the split.");
+	private final StatCell split = new StatCell("Stom / Eggs", false)
+		.help("Kills where you chose Open-stomach / Take-eggs on the corpse.");
+	private final StatCell deaths = new StatCell("Deaths", false)
+		.help("Deaths in the lair this trip.");
 
 	private TripView trip;
 

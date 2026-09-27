@@ -12,6 +12,7 @@ import net.runelite.client.ui.FontManager;
  */
 class StatCell extends JPanel
 {
+	private final JLabel caption;
 	private final JLabel value = new JLabel();
 
 	StatCell(String caption, boolean emphasised)
@@ -19,10 +20,10 @@ class StatCell extends JPanel
 		super(new BorderLayout());
 		setOpaque(false);
 
-		JLabel captionLabel = new JLabel(caption);
-		captionLabel.setFont(FontManager.getRunescapeSmallFont());
-		captionLabel.setForeground(UiFormat.MUTED_TEXT);
-		add(captionLabel, BorderLayout.NORTH);
+		this.caption = new JLabel(caption);
+		this.caption.setFont(FontManager.getRunescapeSmallFont());
+		this.caption.setForeground(UiFormat.MUTED_TEXT);
+		add(this.caption, BorderLayout.NORTH);
 
 		value.setFont(emphasised ? FontManager.getRunescapeBoldFont() : FontManager.getRunescapeSmallFont());
 		value.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
@@ -38,7 +39,15 @@ class StatCell extends JPanel
 	{
 		value.setText(text);
 		value.setForeground(color);
-		setToolTipText(tooltip);
 		value.setToolTipText(tooltip);
+	}
+
+	/**
+	 * Explains the stat when hovering its caption.
+	 */
+	StatCell help(String text)
+	{
+		caption.setToolTipText(UiFormat.tooltip(text));
+		return this;
 	}
 }
