@@ -65,6 +65,17 @@ public class TripMathTest
 	}
 
 	@Test
+	public void polishTallyAndEggPopsRoundTrip()
+	{
+		String json = "{\"schemaVersion\":1,\"trips\":[],\"eggPops\":[{\"eggItemId\":33665,\"at\":5,\"pet\":true}],"
+			+ "\"polishOutcomes\":{\"33679\":{\"1245\":1,\"1243\":2}}}";
+		AccountHistory history = new Gson().fromJson(json, AccountHistory.class);
+
+		assertEquals(Integer.valueOf(2), history.getPolishOutcomes().get(33679).get(1243));
+		assertEquals(33665, history.getEggPops().get(0).getEggItemId());
+	}
+
+	@Test
 	public void missingListsDefaultToEmpty()
 	{
 		Trip trip = new Gson().fromJson("{\"id\":\"x\",\"startedAt\":1}", Trip.class);
