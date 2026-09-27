@@ -19,7 +19,7 @@ class InfoCard extends JPanel
 	{
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+		setBorder(BorderFactory.createEmptyBorder(5, 6, 5, 6));
 		setAlignmentX(LEFT_ALIGNMENT);
 
 		JLabel titleLabel = new JLabel(title);
@@ -31,7 +31,7 @@ class InfoCard extends JPanel
 		lines.setLayout(new BoxLayout(lines, BoxLayout.Y_AXIS));
 		lines.setOpaque(false);
 		lines.setAlignmentX(LEFT_ALIGNMENT);
-		lines.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
+		lines.setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 0));
 		add(lines);
 	}
 
@@ -47,7 +47,7 @@ class InfoCard extends JPanel
 			label.setFont(FontManager.getRunescapeSmallFont());
 			label.setForeground(UiFormat.MUTED_TEXT.brighter());
 			label.setAlignmentX(LEFT_ALIGNMENT);
-			label.setBorder(BorderFactory.createEmptyBorder(1, 0, 1, 0));
+			label.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
 			lines.add(label);
 		}
 		revalidate();

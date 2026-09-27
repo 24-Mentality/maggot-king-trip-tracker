@@ -11,6 +11,7 @@ import javax.swing.SwingConstants;
 import javax.swing.border.Border;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.FontManager;
 import net.runelite.client.util.AsyncBufferedImage;
 import net.runelite.client.util.QuantityFormatter;
 
@@ -20,7 +21,7 @@ import net.runelite.client.util.QuantityFormatter;
  */
 class ItemGrid extends JPanel
 {
-	private static final int COLUMNS = 5;
+	private static final int COLUMNS = 6;
 	private static final Border NORMAL_BORDER = BorderFactory.createLineBorder(ColorScheme.DARKER_GRAY_COLOR, 1);
 	private static final Border UNIQUE_BORDER = BorderFactory.createLineBorder(UiFormat.UNIQUE_BORDER, 1);
 	private static final Border PENDING_BORDER = BorderFactory.createDashedBorder(ColorScheme.LIGHT_GRAY_COLOR, 3, 2);
@@ -46,7 +47,7 @@ class ItemGrid extends JPanel
 	{
 		JLabel label = new JLabel();
 		label.setHorizontalAlignment(SwingConstants.CENTER);
-		label.setPreferredSize(new Dimension(40, 40));
+		label.setPreferredSize(new Dimension(34, 32));
 		label.setOpaque(true);
 		label.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		label.setBorder(item.isPending() ? PENDING_BORDER : item.isUnique() ? UNIQUE_BORDER : NORMAL_BORDER);
@@ -62,7 +63,7 @@ class ItemGrid extends JPanel
 	private static JLabel emptyCell()
 	{
 		JLabel label = new JLabel();
-		label.setPreferredSize(new Dimension(40, 40));
+		label.setPreferredSize(new Dimension(34, 32));
 		label.setOpaque(true);
 		label.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		return label;
@@ -105,9 +106,9 @@ class ItemGrid extends JPanel
 	static JLabel emptyMessage(String text)
 	{
 		JLabel label = new JLabel(text);
-		label.setFont(label.getFont().deriveFont(11f));
+		label.setFont(FontManager.getRunescapeSmallFont());
 		label.setForeground(UiFormat.MUTED_TEXT);
-		label.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+		label.setBorder(BorderFactory.createEmptyBorder(1, 2, 1, 2));
 		return label;
 	}
 }

@@ -54,9 +54,9 @@ class TripDetails extends JPanel
 	private static JComponent section(ItemManager itemManager, String title, List<ItemView> items, String emptyText,
 		List<String> stats)
 	{
-		JPanel panel = new JPanel(new BorderLayout(0, 3));
+		JPanel panel = new JPanel(new BorderLayout(0, 2));
 		panel.setOpaque(false);
-		panel.setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 0));
+		panel.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
 		panel.setAlignmentX(LEFT_ALIGNMENT);
 
 		long total = 0;
@@ -79,13 +79,13 @@ class TripDetails extends JPanel
 			totalLabel.setToolTipText(UiFormat.fullGp(total));
 			header.add(totalLabel, BorderLayout.EAST);
 		}
-		JPanel top = new JPanel(new BorderLayout(0, 2));
+		JPanel top = new JPanel(new BorderLayout(0, 0));
 		top.setOpaque(false);
 		top.add(header, BorderLayout.NORTH);
 		if (!stats.isEmpty())
 		{
 			// Two short stats per line under the section title
-			JPanel statGrid = new JPanel(new GridLayout(0, 2, 6, 0));
+			JPanel statGrid = new JPanel(new GridLayout(0, 2, 4, 0));
 			statGrid.setOpaque(false);
 			for (String stat : stats)
 			{

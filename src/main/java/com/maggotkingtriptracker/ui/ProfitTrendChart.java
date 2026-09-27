@@ -21,7 +21,7 @@ class ProfitTrendChart extends JPanel
 	ProfitTrendChart()
 	{
 		setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		setPreferredSize(new Dimension(0, 90));
+		setPreferredSize(new Dimension(0, 56));
 	}
 
 	void setValues(List<Long> allTrips)

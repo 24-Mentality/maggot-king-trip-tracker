@@ -48,12 +48,12 @@ public class TrackerPanel extends PluginPanel
 
 		ScrollableContent display = new ScrollableContent();
 		display.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		display.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+		display.setBorder(BorderFactory.createEmptyBorder(4, 5, 5, 5));
 
 		MaterialTabGroup tabs = new MaterialTabGroup(display);
 		// The default wrapping row hides the third tab at sidebar width; equal columns always fit
 		tabs.setLayout(new GridLayout(1, 0));
-		tabs.setBorder(BorderFactory.createEmptyBorder(8, 4, 4, 4));
+		tabs.setBorder(BorderFactory.createEmptyBorder(6, 2, 2, 2));
 		MaterialTab current = new MaterialTab("Trip", tabs, currentTab);
 		MaterialTab history = new MaterialTab("History", tabs, historyTab);
 		MaterialTab lifetime = new MaterialTab("Lifetime", tabs, lifetimeTab);

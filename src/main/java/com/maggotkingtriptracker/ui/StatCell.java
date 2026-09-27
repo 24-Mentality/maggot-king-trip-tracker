@@ -8,13 +8,13 @@ import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 
 /**
- * A small caption above a large number.
+ * A small caption above a value, sized to fit three across the sidebar.
  */
 class StatCell extends JPanel
 {
 	private final JLabel value = new JLabel();
 
-	StatCell(String caption, boolean large)
+	StatCell(String caption, boolean emphasised)
 	{
 		super(new BorderLayout());
 		setOpaque(false);
@@ -24,7 +24,7 @@ class StatCell extends JPanel
 		captionLabel.setForeground(UiFormat.MUTED_TEXT);
 		add(captionLabel, BorderLayout.NORTH);
 
-		value.setFont(large ? FontManager.getRunescapeBoldFont().deriveFont(20f) : FontManager.getRunescapeBoldFont());
+		value.setFont(emphasised ? FontManager.getRunescapeBoldFont() : FontManager.getRunescapeSmallFont());
 		value.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 		add(value, BorderLayout.CENTER);
 	}

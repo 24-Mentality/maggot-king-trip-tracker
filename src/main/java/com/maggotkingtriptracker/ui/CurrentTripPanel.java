@@ -30,7 +30,7 @@ class CurrentTripPanel extends JPanel
 
 		status.setFont(FontManager.getRunescapeSmallFont());
 		status.setForeground(UiFormat.MUTED_TEXT);
-		status.setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
+		status.setBorder(BorderFactory.createEmptyBorder(0, 0, 3, 0));
 		status.setAlignmentX(LEFT_ALIGNMENT);
 		summary.setAlignmentX(LEFT_ALIGNMENT);
 		detailsHolder.setLayout(new BoxLayout(detailsHolder, BoxLayout.Y_AXIS));
@@ -41,7 +41,7 @@ class CurrentTripPanel extends JPanel
 		JPanel goalSpacer = new JPanel();
 		goalSpacer.setOpaque(false);
 		goalSpacer.setAlignmentX(LEFT_ALIGNMENT);
-		goalSpacer.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+		goalSpacer.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
 
 		add(goalCard);
 		add(goalSpacer);
