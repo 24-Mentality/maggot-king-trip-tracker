@@ -100,7 +100,10 @@ class DiagnosticLogWriter
 	{
 		if (directory == null)
 		{
-			directory = directorySupplier.call();
+			// getPluginDirectory() only creates plugin-data, not this plugin's folder inside it
+			Filepath resolved = directorySupplier.call();
+			resolved.createDirectories();
+			directory = resolved;
 		}
 
 		Filepath logFile = directory.joinSegment(FILE_NAME);
