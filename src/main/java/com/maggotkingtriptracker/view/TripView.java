@@ -29,6 +29,7 @@ public class TripView
 	long deathCost;
 	long netProfit;
 	Long averageKillMs;
+	Long fastestKillMs;
 	List<ItemView> loot;
 	List<ItemView> supplies;
 	List<ItemView> dropped;

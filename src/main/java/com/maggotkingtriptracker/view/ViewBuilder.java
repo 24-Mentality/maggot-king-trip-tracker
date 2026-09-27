@@ -97,6 +97,7 @@ public class ViewBuilder
 			.deathCost(TripMath.deathCost(trip))
 			.netProfit(TripMath.netProfit(trip))
 			.averageKillMs(TripMath.averageKillMs(Collections.singletonList(trip)))
+			.fastestKillMs(TripMath.fastestKillMs(Collections.singletonList(trip)))
 			.loot(items(loot))
 			.supplies(items(trip.getSupplies()))
 			.dropped(items(trip.getDropped()))

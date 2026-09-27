@@ -85,6 +85,25 @@ public final class TripMath
 		return count == 0 ? null : total / count;
 	}
 
+	/**
+	 * @return shortest fight duration over kills with a known duration, or null if none
+	 */
+	public static Long fastestKillMs(Collection<Trip> trips)
+	{
+		Long fastest = null;
+		for (Trip trip : trips)
+		{
+			for (Kill kill : trip.getKills())
+			{
+				if (kill.getDurationMs() != null && (fastest == null || kill.getDurationMs() < fastest))
+				{
+					fastest = kill.getDurationMs();
+				}
+			}
+		}
+		return fastest;
+	}
+
 	public static long gpPerHour(long net, long activeMs)
 	{
 		if (activeMs < 1000)

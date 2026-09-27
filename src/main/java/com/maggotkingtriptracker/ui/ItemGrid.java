@@ -28,7 +28,7 @@ class ItemGrid extends JPanel
 
 	ItemGrid(ItemManager itemManager, List<ItemView> items)
 	{
-		setLayout(new GridLayout(0, COLUMNS, 1, 1));
+		setLayout(new GridLayout(0, COLUMNS, 2, 2));
 		setBackground(ColorScheme.DARK_GRAY_COLOR);
 
 		for (ItemView item : items)
@@ -47,7 +47,7 @@ class ItemGrid extends JPanel
 	{
 		JLabel label = new JLabel();
 		label.setHorizontalAlignment(SwingConstants.CENTER);
-		label.setPreferredSize(new Dimension(34, 32));
+		label.setPreferredSize(new Dimension(34, 36));
 		label.setOpaque(true);
 		label.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		label.setBorder(item.isPending() ? PENDING_BORDER : item.isUnique() ? UNIQUE_BORDER : NORMAL_BORDER);
@@ -63,7 +63,7 @@ class ItemGrid extends JPanel
 	private static JLabel emptyCell()
 	{
 		JLabel label = new JLabel();
-		label.setPreferredSize(new Dimension(34, 32));
+		label.setPreferredSize(new Dimension(34, 36));
 		label.setOpaque(true);
 		label.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		return label;
