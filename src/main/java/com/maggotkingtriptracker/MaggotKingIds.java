@@ -16,8 +16,22 @@ public final class MaggotKingIds
 	 */
 	public static final int LAIR_REGION_ID = 11645;
 
+	/**
+	 * Region just outside the lair: where the lair exit leads and where re-entries start.
+	 */
+	public static final int LAIR_ENTRANCE_REGION_ID = 10618;
+
 	public static final int BOSS = NpcID.MAGGOT_KING;
 	public static final int CORPSE = NpcID.MAGGOT_KING_CORPSE;
+
+	/**
+	 * The aranei scout variants that handle death recovery (grave moves) in Vampyrium.
+	 */
+	public static final Set<Integer> ARANEI_DEATH_HELPERS = ImmutableSet.of(
+		NpcID.VAMPYRIUM_ARANEI_DEATH_HELPER,
+		NpcID.VAMPYRIUM_ARANEI_DEATH_HELPER_1OP,
+		NpcID.VAMPYRIUM_ARANEI_DEATH_HELPER_3OP
+	);
 
 	public static final Set<Integer> EGGS = ImmutableSet.of(
 		ItemID.MAGGOT_EGG,

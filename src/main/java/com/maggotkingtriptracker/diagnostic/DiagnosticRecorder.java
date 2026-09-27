@@ -23,6 +23,7 @@ import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.ItemContainerChanged;
+import net.runelite.api.events.ItemDespawned;
 import net.runelite.api.events.ItemSpawned;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.NpcDespawned;
@@ -40,8 +41,9 @@ import net.runelite.client.util.Filepath;
  * Records raw game events around the Maggot King to diagnostic.log so detection logic can be built
  * from real data. Only listens to events; it never draws anything or creates input.
  * <p>
- * Recording is active while diagnostic mode is enabled and the player is in the lair, or for
- * {@link #CLICK_WINDOW_TICKS} ticks after clicking the corpse, a maggot egg, or a tarnished item.
+ * Recording is active while diagnostic mode is enabled and the player is in the lair or the region just
+ * outside it, or for {@link #CLICK_WINDOW_TICKS} ticks after clicking the corpse, a maggot egg, a tarnished
+ * item, or the aranei scout that handles death recovery.
  */
 public class DiagnosticRecorder
 {
@@ -60,6 +62,7 @@ public class DiagnosticRecorder
 
 	private boolean enabled;
 	private boolean inLair;
+	private boolean nearLair;
 	private int templateRegionId = -1;
 	private int clickWindowEndTick = -1;
 	private final Map<Integer, Map<Integer, Integer>> containerSnapshots = new HashMap<>();
@@ -125,6 +128,13 @@ public class DiagnosticRecorder
 			}
 		}
 
+		boolean nowNearLair = region == MaggotKingIds.LAIR_ENTRANCE_REGION_ID;
+		if (nowNearLair != nearLair)
+		{
+			nearLair = nowNearLair;
+			record("ENTRANCE", nearLair ? "entered region outside the lair" : "left region outside the lair");
+		}
+
 		boolean nowInLair = region == MaggotKingIds.LAIR_REGION_ID;
 		if (nowInLair != inLair)
 		{
@@ -153,6 +163,7 @@ public class DiagnosticRecorder
 				record("LAIR", "left (" + state.name() + ")");
 			}
 			inLair = false;
+			nearLair = false;
 			templateRegionId = -1;
 			clickWindowEndTick = -1;
 			containerSnapshots.clear();
@@ -166,7 +177,8 @@ public class DiagnosticRecorder
 		NPC npc = entry.getNpc();
 		int itemId = event.getItemId();
 
-		boolean trigger = (npc != null && npc.getId() == MaggotKingIds.CORPSE)
+		boolean trigger = (npc != null && (npc.getId() == MaggotKingIds.CORPSE
+				|| MaggotKingIds.ARANEI_DEATH_HELPERS.contains(npc.getId())))
 			|| MaggotKingIds.EGGS.contains(itemId)
 			|| MaggotKingIds.TARNISHED_ITEMS.contains(itemId);
 		if (trigger)
@@ -250,16 +262,13 @@ public class DiagnosticRecorder
 	@Subscribe
 	public void onItemSpawned(ItemSpawned event)
 	{
-		if (!enabled || !inLair)
-		{
-			return;
-		}
+		recordGroundItem("spawned", event.getItem(), event.getTile().getLocalLocation());
+	}
 
-		TileItem item = event.getItem();
-		WorldPoint location = WorldPoint.fromLocalInstance(client, event.getTile().getLocalLocation());
-		record("GROUND", "spawned " + describeItem(item.getId(), item.getQuantity())
-			+ " ownership=" + item.getOwnership()
-			+ " at=" + location.getX() + "," + location.getY() + "," + location.getPlane());
+	@Subscribe
+	public void onItemDespawned(ItemDespawned event)
+	{
+		recordGroundItem("despawned", event.getItem(), event.getTile().getLocalLocation());
 	}
 
 	@Subscribe
@@ -321,6 +330,19 @@ public class DiagnosticRecorder
 		record("LOOT", sb.toString());
 	}
 
+	private void recordGroundItem(String what, TileItem item, LocalPoint localPoint)
+	{
+		if (!enabled || !(inLair || nearLair))
+		{
+			return;
+		}
+
+		WorldPoint location = WorldPoint.fromLocalInstance(client, localPoint);
+		record("GROUND", what + " " + describeItem(item.getId(), item.getQuantity())
+			+ " ownership=" + item.getOwnership()
+			+ " at=" + location.getX() + "," + location.getY() + "," + location.getPlane());
+	}
+
 	private void recordEncounterNpc(String what, NPC npc)
 	{
 		int id = npc.getId();
@@ -332,7 +354,7 @@ public class DiagnosticRecorder
 
 	private boolean isRecording()
 	{
-		return enabled && (inLair || client.getTickCount() <= clickWindowEndTick);
+		return enabled && (inLair || nearLair || client.getTickCount() <= clickWindowEndTick);
 	}
 
 	private void recordContainerSnapshots()

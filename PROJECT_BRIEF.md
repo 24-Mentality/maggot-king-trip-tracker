@@ -148,3 +148,37 @@ RuneLite does not accept new high-end PvM helper plugins.
    Accounts login step. The user runs ./gradlew run themselves.
 7. File IO goes through Filepath (AGENTS.md), so plugin files live in
    ~/.runelite/plugin-data/maggot-king-trip-tracker/.
+
+## Observed in-game (diagnostic test trips, 2026-09-27)
+These come from diagnostic.log and take precedence over the assumptions above.
+- Lair template region is always 11645; the real instance region changes per
+  entry. Walking out via "Exit" on Darkwood trees (object 61049) lands in
+  region 10618 (just outside the lair). Death respawn lands in region 10106.
+- Kill-count message (GAMEMESSAGE), same tick as boss despawn / corpse spawn:
+  `Your Maggot King kill count is: <col=ff0000>2,565</col>.` followed by
+  `Fight duration: <col=ff0000>1:48.00</col>. Personal best: 1:19.20`.
+  Use the game's fight duration for kill time.
+- Corpse options: "Open-stomach" = NPC_FIRST_OPTION, "Take-eggs" =
+  NPC_THIRD_OPTION.
+- LootReceived (name "Maggot King", type NPC) fires about 2 ticks after
+  Open-stomach, but it only contains items that went into the inventory.
+  With a full inventory, overflow (e.g. 3 x Stymphike tartare) spawned on the
+  ground and was NOT in LootReceived. Always capture ground spawns
+  (ItemSpawned, ownership=1) after a corpse click as loot, not only as a
+  fallback.
+- The stymphike tartare + dull ancient medal supply drop came from
+  Open-stomach, not Take-eggs. Treat it as possible from either option.
+- Take-eggs with no result: chat "The eggs pop as you try to take them." and
+  LootReceived name "Maggot King", type UNKNOWN, empty items.
+- Polish immediately fires LootReceived type EVENT named after the tarnished
+  item, containing the result (Tarnished spear -> Adamant spear, Tarnished
+  necklace -> Jade necklace). Chat: "You rub the tarnished <item> on your
+  clothes and are surprised to find a shine underneath the grime."
+- The player's own drops also spawn with ownership=1; the only distinguishing
+  signal is a "Drop" menu click on that item in the same tick.
+- Rune pouch: only RUNE_POUCH_QUANTITY_n varbits change during casting; the
+  TYPE varbits don't fire, so read rune types directly at trip start.
+- Gear switches are frequent (magic/melee); combined inventory + equipment
+  snapshots net them out to zero as intended.
+- Tome of Fire, Webweaver bow and Amulet of blood fury charges are not
+  visible in item containers (Phase 3 charge tracking).
