@@ -182,3 +182,7 @@ These come from diagnostic.log and take precedence over the assumptions above.
   snapshots net them out to zero as intended.
 - Tome of Fire, Webweaver bow and Amulet of blood fury charges are not
   visible in item containers (Phase 3 charge tracking).
+- Polishing a Dull ancient medal destroys it ("The medal releases a trace of
+  ancient magic as it falls apart."); it is not a supply.
+- The pre-entry, rune pouch, overflow pickup, own-drop re-pickup and logout
+  grace logic matched the diagnostic log on the first Phase 1 test trip.

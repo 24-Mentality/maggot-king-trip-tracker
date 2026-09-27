@@ -804,9 +804,10 @@ public class TripTracker
 		boolean trackingTrip = inLair && currentTrip != null && !dead;
 		recordDrops(removed, tick, trackingTrip);
 
-		// Popping eggs and polishing tarnished items is not supply use
+		// Popping eggs and polishing (tarnished items, dull ancient medals) is not supply use
 		removed.keySet().removeAll(MaggotKingIds.EGGS);
 		removed.keySet().removeAll(MaggotKingIds.TARNISHED_ITEMS);
+		removePolished(removed, tick);
 
 		if (trackingTrip)
 		{
@@ -882,6 +883,17 @@ public class TripTracker
 				{
 					pendingDrops.merge(click.itemId, quantity, Long::sum);
 				}
+			}
+		}
+	}
+
+	private void removePolished(Map<Integer, Long> removed, int tick)
+	{
+		for (Click click : recentClicks)
+		{
+			if (OPTION_POLISH.equals(click.option) && tick - click.tick <= CLICK_MATCH_TICKS)
+			{
+				removed.remove(click.itemId);
 			}
 		}
 	}
