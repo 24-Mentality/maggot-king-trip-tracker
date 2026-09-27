@@ -32,6 +32,10 @@ public class TripView
 	List<ItemView> loot;
 	List<ItemView> supplies;
 	List<ItemView> dropped;
+	/**
+	 * Supply cost split into charges, runes, potions, food and other; only non-zero categories.
+	 */
+	List<SupplyCategory> supplyCategories;
 
 	public long activeMsAt(long now)
 	{

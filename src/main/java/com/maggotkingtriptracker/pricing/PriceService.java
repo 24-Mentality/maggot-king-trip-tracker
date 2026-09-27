@@ -22,6 +22,7 @@ public class PriceService
 	private final Map<Integer, DoseInfo> doseInfoCache = new HashMap<>();
 	private final Map<String, FullDose> fullDoseCache = new HashMap<>();
 	private final Map<Integer, Boolean> meleeWeaponCache = new HashMap<>();
+	private final Map<Integer, Boolean> foodCache = new HashMap<>();
 
 	public PriceService(ItemManager itemManager)
 	{
@@ -36,6 +37,24 @@ public class PriceService
 	public String name(int itemId)
 	{
 		return itemManager.getItemComposition(itemId).getName();
+	}
+
+	/**
+	 * Food is anything with an Eat option.
+	 */
+	public boolean isFood(int itemId)
+	{
+		return foodCache.computeIfAbsent(itemId, id ->
+		{
+			for (String action : itemManager.getItemComposition(id).getInventoryActions())
+			{
+				if ("Eat".equalsIgnoreCase(action))
+				{
+					return true;
+				}
+			}
+			return false;
+		});
 	}
 
 	/**

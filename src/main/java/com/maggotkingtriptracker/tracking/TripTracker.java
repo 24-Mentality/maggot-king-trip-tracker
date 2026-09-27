@@ -12,6 +12,7 @@ import com.maggotkingtriptracker.model.DeathRecord;
 import com.maggotkingtriptracker.model.EggPop;
 import com.maggotkingtriptracker.model.ItemEntry;
 import com.maggotkingtriptracker.model.Kill;
+import com.maggotkingtriptracker.model.KillGoal;
 import com.maggotkingtriptracker.model.Trip;
 import com.maggotkingtriptracker.model.TripEndReason;
 import com.maggotkingtriptracker.model.TripMath;
@@ -47,6 +48,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.ActorSpotAnim;
+import net.runelite.api.EnumComposition;
+import net.runelite.api.EnumID;
 import net.runelite.api.EquipmentInventorySlot;
 import net.runelite.api.Hitsplat;
 import net.runelite.api.Item;
@@ -178,6 +181,11 @@ public class TripTracker
 	private int lastEggPopTick = -100;
 	private int lastEggClickTick = -100;
 	private int unclaimedPetMessageTick = -100;
+	/**
+	 * Last tick time while logged in, for the goal clock; 0 while logged out.
+	 */
+	private long lastGoalTickAt;
+	private boolean runeIdsLoaded;
 	private final Deque<PreEntryUse> preEntryUses = new ArrayDeque<>();
 
 	private ScheduledFuture<?> saveFuture;
@@ -413,6 +421,48 @@ public class TripTracker
 		pushState();
 	}
 
+	/**
+	 * Sets the kill goal target, keeping progress if a goal is already running. 0 or less removes it.
+	 */
+	public void setGoal(int target)
+	{
+		if (history == null || readOnly)
+		{
+			return;
+		}
+		if (target <= 0)
+		{
+			history.setGoal(null);
+		}
+		else if (history.getGoal() == null)
+		{
+			history.setGoal(new KillGoal(target, System.currentTimeMillis(), 0));
+		}
+		else
+		{
+			history.getGoal().setTarget(target);
+		}
+		viewDirty = true;
+		saveNow();
+		pushState();
+	}
+
+	/**
+	 * Restarts the goal's kill count and clock from now.
+	 */
+	public void resetGoal()
+	{
+		if (history == null || readOnly || history.getGoal() == null)
+		{
+			return;
+		}
+		history.getGoal().setStartedAt(System.currentTimeMillis());
+		history.getGoal().setActiveMs(0);
+		viewDirty = true;
+		saveNow();
+		pushState();
+	}
+
 	public void refreshView()
 	{
 		historyChanged();
@@ -437,6 +487,7 @@ public class TripTracker
 				}
 				ledger.reset();
 				chargeCounter.reset();
+				lastGoalTickAt = 0;
 				recentClicks.clear();
 				preEntryUses.clear();
 				pushState();
@@ -457,6 +508,12 @@ public class TripTracker
 
 		int tick = client.getTickCount();
 		long now = System.currentTimeMillis();
+
+		if (!runeIdsLoaded)
+		{
+			loadRuneIds();
+		}
+		tickGoalClock(now);
 
 		// Attacks from the previous tick are complete, including gear switched in that tick
 		chargeCounter.process(tick - 1, this::chargesUsed);
@@ -489,7 +546,8 @@ public class TripTracker
 			endTrip(TripEndReason.LOGOUT, suspendedAt);
 		}
 
-		if (inLair && currentTrip != null && now - lastPeriodicSave > ACTIVE_SAVE_INTERVAL_MS)
+		boolean goalRunning = history != null && history.getGoal() != null;
+		if (((inLair && currentTrip != null) || goalRunning) && now - lastPeriodicSave > ACTIVE_SAVE_INTERVAL_MS)
 		{
 			lastPeriodicSave = now;
 			requestSave();
@@ -1075,6 +1133,43 @@ public class TripTracker
 		lastCorpseClickTick = -100;
 		groundItems.clear();
 		recentDespawns.clear();
+	}
+
+	// ---- Kill goal ----
+
+	private void tickGoalClock(long now)
+	{
+		KillGoal goal = history != null ? history.getGoal() : null;
+		if (goal != null && lastGoalTickAt > 0)
+		{
+			long elapsed = now - lastGoalTickAt;
+			// Ticks are 0.6s apart; a longer gap means the client was paused, so don't count it
+			if (elapsed > 0 && elapsed < 5_000)
+			{
+				goal.setActiveMs(goal.getActiveMs() + elapsed);
+			}
+		}
+		lastGoalTickAt = now;
+	}
+
+	private void loadRuneIds()
+	{
+		EnumComposition runeEnum = client.getEnum(EnumID.RUNEPOUCH_RUNE);
+		if (runeEnum == null)
+		{
+			return;
+		}
+		Set<Integer> ids = new HashSet<>();
+		for (int id : runeEnum.getIntVals())
+		{
+			if (id > 0)
+			{
+				ids.add(id);
+			}
+		}
+		viewBuilder.setRuneIds(ids);
+		runeIdsLoaded = true;
+		viewDirty = true;
 	}
 
 	// ---- Tarnished items ----
@@ -1803,6 +1898,7 @@ public class TripTracker
 			shown,
 			historyViews,
 			history == null ? null : viewBuilder.lifetime(history, config.showCurrentValue(), System.currentTimeMillis()),
+			history == null ? null : viewBuilder.goal(history, lastGoalTickAt > 0, System.currentTimeMillis()),
 			readOnly);
 		stateListener.accept(state);
 	}

@@ -14,4 +14,11 @@ public interface PanelActions
 	void exportJson();
 
 	void importJson();
+
+	/**
+	 * @param target kills; 0 removes the goal
+	 */
+	void setGoal(int target);
+
+	void resetGoal();
 }

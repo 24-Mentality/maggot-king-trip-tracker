@@ -6,6 +6,7 @@ import com.maggotkingtriptracker.model.AccountHistory;
 import com.maggotkingtriptracker.model.EggPop;
 import com.maggotkingtriptracker.model.CorpseChoice;
 import com.maggotkingtriptracker.model.ItemEntry;
+import com.maggotkingtriptracker.model.KillGoal;
 import com.maggotkingtriptracker.model.Kill;
 import com.maggotkingtriptracker.model.Trip;
 import com.maggotkingtriptracker.model.TripMath;
@@ -17,6 +18,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Turns stored trips into immutable view objects for the panel. Runs on the client thread,
@@ -30,10 +32,41 @@ public class ViewBuilder
 		.thenComparing(ItemView::getName);
 
 	private final PriceService prices;
+	private Set<Integer> runeIds = Collections.emptySet();
 
 	public ViewBuilder(PriceService prices)
 	{
 		this.prices = prices;
+	}
+
+	/**
+	 * Item ids that count as runes in the supply breakdown (every rune the rune pouch can hold).
+	 */
+	public void setRuneIds(Set<Integer> runeIds)
+	{
+		this.runeIds = runeIds;
+	}
+
+	public GoalView goal(AccountHistory history, boolean running, long now)
+	{
+		KillGoal goal = history.getGoal();
+		if (goal == null)
+		{
+			return null;
+		}
+
+		int done = 0;
+		for (Trip trip : history.getTrips())
+		{
+			for (Kill kill : trip.getKills())
+			{
+				if (kill.getEndedAt() >= goal.getStartedAt())
+				{
+					done++;
+				}
+			}
+		}
+		return new GoalView(goal.getTarget(), done, goal.getActiveMs(), now, running);
 	}
 
 	public TripView trip(Trip trip)
@@ -67,6 +100,7 @@ public class ViewBuilder
 			.loot(items(loot))
 			.supplies(items(trip.getSupplies()))
 			.dropped(items(trip.getDropped()))
+			.supplyCategories(supplyCategories(trip.getSupplies()))
 			.build();
 	}
 
@@ -245,6 +279,55 @@ public class ViewBuilder
 			views.add(new PolishView(tarnishedId, prices.name(tarnishedId), total, items));
 		}
 		return views;
+	}
+
+	private List<SupplyCategory> supplyCategories(List<ItemEntry> supplies)
+	{
+		long charges = 0;
+		long runes = 0;
+		long potions = 0;
+		long food = 0;
+		long other = 0;
+		for (ItemEntry entry : supplies)
+		{
+			long value = entry.totalValue();
+			if (entry.isCharges())
+			{
+				charges += value;
+			}
+			else if (runeIds.contains(entry.getItemId()))
+			{
+				runes += value;
+			}
+			else if (entry.isPerDose())
+			{
+				potions += value;
+			}
+			else if (prices.isFood(entry.getItemId()))
+			{
+				food += value;
+			}
+			else
+			{
+				other += value;
+			}
+		}
+
+		List<SupplyCategory> categories = new ArrayList<>();
+		addCategory(categories, "Charges", charges);
+		addCategory(categories, "Runes", runes);
+		addCategory(categories, "Potions", potions);
+		addCategory(categories, "Food", food);
+		addCategory(categories, "Other", other);
+		return categories;
+	}
+
+	private static void addCategory(List<SupplyCategory> categories, String name, long value)
+	{
+		if (value > 0)
+		{
+			categories.add(new SupplyCategory(name, value));
+		}
 	}
 
 	private List<ItemView> items(Collection<ItemEntry> entries)

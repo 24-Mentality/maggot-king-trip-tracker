@@ -175,6 +175,20 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 		}
 
 		@Override
+		public void setGoal(int target)
+		{
+			TripTracker tracker = tripTracker;
+			clientThread.invokeLater(() -> tracker.setGoal(target));
+		}
+
+		@Override
+		public void resetGoal()
+		{
+			TripTracker tracker = tripTracker;
+			clientThread.invokeLater(tracker::resetGoal);
+		}
+
+		@Override
 		public void exportCsv()
 		{
 			export("Export trips", "maggot-king-trips.csv", "CSV files", "csv", TripTracker::exportCsv);

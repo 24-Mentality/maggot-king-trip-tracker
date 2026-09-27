@@ -14,15 +14,17 @@ import net.runelite.client.ui.FontManager;
 class CurrentTripPanel extends JPanel
 {
 	private final ItemManager itemManager;
+	private final GoalCard goalCard;
 	private final JLabel status = new JLabel();
 	private final TripSummaryCard summary = new TripSummaryCard();
 	private final JPanel detailsHolder = new JPanel();
 	private boolean live;
 	private TripView shownDetails;
 
-	CurrentTripPanel(ItemManager itemManager)
+	CurrentTripPanel(ItemManager itemManager, Runnable onSetGoal, Runnable onResetGoal)
 	{
 		this.itemManager = itemManager;
+		this.goalCard = new GoalCard(itemManager, onSetGoal, onResetGoal);
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		setBackground(ColorScheme.DARK_GRAY_COLOR);
 
@@ -35,6 +37,14 @@ class CurrentTripPanel extends JPanel
 		detailsHolder.setOpaque(false);
 		detailsHolder.setAlignmentX(LEFT_ALIGNMENT);
 
+		goalCard.setAlignmentX(LEFT_ALIGNMENT);
+		JPanel goalSpacer = new JPanel();
+		goalSpacer.setOpaque(false);
+		goalSpacer.setAlignmentX(LEFT_ALIGNMENT);
+		goalSpacer.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+
+		add(goalCard);
+		add(goalSpacer);
 		add(status);
 		add(summary);
 		add(detailsHolder);
@@ -44,6 +54,8 @@ class CurrentTripPanel extends JPanel
 	{
 		TripView trip = state.getCurrentTrip();
 		live = state.getStatus() == PanelState.Status.IN_TRIP;
+		goalCard.setVisible(state.getLifetime() != null);
+		goalCard.setGoal(state.getGoal(), now);
 		status.setText(statusText(state));
 
 		summary.setVisible(trip != null);
@@ -68,6 +80,7 @@ class CurrentTripPanel extends JPanel
 
 	void tick(long now)
 	{
+		goalCard.tick(now);
 		if (live)
 		{
 			summary.tick(now);
@@ -80,7 +93,8 @@ class CurrentTripPanel extends JPanel
 		{
 			return a == b;
 		}
-		return a.getLoot().equals(b.getLoot())
+		return a.getKills() == b.getKills()
+			&& a.getLoot().equals(b.getLoot())
 			&& a.getSupplies().equals(b.getSupplies())
 			&& a.getDropped().equals(b.getDropped());
 	}

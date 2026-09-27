@@ -16,9 +16,14 @@ with persistent per-account history in a side panel.
 
 ## Side panel
 
+- **Kill goal** (top of the Trip tab): set a kill target and see kills per hour (logged-in
+  time), kills done and left, time to goal, and a progress bar. **Reset** starts the count
+  again from now.
 - **Trip:** the current (or last) trip's time, kills, loot value, costs, net profit, GP/hr and average kill
   time, plus item grids for loot, supplies and anything you dropped and left behind.
   Uniques have a gold border; tarnished drops waiting to be polished have a dashed border.
+  Loot shows kills, loot per kill, loot per hour and net profit; Supplies shows the cost of
+  charges, runes, potions, food and anything else.
 - **History:** one card per completed trip. Click to expand it, right-click to delete it.
 - **Lifetime:** totals across all trips, the Open-stomach / Take-eggs split, a profit-per-trip
   chart, and:

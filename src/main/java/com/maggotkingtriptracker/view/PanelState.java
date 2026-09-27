@@ -25,5 +25,9 @@ public class PanelState
 	 */
 	List<TripView> history;
 	LifetimeView lifetime;
+	/**
+	 * Null when no goal is set.
+	 */
+	GoalView goal;
 	boolean readOnly;
 }

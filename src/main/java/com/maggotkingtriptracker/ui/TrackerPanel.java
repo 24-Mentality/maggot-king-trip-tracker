@@ -42,7 +42,7 @@ public class TrackerPanel extends PluginPanel
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARK_GRAY_COLOR);
 
-		currentTab = new CurrentTripPanel(itemManager);
+		currentTab = new CurrentTripPanel(itemManager, () -> promptGoal(actions), () -> confirmResetGoal(actions));
 		historyTab = new HistoryPanel(itemManager, trip -> confirmDelete(trip, actions::deleteTrip));
 		lifetimeTab = new LifetimePanel(actions, () -> confirmClear(actions::clearHistory));
 
@@ -121,6 +121,37 @@ public class TrackerPanel extends PluginPanel
 		if (choice == JOptionPane.YES_OPTION)
 		{
 			onDeleteTrip.accept(trip.getId());
+		}
+	}
+
+	private void promptGoal(PanelActions actions)
+	{
+		String input = JOptionPane.showInputDialog(this,
+			"How many Maggot King kills is your goal? (0 removes it)", "Set kill goal", JOptionPane.QUESTION_MESSAGE);
+		if (input == null)
+		{
+			return;
+		}
+		try
+		{
+			int target = Integer.parseInt(input.trim().replace(",", ""));
+			if (target < 0 || target > 1_000_000)
+			{
+				throw new NumberFormatException();
+			}
+			actions.setGoal(target);
+		}
+		catch (NumberFormatException e)
+		{
+			showMessage("Set kill goal", "Enter a whole number of kills, like 100.", true);
+		}
+	}
+
+	private void confirmResetGoal(PanelActions actions)
+	{
+		if (confirm("Reset kill goal", "Start counting the goal again from 0 kills now?"))
+		{
+			actions.resetGoal();
 		}
 	}
 

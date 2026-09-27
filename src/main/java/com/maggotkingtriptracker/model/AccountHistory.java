@@ -26,4 +26,8 @@ public class AccountHistory
 	 * Tarnished item id to (polished result id to count), for every polish seen.
 	 */
 	private Map<Integer, Map<Integer, Integer>> polishOutcomes = new HashMap<>();
+	/**
+	 * Kill goal shown on the Trip tab; null if none is set.
+	 */
+	private KillGoal goal;
 }
