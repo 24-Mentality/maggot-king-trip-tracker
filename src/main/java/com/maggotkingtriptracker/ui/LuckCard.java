@@ -149,8 +149,7 @@ class LuckCard extends JPanel
 		String sinceWhat = lastKc != null ? "your last unique at KC " + String.format(Locale.ROOT, "%,d", lastKc)
 			: dryness.getFirstTrackedKc() != null ? "tracking began at KC " + String.format(Locale.ROOT, "%,d", dryness.getFirstTrackedKc())
 			: "tracking began";
-		set(dry, "Dry", since + " kc", null, "Open-stomach kills since " + sinceWhat + ". This counts kills tracked by"
-			+ " this plugin, since the Loot Tracker only keeps totals, not when each drop happened.");
+		set(dry, "Dry", since + " kc", null, "Open-stomach kills since " + sinceWhat + ".");
 
 		double chance = DropOdds.chanceByNow(RATE, since);
 		set(byNow, "By now", percent(chance), null, "Chance of at least one unique in " + since

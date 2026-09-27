@@ -51,7 +51,7 @@ class TripSummaryCard extends JPanel
 		JPanel gap = new JPanel();
 		gap.setOpaque(false);
 		gap.setAlignmentX(LEFT_ALIGNMENT);
-		gap.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
+		gap.setBorder(BorderFactory.createEmptyBorder(1, 0, 1, 0));
 
 		add(timeCard);
 		add(gap);
