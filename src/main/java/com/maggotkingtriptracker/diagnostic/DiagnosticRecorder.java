@@ -9,6 +9,9 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import net.runelite.api.Actor;
+import net.runelite.api.ActorSpotAnim;
+import net.runelite.api.EquipmentInventorySlot;
+import net.runelite.api.Hitsplat;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.Item;
@@ -20,6 +23,9 @@ import net.runelite.api.TileItem;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ActorDeath;
+import net.runelite.api.events.AnimationChanged;
+import net.runelite.api.events.GraphicChanged;
+import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
@@ -31,6 +37,7 @@ import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.gameval.InventoryID;
+import net.runelite.api.gameval.VarPlayerID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
@@ -55,6 +62,10 @@ public class DiagnosticRecorder
 		VarbitID.RUNE_POUCH_TYPE_4, VarbitID.RUNE_POUCH_TYPE_5, VarbitID.RUNE_POUCH_TYPE_6,
 		VarbitID.RUNE_POUCH_QUANTITY_1, VarbitID.RUNE_POUCH_QUANTITY_2, VarbitID.RUNE_POUCH_QUANTITY_3,
 		VarbitID.RUNE_POUCH_QUANTITY_4, VarbitID.RUNE_POUCH_QUANTITY_5, VarbitID.RUNE_POUCH_QUANTITY_6
+	);
+
+	private static final Set<Integer> AUTOCAST_VARBITS = ImmutableSet.of(
+		VarbitID.AUTOCAST_SET, VarbitID.AUTOCAST_SPELL
 	);
 
 	private final Client client;
@@ -224,6 +235,17 @@ public class DiagnosticRecorder
 			+ " name=\"" + event.getName() + '"'
 			+ " sender=\"" + event.getSender() + '"'
 			+ " message=\"" + event.getMessage() + '"');
+
+		String lower = event.getMessage().toLowerCase();
+		if (lower.contains("charge") || lower.contains("more hits"))
+		{
+			StringBuilder sb = new StringBuilder("varbit snapshot");
+			for (ChargeType type : ChargeType.values())
+			{
+				sb.append(' ').append(type.name()).append('=').append(client.getVarbitValue(type.getVarbit()));
+			}
+			record("CHARGES", sb.toString());
+		}
 	}
 
 	@Subscribe
@@ -260,6 +282,16 @@ public class DiagnosticRecorder
 		if (RUNE_POUCH_VARBITS.contains(event.getVarbitId()))
 		{
 			record("RUNEPOUCH", "varbit=" + event.getVarbitId() + " value=" + event.getValue());
+			return;
+		}
+		if (AUTOCAST_VARBITS.contains(event.getVarbitId()))
+		{
+			record("AUTOCAST", "varbit=" + event.getVarbitId() + " value=" + event.getValue());
+			return;
+		}
+		if (event.getVarpId() == VarPlayerID.SA_ENERGY)
+		{
+			record("SPEC", "energy=" + event.getValue());
 			return;
 		}
 		for (ChargeType type : ChargeType.values())
@@ -316,6 +348,61 @@ public class DiagnosticRecorder
 	}
 
 	@Subscribe
+	public void onAnimationChanged(AnimationChanged event)
+	{
+		Actor actor = event.getActor();
+		if (!isRecording() || actor != client.getLocalPlayer() || actor.getAnimation() == -1)
+		{
+			return;
+		}
+
+		Actor target = actor.getInteracting();
+		record("ANIM", "id=" + actor.getAnimation()
+			+ " target=" + describeActor(target)
+			+ ' ' + describeGear()
+			+ " autocast=" + client.getVarbitValue(VarbitID.AUTOCAST_SPELL)
+			+ " spec=" + client.getVarpValue(VarPlayerID.SA_ENERGY));
+	}
+
+	@Subscribe
+	public void onHitsplatApplied(HitsplatApplied event)
+	{
+		Hitsplat hitsplat = event.getHitsplat();
+		if (!isRecording() || !hitsplat.isMine() || event.getActor() == client.getLocalPlayer())
+		{
+			return;
+		}
+
+		record("HITSPLAT", "type=" + hitsplat.getHitsplatType()
+			+ " amount=" + hitsplat.getAmount()
+			+ " target=" + describeActor(event.getActor())
+			+ ' ' + describeGear());
+	}
+
+	@Subscribe
+	public void onGraphicChanged(GraphicChanged event)
+	{
+		Actor actor = event.getActor();
+		if (!isRecording() || actor != client.getLocalPlayer())
+		{
+			return;
+		}
+
+		StringBuilder sb = new StringBuilder("spotanims=[");
+		boolean first = true;
+		for (ActorSpotAnim spotAnim : actor.getSpotAnims())
+		{
+			if (!first)
+			{
+				sb.append(", ");
+			}
+			first = false;
+			sb.append(spotAnim.getId());
+		}
+		record("GRAPHIC", sb.append(']').toString());
+	}
+
+	@Subscribe
 	public void onLootReceived(LootReceived event)
 	{
 		if (!isRecording())
@@ -341,6 +428,37 @@ public class DiagnosticRecorder
 		}
 		sb.append(']');
 		record("LOOT", sb.toString());
+	}
+
+	private String describeGear()
+	{
+		ItemContainer worn = client.getItemContainer(InventoryID.WORN);
+		return "weapon=" + wornId(worn, EquipmentInventorySlot.WEAPON)
+			+ " shield=" + wornId(worn, EquipmentInventorySlot.SHIELD)
+			+ " amulet=" + wornId(worn, EquipmentInventorySlot.AMULET);
+	}
+
+	private static int wornId(ItemContainer worn, EquipmentInventorySlot slot)
+	{
+		if (worn == null)
+		{
+			return -1;
+		}
+		Item item = worn.getItem(slot.getSlotIdx());
+		return item == null ? -1 : item.getId();
+	}
+
+	private static String describeActor(Actor actor)
+	{
+		if (actor == null)
+		{
+			return "none";
+		}
+		if (actor instanceof NPC)
+		{
+			return "npc:" + ((NPC) actor).getId();
+		}
+		return "player";
 	}
 
 	private void recordGroundItem(String what, TileItem item, LocalPoint localPoint)
