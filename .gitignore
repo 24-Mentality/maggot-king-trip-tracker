@@ -8,3 +8,7 @@ nbactions.xml
 nb-configuration.xml
 nbproject/
 *.class
+.DS_Store
+bin/
+out/
+.tmp/

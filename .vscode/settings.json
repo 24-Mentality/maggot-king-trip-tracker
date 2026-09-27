@@ -1,0 +1,24 @@
+{
+	"java.configuration.updateBuildConfiguration": "automatic",
+	"java.configuration.runtimes": [
+		{
+			"name": "JavaSE-11",
+			"path": "/Library/Java/JavaVirtualMachines/temurin-11.jdk/Contents/Home",
+			"default": true
+		}
+	],
+	"java.import.gradle.enabled": true,
+	"java.import.gradle.wrapper.enabled": true,
+	"java.import.gradle.java.home": "/Library/Java/JavaVirtualMachines/temurin-11.jdk/Contents/Home",
+	"java.gradle.buildServer.enabled": "off",
+	"java.compile.nullAnalysis.mode": "disabled",
+	"terminal.integrated.env.osx": {
+		"JAVA_HOME": "/Library/Java/JavaVirtualMachines/temurin-11.jdk/Contents/Home"
+	},
+	"files.exclude": {
+		"**/.classpath": true,
+		"**/.project": true,
+		"**/.settings": true,
+		"**/.factorypath": true
+	}
+}
