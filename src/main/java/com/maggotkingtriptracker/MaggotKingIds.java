@@ -52,6 +52,8 @@ public final class MaggotKingIds
 	);
 
 	public static final int PET_ITEM = ItemID.MAGGOTKINGPET;
+	public static final int UNIQUES_FANG = ItemID.ELDER_VENATOR_FANG;
+	public static final int UNIQUES_KISTEN = ItemID.CRIMSON_KISTEN;
 
 	/**
 	 * What the aranei scout accepts for moving a gravestone.

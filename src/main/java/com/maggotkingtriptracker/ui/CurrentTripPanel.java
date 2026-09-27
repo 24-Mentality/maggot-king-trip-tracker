@@ -19,6 +19,7 @@ class CurrentTripPanel extends JPanel
 	private final JLabel status = new JLabel();
 	private final TripSummaryCard summary = new TripSummaryCard();
 	private final LuckCard luckCard = new LuckCard();
+	private final DropChancesCard dropChances;
 	private final JPanel luckHolder = new JPanel(new BorderLayout());
 	private final JPanel detailsHolder = new JPanel();
 	private boolean live;
@@ -28,6 +29,7 @@ class CurrentTripPanel extends JPanel
 	{
 		this.itemManager = itemManager;
 		this.goalCard = new GoalCard(itemManager, onSetGoal, onResetGoal);
+		this.dropChances = new DropChancesCard(itemManager);
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		setBackground(ColorScheme.DARK_GRAY_COLOR);
 
@@ -54,6 +56,11 @@ class CurrentTripPanel extends JPanel
 		luckHolder.setAlignmentX(LEFT_ALIGNMENT);
 		luckHolder.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
 		luckHolder.add(luckCard, BorderLayout.CENTER);
+		JPanel dropHolder = new JPanel(new BorderLayout());
+		dropHolder.setOpaque(false);
+		dropHolder.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
+		dropHolder.add(dropChances, BorderLayout.CENTER);
+		luckHolder.add(dropHolder, BorderLayout.SOUTH);
 		add(luckHolder);
 		add(detailsHolder);
 	}
@@ -68,6 +75,7 @@ class CurrentTripPanel extends JPanel
 		if (state.getLifetime() != null)
 		{
 			luckCard.update(state.getLifetime().getDryness());
+			dropChances.update(state.getLifetime().getDryness());
 		}
 		status.setText(statusText(state));
 
