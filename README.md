@@ -21,7 +21,15 @@ with persistent per-account history in a side panel.
   Uniques have a gold border; tarnished drops waiting to be polished have a dashed border.
 - **History:** one card per completed trip. Click to expand it, right-click to delete it.
 - **Lifetime:** totals across all trips, the Open-stomach / Take-eggs split, a profit-per-trip
-  chart, and a button to clear all history for the account.
+  chart, and:
+  - **Dryness:** Open-stomach kills since your last unique and the chance of being that dry,
+    the kill counts of each Elder venator fang and Crimson kisten, and expected vs actual
+    uniques and pets.
+  - **Eggs popped:** eggs popped per tier (anywhere, not just in the lair), pets from eggs,
+    and your total pet chance from the eggs popped so far.
+  - **Polish results:** what each type of tarnished item has polished into.
+  - **Data:** export trips as CSV, export or import the account's full history as JSON
+    (imports only add trips you don't already have), and clear all history.
 
 ## How trips are counted
 
@@ -44,6 +52,10 @@ with persistent per-account history in a side panel.
 - Items you drop in the lair and don't pick up again are a "Dropped" cost. Zero-value items
   such as empty vials are ignored.
 - Gravestone moves paid to the aranei scout are recorded as death costs.
+- Tarnished drops are pending until you polish them (anywhere, any time later). The
+  result replaces the oldest pending drop of that type and is valued at the GE price then.
+- **Loot alerts** (Configuration → Loot alerts) notify you for uniques, the pet, or any drop
+  worth at least a set amount. Nothing is drawn on the game screen.
 - Values use the GE price at the time of the drop or use. The Lifetime tab can also show
   loot at today's prices (**Show today's value**).
 

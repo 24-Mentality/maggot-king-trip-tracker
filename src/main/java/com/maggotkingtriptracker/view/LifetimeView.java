@@ -29,4 +29,6 @@ public class LifetimeView
 	 * Net profit of completed trips, oldest first.
 	 */
 	List<Long> netPerTrip;
+	DrynessView dryness;
+	List<PolishView> polish;
 }

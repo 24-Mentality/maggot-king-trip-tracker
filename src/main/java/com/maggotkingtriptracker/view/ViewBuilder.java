@@ -1,6 +1,9 @@
 package com.maggotkingtriptracker.view;
 
 import com.maggotkingtriptracker.MaggotKingIds;
+import com.maggotkingtriptracker.MaggotKingRates;
+import com.maggotkingtriptracker.model.AccountHistory;
+import com.maggotkingtriptracker.model.EggPop;
 import com.maggotkingtriptracker.model.CorpseChoice;
 import com.maggotkingtriptracker.model.ItemEntry;
 import com.maggotkingtriptracker.model.Kill;
@@ -68,11 +71,11 @@ public class ViewBuilder
 	}
 
 	/**
-	 * @param trips every stored trip, including one in progress
 	 * @param now current time, for the running segment of an open trip
 	 */
-	public LifetimeView lifetime(List<Trip> trips, boolean includeTodayValue, long now)
+	public LifetimeView lifetime(AccountHistory history, boolean includeTodayValue, long now)
 	{
+		List<Trip> trips = history.getTrips();
 		int kills = 0;
 		int stomach = 0;
 		int eggs = 0;
@@ -136,7 +139,112 @@ public class ViewBuilder
 			.averageKillMs(TripMath.averageKillMs(trips))
 			.lootValueToday(includeTodayValue ? today : null)
 			.netPerTrip(netPerTrip)
+			.dryness(dryness(history))
+			.polish(polish(history))
 			.build();
+	}
+
+	private DrynessView dryness(AccountHistory history)
+	{
+		int stomachKills = 0;
+		int sinceUnique = 0;
+		int petsFromKills = 0;
+		Map<Integer, List<Integer>> received = new LinkedHashMap<>();
+		for (int uniqueId : MaggotKingRates.UNIQUES.keySet())
+		{
+			received.put(uniqueId, new ArrayList<>());
+		}
+
+		for (Trip trip : history.getTrips())
+		{
+			for (Kill kill : trip.getKills())
+			{
+				if (kill.isPet())
+				{
+					petsFromKills++;
+				}
+				if (kill.getChoice() != CorpseChoice.STOMACH)
+				{
+					continue;
+				}
+				stomachKills++;
+				sinceUnique++;
+				for (ItemEntry entry : kill.getLoot())
+				{
+					List<Integer> kcs = received.get(entry.getItemId());
+					if (kcs != null)
+					{
+						for (long i = 0; i < entry.getQuantity(); i++)
+						{
+							kcs.add(kill.getKillCount());
+						}
+						sinceUnique = 0;
+					}
+				}
+			}
+		}
+
+		List<DrynessView.Unique> uniques = new ArrayList<>();
+		for (Map.Entry<Integer, List<Integer>> e : received.entrySet())
+		{
+			uniques.add(new DrynessView.Unique(e.getKey(), prices.name(e.getKey()),
+				stomachKills * MaggotKingRates.UNIQUES.get(e.getKey()), e.getValue()));
+		}
+
+		Map<Integer, int[]> eggCounts = new LinkedHashMap<>();
+		for (int eggId : MaggotKingRates.EGG_PET.keySet())
+		{
+			eggCounts.put(eggId, new int[2]);
+		}
+		for (EggPop pop : history.getEggPops())
+		{
+			int[] counts = eggCounts.get(pop.getEggItemId());
+			if (counts != null)
+			{
+				counts[0]++;
+				counts[1] += pop.isPet() ? 1 : 0;
+			}
+		}
+
+		List<DrynessView.EggTier> tiers = new ArrayList<>();
+		double noPetFromEggs = 1;
+		int petsFromEggs = 0;
+		for (Map.Entry<Integer, int[]> e : eggCounts.entrySet())
+		{
+			double rate = MaggotKingRates.EGG_PET.get(e.getKey());
+			tiers.add(new DrynessView.EggTier(e.getKey(), prices.name(e.getKey()), e.getValue()[0], e.getValue()[1], rate));
+			noPetFromEggs *= Math.pow(1 - rate, e.getValue()[0]);
+			petsFromEggs += e.getValue()[1];
+		}
+
+		return new DrynessView(stomachKills, sinceUnique, Math.pow(1 - MaggotKingRates.ANY_UNIQUE, sinceUnique),
+			uniques, stomachKills * MaggotKingRates.PET_PER_STOMACH, petsFromKills, tiers, 1 - noPetFromEggs, petsFromEggs);
+	}
+
+	private List<PolishView> polish(AccountHistory history)
+	{
+		List<PolishView> views = new ArrayList<>();
+		for (int tarnishedId : MaggotKingIds.TARNISHED_ITEMS)
+		{
+			Map<Integer, Integer> outcomes = history.getPolishOutcomes().get(tarnishedId);
+			if (outcomes == null || outcomes.isEmpty())
+			{
+				continue;
+			}
+
+			int total = 0;
+			List<ItemView> items = new ArrayList<>();
+			for (Map.Entry<Integer, Integer> e : outcomes.entrySet())
+			{
+				int count = e.getValue();
+				total += count;
+				items.add(new ItemView(e.getKey(), prices.name(e.getKey()), count, count * prices.price(e.getKey()),
+					false, false, false, null, 0, null));
+			}
+			items.sort(Comparator.comparingLong(ItemView::getQuantity).reversed());
+			views.add(new PolishView(tarnishedId, prices.name(tarnishedId), total, items));
+		}
+		return views;
 	}
 
 	private List<ItemView> items(Collection<ItemEntry> entries)
@@ -147,7 +255,8 @@ public class ViewBuilder
 		for (ItemEntry entry : entries)
 		{
 			String key = entry.getItemId() + (entry.isPerDose() ? "d" : "") + (entry.isPending() ? "p" : "")
-				+ (entry.isCharges() ? "c" + entry.getChargeItemId() : "");
+				+ (entry.isCharges() ? "c" + entry.getChargeItemId() : "")
+				+ (entry.getPolishedFrom() > 0 ? "f" + entry.getPolishedFrom() : "");
 			long[] sum = totals.computeIfAbsent(key, k -> new long[2]);
 			sum[0] += entry.getQuantity();
 			sum[1] += entry.totalValue();
@@ -162,7 +271,8 @@ public class ViewBuilder
 			int itemId = first.getItemId();
 			views.add(new ItemView(itemId, prices.name(itemId), sum[0], sum[1], first.isPerDose(),
 				MaggotKingIds.UNIQUES.contains(itemId), first.isPending(),
-				first.isCharges() ? prices.name(first.getChargeItemId()) : null, first.getChargesPerItem()));
+				first.isCharges() ? prices.name(first.getChargeItemId()) : null, first.getChargesPerItem(),
+				first.getPolishedFrom() > 0 ? prices.name(first.getPolishedFrom()) : null));
 		}
 		views.sort(BY_VALUE);
 		return views;

@@ -27,15 +27,15 @@ public class TrackerPanel extends PluginPanel
 	private final JLabel readOnlyWarning = new JLabel();
 	private final Timer timer;
 
-	public TrackerPanel(ItemManager itemManager, Consumer<String> onDeleteTrip, Runnable onClearHistory)
+	public TrackerPanel(ItemManager itemManager, PanelActions actions)
 	{
 		setLayout(new BorderLayout(0, 8));
 		setBackground(ColorScheme.DARK_GRAY_COLOR);
 		setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
 		currentTab = new CurrentTripPanel(itemManager);
-		historyTab = new HistoryPanel(itemManager, trip -> confirmDelete(trip, onDeleteTrip));
-		lifetimeTab = new LifetimePanel(() -> confirmClear(onClearHistory));
+		historyTab = new HistoryPanel(itemManager, trip -> confirmDelete(trip, actions::deleteTrip));
+		lifetimeTab = new LifetimePanel(actions, () -> confirmClear(actions::clearHistory));
 
 		JPanel display = new JPanel(new BorderLayout());
 		display.setOpaque(false);
@@ -76,6 +76,18 @@ public class TrackerPanel extends PluginPanel
 	public void shutDown()
 	{
 		timer.stop();
+	}
+
+	public void showMessage(String title, String message, boolean error)
+	{
+		JOptionPane.showMessageDialog(this, message, title,
+			error ? JOptionPane.ERROR_MESSAGE : JOptionPane.INFORMATION_MESSAGE);
+	}
+
+	public boolean confirm(String title, String message)
+	{
+		return JOptionPane.showConfirmDialog(this, message, title, JOptionPane.YES_NO_OPTION,
+			JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION;
 	}
 
 	private void confirmDelete(TripView trip, Consumer<String> onDeleteTrip)

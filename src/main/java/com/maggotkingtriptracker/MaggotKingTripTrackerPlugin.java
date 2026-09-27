@@ -6,14 +6,18 @@ import com.maggotkingtriptracker.diagnostic.DiagnosticRecorder;
 import com.maggotkingtriptracker.persistence.HistoryStore;
 import com.maggotkingtriptracker.pricing.PriceService;
 import com.maggotkingtriptracker.tracking.TripTracker;
+import com.maggotkingtriptracker.ui.PanelActions;
 import com.maggotkingtriptracker.ui.TrackerPanel;
 import java.awt.image.BufferedImage;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Function;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.client.Notifier;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
@@ -24,6 +28,7 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
+import net.runelite.client.util.Filepath;
 import net.runelite.client.util.ImageUtil;
 
 @Slf4j
@@ -54,10 +59,14 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 	private Gson gson;
 
 	@Inject
+	private Notifier notifier;
+
+	@Inject
 	private MaggotKingTripTrackerConfig config;
 
 	private DiagnosticRecorder diagnosticRecorder;
 	private ScheduledExecutorService executor;
+	private HistoryStore store;
 	private TripTracker tripTracker;
 	private TrackerPanel panel;
 	private NavigationButton navigationButton;
@@ -78,12 +87,13 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 			return thread;
 		});
 
-		TrackerPanel trackerPanel = new TrackerPanel(itemManager, this::deleteTrip, this::clearHistory);
+		TrackerPanel trackerPanel = new TrackerPanel(itemManager, new Actions());
 		panel = trackerPanel;
 
-		HistoryStore store = new HistoryStore(gson, this::getPluginDirectory, executor);
+		store = new HistoryStore(gson, this::getPluginDirectory, executor);
 		TripTracker tracker = new TripTracker(client, clientThread, config, new PriceService(itemManager), store,
-			gson, executor, state -> SwingUtilities.invokeLater(() -> trackerPanel.update(state)));
+			gson, executor, state -> SwingUtilities.invokeLater(() -> trackerPanel.update(state)),
+			message -> notifier.notify(config.alertNotification(), message));
 		tripTracker = tracker;
 		eventBus.register(tracker);
 		clientThread.invokeLater(tracker::start);
@@ -113,6 +123,7 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 
 		executor.shutdownNow();
 		executor = null;
+		store = null;
 
 		clientToolbar.removeNavigation(navigationButton);
 		navigationButton = null;
@@ -143,21 +154,111 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 		}
 	}
 
-	private void deleteTrip(String tripId)
+	/**
+	 * Panel buttons. Runs on the Swing thread; file dialogs open here, IO runs on the executor and
+	 * history access on the client thread.
+	 */
+	private class Actions implements PanelActions
 	{
-		TripTracker tracker = tripTracker;
-		if (tracker != null)
+		@Override
+		public void deleteTrip(String tripId)
 		{
+			TripTracker tracker = tripTracker;
 			clientThread.invokeLater(() -> tracker.deleteTrip(tripId));
 		}
-	}
 
-	private void clearHistory()
-	{
-		TripTracker tracker = tripTracker;
-		if (tracker != null)
+		@Override
+		public void clearHistory()
 		{
+			TripTracker tracker = tripTracker;
 			clientThread.invokeLater(tracker::clearHistory);
+		}
+
+		@Override
+		public void exportCsv()
+		{
+			export("Export trips", "maggot-king-trips.csv", "CSV files", "csv", TripTracker::exportCsv);
+		}
+
+		@Override
+		public void exportJson()
+		{
+			export("Export history", "maggot-king-history.json", "JSON files", "json", TripTracker::exportJson);
+		}
+
+		@Override
+		public void importJson()
+		{
+			List<Filepath> chosen = new Filepath.Chooser()
+				.setIsOpen()
+				.setAcceptsFiles()
+				.setDialogTitle("Import history")
+				.addExtensionFilter("JSON files", "json")
+				.showDialog(panel);
+			if (chosen.isEmpty())
+			{
+				return;
+			}
+
+			TripTracker tracker = tripTracker;
+			TrackerPanel trackerPanel = panel;
+			store.readHistoryFile(chosen.get(0), (imported, error) ->
+			{
+				if (error != null)
+				{
+					SwingUtilities.invokeLater(() -> trackerPanel.showMessage("Import history",
+						"That file couldn't be read as a Maggot King Trip Tracker export.", true));
+					return;
+				}
+				clientThread.invokeLater(() ->
+				{
+					String description = tracker.describeImport(imported);
+					SwingUtilities.invokeLater(() ->
+					{
+						if (description.startsWith("!"))
+						{
+							trackerPanel.showMessage("Import history", description.substring(1), true);
+						}
+						else if (trackerPanel.confirm("Import history", description))
+						{
+							clientThread.invokeLater(() -> tracker.importHistory(imported));
+						}
+					});
+				});
+			});
+		}
+
+		private void export(String title, String fileName, String filterName, String extension,
+			Function<TripTracker, String> content)
+		{
+			List<Filepath> chosen = new Filepath.Chooser()
+				.setIsSave()
+				.setDialogTitle(title)
+				.setFileName(fileName)
+				.addExtensionFilter(filterName, extension)
+				.setDefaultExtension(extension)
+				.showDialog(panel);
+			if (chosen.isEmpty())
+			{
+				return;
+			}
+
+			Filepath file = chosen.get(0);
+			TripTracker tracker = tripTracker;
+			TrackerPanel trackerPanel = panel;
+			HistoryStore historyStore = store;
+			clientThread.invokeLater(() ->
+			{
+				String data = content.apply(tracker);
+				if (data == null)
+				{
+					SwingUtilities.invokeLater(() -> trackerPanel.showMessage(title, "Log in first.", true));
+					return;
+				}
+				historyStore.writeFile(file, data, error -> SwingUtilities.invokeLater(() -> trackerPanel.showMessage(title,
+					error == null ? "Saved to " + file.getFileName() : "Couldn't save the file: " + error.getMessage(),
+					error != null)));
+			});
 		}
 	}
 

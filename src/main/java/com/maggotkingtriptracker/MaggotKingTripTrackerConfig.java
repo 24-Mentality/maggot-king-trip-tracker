@@ -4,6 +4,7 @@ import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
+import net.runelite.client.config.Notification;
 import net.runelite.client.config.Range;
 import net.runelite.client.config.Units;
 
@@ -27,9 +28,16 @@ public interface MaggotKingTripTrackerConfig extends Config
 	String chargesSection = "charges";
 
 	@ConfigSection(
+		name = "Loot alerts",
+		description = "Notifications for good drops",
+		position = 2
+	)
+	String alertsSection = "alerts";
+
+	@ConfigSection(
 		name = "Display",
 		description = "Side panel options",
-		position = 2
+		position = 3
 	)
 	String displaySection = "display";
 
@@ -103,6 +111,55 @@ public interface MaggotKingTripTrackerConfig extends Config
 	default TomePage tomePage()
 	{
 		return TomePage.SEARING;
+	}
+
+	@ConfigItem(
+		keyName = "alertUniques",
+		name = "Unique drops",
+		description = "Notify when you get an Elder venator fang or Crimson kisten",
+		section = alertsSection,
+		position = 0
+	)
+	default boolean alertUniques()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "alertPet",
+		name = "Pet",
+		description = "Notify when you get the Maggot King pet, from a kill or an egg",
+		section = alertsSection,
+		position = 1
+	)
+	default boolean alertPet()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "alertValue",
+		name = "Drops worth at least",
+		description = "Notify for any Maggot King drop (including polished tarnished items) worth at least this"
+			+ " many gp. 0 turns it off.",
+		section = alertsSection,
+		position = 2
+	)
+	default int alertValue()
+	{
+		return 0;
+	}
+
+	@ConfigItem(
+		keyName = "alertNotification",
+		name = "Notification",
+		description = "How loot alerts are shown",
+		section = alertsSection,
+		position = 3
+	)
+	default Notification alertNotification()
+	{
+		return Notification.ON;
 	}
 
 	@ConfigItem(

@@ -21,7 +21,8 @@ final class ItemEntries
 
 		for (ItemEntry entry : entries)
 		{
-			if (entry.getItemId() == itemId && entry.isPerDose() == perDose && !entry.isPending() && !entry.isCharges())
+			if (entry.getItemId() == itemId && entry.isPerDose() == perDose && !entry.isPending() && !entry.isCharges()
+				&& entry.getPolishedFrom() == 0)
 			{
 				long total = entry.getQuantity() + quantity;
 				double value = (double) entry.getQuantity() * entry.getPriceEach() + (double) quantity * priceEach;

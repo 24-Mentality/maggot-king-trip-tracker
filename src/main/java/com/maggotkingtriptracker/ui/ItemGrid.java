@@ -87,6 +87,10 @@ class ItemGrid extends JPanel
 		{
 			sb.append(item.getQuantity() == 1 ? " dose" : " doses");
 		}
+		if (item.getPolishedFromName() != null)
+		{
+			sb.append("<br>Polished from ").append(UiFormat.html(item.getPolishedFromName()));
+		}
 		if (item.isPending())
 		{
 			sb.append("<br>Pending: value is known once polished");

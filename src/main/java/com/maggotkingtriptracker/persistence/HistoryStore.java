@@ -9,9 +9,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -49,6 +51,51 @@ public class HistoryStore
 	public void save(long accountHash, String json)
 	{
 		submit(() -> writeHistory(accountHash, json));
+	}
+
+	/**
+	 * Writes a user-chosen export file. The callback gets null on success, or the error.
+	 */
+	public void writeFile(Filepath file, String content, Consumer<Exception> callback)
+	{
+		submit(() ->
+		{
+			try
+			{
+				file.write(content.getBytes(StandardCharsets.UTF_8),
+					StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+				callback.accept(null);
+			}
+			catch (Exception e)
+			{
+				log.warn("Unable to write export", e);
+				callback.accept(e);
+			}
+		});
+	}
+
+	/**
+	 * Reads a user-chosen history export. The callback gets the parsed history, or null and the error.
+	 */
+	public void readHistoryFile(Filepath file, BiConsumer<AccountHistory, Exception> callback)
+	{
+		submit(() ->
+		{
+			try (Reader reader = file.openBufferedReader())
+			{
+				AccountHistory history = gson.fromJson(reader, AccountHistory.class);
+				if (history == null || history.getTrips() == null)
+				{
+					throw new IOException("Not a Maggot King Trip Tracker export");
+				}
+				callback.accept(history, null);
+			}
+			catch (Exception e)
+			{
+				log.warn("Unable to read import", e);
+				callback.accept(null, e);
+			}
+		});
 	}
 
 	private void submit(Runnable task)
@@ -93,6 +140,14 @@ public class HistoryStore
 			if (history.getTrips() == null)
 			{
 				history.setTrips(new ArrayList<>());
+			}
+			if (history.getEggPops() == null)
+			{
+				history.setEggPops(new ArrayList<>());
+			}
+			if (history.getPolishOutcomes() == null)
+			{
+				history.setPolishOutcomes(new HashMap<>());
 			}
 			if (history.getSchemaVersion() <= 0)
 			{

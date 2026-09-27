@@ -33,15 +33,19 @@ public class ItemEntry
 	 */
 	private int chargeItemId;
 	private int chargesPerItem;
+	/**
+	 * For a tarnished drop that has been polished: the tarnished item it came from. itemId is the result.
+	 */
+	private int polishedFrom;
 
 	public ItemEntry(int itemId, long quantity, long priceEach)
 	{
-		this(itemId, quantity, priceEach, false, false, null, 0, 0);
+		this(itemId, quantity, priceEach, false, false, null, 0, 0, 0);
 	}
 
 	public static ItemEntry charges(int chargedItemId, long charges, int chargeItemId, long chargeItemPrice, int chargesPerItem)
 	{
-		return new ItemEntry(chargedItemId, charges, chargeItemPrice, false, false, null, chargeItemId, chargesPerItem);
+		return new ItemEntry(chargedItemId, charges, chargeItemPrice, false, false, null, chargeItemId, chargesPerItem, 0);
 	}
 
 	public boolean isCharges()

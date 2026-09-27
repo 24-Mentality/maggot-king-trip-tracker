@@ -1,9 +1,15 @@
 package com.maggotkingtriptracker.ui;
 
 import com.maggotkingtriptracker.model.TripMath;
+import com.maggotkingtriptracker.view.DrynessView;
+import com.maggotkingtriptracker.view.ItemView;
 import com.maggotkingtriptracker.view.LifetimeView;
+import com.maggotkingtriptracker.view.PolishView;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -27,9 +33,15 @@ class LifetimePanel extends JPanel
 	private final JLabel todayValue = new JLabel();
 	private final JLabel chartTitle = new JLabel();
 	private final ProfitTrendChart chart = new ProfitTrendChart();
+	private final InfoCard drynessCard = new InfoCard("Dryness");
+	private final InfoCard eggCard = new InfoCard("Eggs popped");
+	private final InfoCard polishCard = new InfoCard("Polish results");
+	private final JButton exportCsvButton = new JButton("Export trips (CSV)");
+	private final JButton exportJsonButton = new JButton("Export history (JSON)");
+	private final JButton importJsonButton = new JButton("Import history (JSON)");
 	private final JButton clearButton = new JButton("Clear all history");
 
-	LifetimePanel(Runnable onClear)
+	LifetimePanel(PanelActions actions, Runnable onClear)
 	{
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		setBackground(ColorScheme.DARK_GRAY_COLOR);
@@ -80,15 +92,42 @@ class LifetimePanel extends JPanel
 		chart.setAlignmentX(LEFT_ALIGNMENT);
 		add(chart);
 
-		JPanel clearRow = new JPanel(new BorderLayout());
-		clearRow.setOpaque(false);
-		clearRow.setBorder(BorderFactory.createEmptyBorder(12, 0, 0, 0));
-		clearRow.setAlignmentX(LEFT_ALIGNMENT);
+		for (InfoCard infoCard : new InfoCard[]{drynessCard, eggCard, polishCard})
+		{
+			add(spacer());
+			add(infoCard);
+		}
+
+		JLabel dataTitle = new JLabel("Data");
+		dataTitle.setFont(FontManager.getRunescapeBoldFont());
+		dataTitle.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+		dataTitle.setBorder(BorderFactory.createEmptyBorder(10, 0, 4, 0));
+		dataTitle.setAlignmentX(LEFT_ALIGNMENT);
+		add(dataTitle);
+
+		JPanel buttons = new JPanel(new GridLayout(0, 1, 0, 4));
+		buttons.setOpaque(false);
+		buttons.setAlignmentX(LEFT_ALIGNMENT);
+		exportCsvButton.addActionListener(e -> actions.exportCsv());
+		exportJsonButton.addActionListener(e -> actions.exportJson());
+		importJsonButton.addActionListener(e -> actions.importJson());
 		clearButton.setForeground(UiFormat.LOSS);
-		clearButton.setFocusPainted(false);
 		clearButton.addActionListener(e -> onClear.run());
-		clearRow.add(clearButton, BorderLayout.CENTER);
-		add(clearRow);
+		for (JButton button : new JButton[]{exportCsvButton, exportJsonButton, importJsonButton, clearButton})
+		{
+			button.setFocusPainted(false);
+			buttons.add(button);
+		}
+		add(buttons);
+	}
+
+	private static JPanel spacer()
+	{
+		JPanel spacer = new JPanel();
+		spacer.setOpaque(false);
+		spacer.setAlignmentX(LEFT_ALIGNMENT);
+		spacer.setBorder(BorderFactory.createEmptyBorder(3, 0, 3, 0));
+		return spacer;
 	}
 
 	void update(LifetimeView view, boolean readOnly)
@@ -127,12 +166,84 @@ class LifetimePanel extends JPanel
 			todayValue.setToolTipText(UiFormat.fullGp(today));
 		}
 
+
 		int shown = Math.min(view.getNetPerTrip().size(), ProfitTrendChart.MAX_TRIPS);
 		chartTitle.setText(shown == 0 ? "Profit per trip" : "Profit per trip (last " + shown + ")");
 		chart.setValues(view.getNetPerTrip());
 
+		updateDryness(view.getDryness());
+		updatePolish(view.getPolish());
+
+		exportCsvButton.setEnabled(view.getTrips() > 0);
+		exportJsonButton.setEnabled(view.getTrips() > 0);
+		importJsonButton.setEnabled(!readOnly);
 		clearButton.setEnabled(!readOnly && view.getTrips() > 0);
 		revalidate();
 		repaint();
+	}
+
+	private void updateDryness(DrynessView dryness)
+	{
+		List<String> rows = new ArrayList<>();
+		rows.add("Open-stomach kills: " + dryness.getStomachKills());
+		rows.add("Since last unique: " + dryness.getStomachKillsSinceUnique()
+			+ " (" + percent(dryness.getChanceThisDry()) + " chance to be this dry)");
+		for (DrynessView.Unique unique : dryness.getUniques())
+		{
+			StringBuilder row = new StringBuilder(unique.getName()).append(": ").append(unique.getKillCounts().size())
+				.append(" (expected ").append(String.format(Locale.ROOT, "%.2f", unique.getExpected())).append(')');
+			if (!unique.getKillCounts().isEmpty())
+			{
+				List<String> kcs = new ArrayList<>();
+				for (Integer kc : unique.getKillCounts())
+				{
+					kcs.add(kc == null ? "?" : String.format(Locale.ROOT, "%,d", kc));
+				}
+				row.append(" at KC ").append(String.join(", ", kcs));
+			}
+			rows.add(row.toString());
+		}
+		rows.add("Pet from kills: " + dryness.getPetsFromKills()
+			+ " (expected " + String.format(Locale.ROOT, "%.3f", dryness.getExpectedPetsFromKills()) + ")");
+		drynessCard.setLines(rows);
+
+		List<String> eggRows = new ArrayList<>();
+		int popped = 0;
+		for (DrynessView.EggTier tier : dryness.getEggTiers())
+		{
+			popped += tier.getPopped();
+			eggRows.add(tier.getName() + ": " + tier.getPopped()
+				+ " (1/" + Math.round(1 / tier.getPetRate()) + ")"
+				+ (tier.getPets() > 0 ? " · pets " + tier.getPets() : ""));
+		}
+		eggRows.add(popped == 0 ? "No eggs popped yet"
+			: "Pet chance from these eggs: " + percent(dryness.getEggPetChance())
+			+ (dryness.getPetsFromEggs() > 0 ? " · pets " + dryness.getPetsFromEggs() : ""));
+		eggCard.setLines(eggRows);
+	}
+
+	private void updatePolish(List<PolishView> polish)
+	{
+		List<String> rows = new ArrayList<>();
+		for (PolishView view : polish)
+		{
+			List<String> outcomes = new ArrayList<>();
+			for (ItemView outcome : view.getOutcomes())
+			{
+				outcomes.add(outcome.getName() + " x" + outcome.getQuantity());
+			}
+			rows.add(view.getTarnishedName() + " (" + view.getTotal() + "): " + String.join(", ", outcomes));
+		}
+		if (rows.isEmpty())
+		{
+			rows.add("Nothing polished yet");
+		}
+		polishCard.setLines(rows);
+	}
+
+	private static String percent(double chance)
+	{
+		double pct = chance * 100;
+		return String.format(Locale.ROOT, pct < 1 ? "%.2f%%" : "%.1f%%", pct);
 	}
 }

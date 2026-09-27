@@ -3,28 +3,37 @@ package com.maggotkingtriptracker.tracking;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
 import com.maggotkingtriptracker.MaggotKingIds;
+import com.maggotkingtriptracker.MaggotKingRates;
 import com.maggotkingtriptracker.MaggotKingTripTrackerConfig;
 import com.maggotkingtriptracker.model.AccountHistory;
 import com.maggotkingtriptracker.model.ChargeType;
 import com.maggotkingtriptracker.model.CorpseChoice;
 import com.maggotkingtriptracker.model.DeathRecord;
+import com.maggotkingtriptracker.model.EggPop;
 import com.maggotkingtriptracker.model.ItemEntry;
 import com.maggotkingtriptracker.model.Kill;
 import com.maggotkingtriptracker.model.Trip;
 import com.maggotkingtriptracker.model.TripEndReason;
+import com.maggotkingtriptracker.model.TripMath;
 import com.maggotkingtriptracker.persistence.HistoryStore;
 import com.maggotkingtriptracker.pricing.PriceService;
 import com.maggotkingtriptracker.view.PanelState;
 import com.maggotkingtriptracker.view.TripView;
 import com.maggotkingtriptracker.view.ViewBuilder;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -67,6 +76,7 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemStack;
 import net.runelite.client.plugins.loottracker.LootReceived;
+import net.runelite.client.util.QuantityFormatter;
 import net.runelite.http.api.loottracker.LootRecordType;
 
 /**
@@ -97,6 +107,10 @@ public class TripTracker
 	 * Container changes this soon after respawning are the death itself, not consumption.
 	 */
 	private static final int POST_DEATH_IGNORE_TICKS = 5;
+	/**
+	 * A pet or dead-maggot message this soon after popping an egg belongs to that egg.
+	 */
+	private static final int EGG_WINDOW_TICKS = 10;
 	private static final long PRE_ENTRY_WINDOW_MS = 60_000;
 	private static final long SAVE_DELAY_MS = 1_000;
 	private static final long ACTIVE_SAVE_INTERVAL_MS = 60_000;
@@ -117,6 +131,7 @@ public class TripTracker
 	private final Gson gson;
 	private final ScheduledExecutorService executor;
 	private final Consumer<PanelState> stateListener;
+	private final Consumer<String> alerter;
 	private final InventoryLedger ledger;
 
 	private AccountHistory history;
@@ -153,6 +168,11 @@ public class TripTracker
 	private final List<GroundEntry> recentDespawns = new ArrayList<>();
 	private final Map<Integer, Long> pendingDrops = new HashMap<>();
 	private final ChargeCounter chargeCounter;
+	private final List<PendingPolish> pendingPolishes = new ArrayList<>();
+	private EggPop lastEggPop;
+	private int lastEggPopTick = -100;
+	private int lastEggClickTick = -100;
+	private int unclaimedPetMessageTick = -100;
 	private final Deque<PreEntryUse> preEntryUses = new ArrayDeque<>();
 
 	private ScheduledFuture<?> saveFuture;
@@ -163,7 +183,7 @@ public class TripTracker
 
 	public TripTracker(Client client, ClientThread clientThread, MaggotKingTripTrackerConfig config,
 		PriceService prices, HistoryStore store, Gson gson, ScheduledExecutorService executor,
-		Consumer<PanelState> stateListener)
+		Consumer<PanelState> stateListener, Consumer<String> alerter)
 	{
 		this.client = client;
 		this.clientThread = clientThread;
@@ -174,6 +194,7 @@ public class TripTracker
 		this.gson = gson;
 		this.executor = executor;
 		this.stateListener = stateListener;
+		this.alerter = alerter;
 		this.ledger = new InventoryLedger(client);
 		this.chargeCounter = new ChargeCounter(prices::isMeleeWeapon);
 	}
@@ -255,6 +276,138 @@ public class TripTracker
 		pushState();
 	}
 
+	/**
+	 * @return this account's full history as JSON, or null if none is loaded. Client thread.
+	 */
+	public String exportJson()
+	{
+		return history == null ? null : gson.toJson(history);
+	}
+
+	/**
+	 * @return completed trips as CSV (oldest first), or null if no history is loaded. Client thread.
+	 */
+	public String exportCsv()
+	{
+		if (history == null)
+		{
+			return null;
+		}
+
+		StringBuilder csv = new StringBuilder("start,end,active_minutes,end_reason,kills,stomach,eggs,deaths,pet,"
+			+ "loot_gp,supplies_gp,dropped_gp,death_costs_gp,net_gp,gp_per_hour,avg_kill_seconds\n");
+		DateTimeFormatter format = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+		for (Trip trip : history.getTrips())
+		{
+			if (trip.isOpen())
+			{
+				continue;
+			}
+			long net = TripMath.netProfit(trip);
+			Long averageKill = TripMath.averageKillMs(Collections.singletonList(trip));
+			csv.append(format.format(Instant.ofEpochMilli(trip.getStartedAt()).atZone(ZoneId.systemDefault()))).append(',')
+				.append(format.format(Instant.ofEpochMilli(trip.getEndedAt()).atZone(ZoneId.systemDefault()))).append(',')
+				.append(String.format(Locale.ROOT, "%.1f", trip.getActiveMs() / 60_000.0)).append(',')
+				.append(trip.getEndReason()).append(',')
+				.append(trip.getKills().size()).append(',')
+				.append(TripMath.countChoice(trip, CorpseChoice.STOMACH)).append(',')
+				.append(TripMath.countChoice(trip, CorpseChoice.EGGS)).append(',')
+				.append(trip.getDeaths().size()).append(',')
+				.append(trip.getKills().stream().anyMatch(Kill::isPet)).append(',')
+				.append(TripMath.lootValue(trip)).append(',')
+				.append(TripMath.supplyCost(trip)).append(',')
+				.append(TripMath.droppedCost(trip)).append(',')
+				.append(TripMath.deathCost(trip)).append(',')
+				.append(net).append(',')
+				.append(TripMath.gpPerHour(net, trip.getActiveMs())).append(',')
+				.append(averageKill == null ? "" : String.format(Locale.ROOT, "%.1f", averageKill / 1000.0))
+				.append('\n');
+		}
+		return csv.toString();
+	}
+
+	/**
+	 * Describes what importing would do, or returns an error message starting with "!". Client thread.
+	 */
+	public String describeImport(AccountHistory imported)
+	{
+		if (history == null)
+		{
+			return "!Log in first so the history can be imported into your account.";
+		}
+		if (readOnly)
+		{
+			return "!This account's history is read-only.";
+		}
+		if (imported.getSchemaVersion() > AccountHistory.CURRENT_SCHEMA_VERSION)
+		{
+			return "!This file is from a newer version of the plugin.";
+		}
+
+		int added = 0;
+		for (Trip trip : imported.getTrips())
+		{
+			if (trip.getId() != null && !trip.isOpen() && findTrip(trip.getId()) == null)
+			{
+				added++;
+			}
+		}
+		String account = imported.getAccountHash() != 0 && imported.getAccountHash() != accountHash
+			? " The file is from a different account" + (imported.getLastDisplayName() != null
+			? " (" + imported.getLastDisplayName() + ")" : "") + "."
+			: "";
+		return "Add " + added + " of " + imported.getTrips().size() + " trips from the file to this account?"
+			+ " Trips you already have are skipped." + account;
+	}
+
+	/**
+	 * Adds trips, egg pops and polish outcomes from an export that aren't already here. Client thread.
+	 */
+	public void importHistory(AccountHistory imported)
+	{
+		if (describeImport(imported).startsWith("!"))
+		{
+			return;
+		}
+
+		for (Trip trip : imported.getTrips())
+		{
+			if (trip.getId() != null && !trip.isOpen() && findTrip(trip.getId()) == null)
+			{
+				history.getTrips().add(trip);
+			}
+		}
+		history.getTrips().sort(Comparator.comparingLong(Trip::getStartedAt));
+
+		if (imported.getEggPops() != null)
+		{
+			for (EggPop pop : imported.getEggPops())
+			{
+				boolean known = history.getEggPops().stream()
+					.anyMatch(p -> p.getAt() == pop.getAt() && p.getEggItemId() == pop.getEggItemId());
+				if (!known)
+				{
+					history.getEggPops().add(pop);
+				}
+			}
+			history.getEggPops().sort(Comparator.comparingLong(EggPop::getAt));
+		}
+
+		// Tallies can't be told apart, so keep the larger count rather than adding (re-importing is safe)
+		if (imported.getPolishOutcomes() != null)
+		{
+			imported.getPolishOutcomes().forEach((tarnished, outcomes) ->
+			{
+				Map<Integer, Integer> mine = history.getPolishOutcomes().computeIfAbsent(tarnished, k -> new LinkedHashMap<>());
+				outcomes.forEach((result, count) -> mine.merge(result, count, Math::max));
+			});
+		}
+
+		historyChanged();
+		saveNow();
+		pushState();
+	}
+
 	public void refreshView()
 	{
 		historyChanged();
@@ -310,6 +463,7 @@ public class TripTracker
 			processDelta(delta, tick, now);
 		}
 		applyLootFallback(tick);
+		applyPolishFallback(tick);
 
 		int region = WorldPoint.fromLocalInstance(client, player.getLocalLocation()).getRegionID();
 		boolean nowInLair = region == MaggotKingIds.LAIR_REGION_ID;
@@ -448,7 +602,17 @@ public class TripTracker
 	{
 		int tick = client.getTickCount();
 		String option = event.getMenuOption();
-		recentClicks.addLast(new Click(tick, option, event.getItemId(), false));
+		int itemId = event.getItemId();
+		recentClicks.addLast(new Click(tick, option, itemId, false));
+
+		if (OPTION_POLISH.equals(option) && MaggotKingIds.TARNISHED_ITEMS.contains(itemId))
+		{
+			pendingPolishes.add(new PendingPolish(itemId, tick));
+		}
+		else if (MaggotKingIds.EGGS.contains(itemId) && isPopOption(option))
+		{
+			lastEggClickTick = tick;
+		}
 
 		NPC npc = event.getMenuEntry().getNpc();
 		if (npc == null)
@@ -505,6 +669,11 @@ public class TripTracker
 			markDead(now);
 			return;
 		}
+		if (ChatPatterns.isPetMessage(message))
+		{
+			petMessage(tick);
+			return;
+		}
 		if (!inLair || currentTrip == null)
 		{
 			return;
@@ -528,7 +697,14 @@ public class TripTracker
 			return;
 		}
 
-		if (ChatPatterns.isPetMessage(message) && lootKill != null && tick - lastCorpseClickTick <= CORPSE_WINDOW_TICKS)
+	}
+
+	/**
+	 * Pet messages are shared by every pet, so they only count right after a corpse or egg interaction.
+	 */
+	private void petMessage(int tick)
+	{
+		if (inLair && currentTrip != null && lootKill != null && tick - lastCorpseClickTick <= CORPSE_WINDOW_TICKS)
 		{
 			lootKill.setPet(true);
 			boolean listed = lootKill.getLoot().stream().anyMatch(e -> e.getItemId() == MaggotKingIds.PET_ITEM);
@@ -536,16 +712,33 @@ public class TripTracker
 			{
 				lootKill.getLoot().add(new ItemEntry(MaggotKingIds.PET_ITEM, 1, 0));
 			}
+			alertPet("Maggot King pet from the corpse!");
 			viewDirty = true;
 			requestSave();
+		}
+		else if (tick - lastEggClickTick <= EGG_WINDOW_TICKS)
+		{
+			if (lastEggPop != null && tick - lastEggPopTick <= EGG_WINDOW_TICKS)
+			{
+				eggPet(lastEggPop);
+			}
+			else
+			{
+				// The egg's removal hasn't been processed yet
+				unclaimedPetMessageTick = tick;
+			}
 		}
 	}
 
 	@Subscribe
 	public void onLootReceived(LootReceived event)
 	{
-		if (!inLair || currentTrip == null || event.getType() == LootRecordType.EVENT
-			|| !bossName().equalsIgnoreCase(event.getName()))
+		if (event.getType() == LootRecordType.EVENT)
+		{
+			polishEvent(event);
+			return;
+		}
+		if (!inLair || currentTrip == null || !bossName().equalsIgnoreCase(event.getName()))
 		{
 			return;
 		}
@@ -554,6 +747,7 @@ public class TripTracker
 		for (ItemStack stack : event.getItems())
 		{
 			addLoot(kill, stack.getId(), stack.getQuantity());
+			alertForDrop(stack.getId(), stack.getQuantity());
 		}
 		lootReceived = true;
 		fallbackEndTick = -1;
@@ -606,6 +800,7 @@ public class TripTracker
 		{
 			kind = GroundKind.LOOT_OVERFLOW;
 			kill = lootKill;
+			alertForDrop(item.getId(), item.getQuantity());
 		}
 		else
 		{
@@ -828,7 +1023,7 @@ public class TripTracker
 	{
 		if (MaggotKingIds.TARNISHED_ITEMS.contains(itemId))
 		{
-			// Real value is only known once polished; resolved in a later phase
+			// Real value is only known once polished; see resolvePolish
 			for (long i = 0; i < quantity; i++)
 			{
 				ItemEntry pending = new ItemEntry(itemId, 1, 0);
@@ -856,6 +1051,7 @@ public class TripTracker
 			for (Map.Entry<Integer, Long> e : fallbackGains.entrySet())
 			{
 				addLoot(lootKill, e.getKey(), e.getValue());
+				alertForDrop(e.getKey(), e.getValue());
 			}
 			lootReceived = true;
 			viewDirty = true;
@@ -874,6 +1070,246 @@ public class TripTracker
 		lastCorpseClickTick = -100;
 		groundItems.clear();
 		recentDespawns.clear();
+	}
+
+	// ---- Tarnished items ----
+
+	private void polishEvent(LootReceived event)
+	{
+		int tarnishedId = tarnishedIdForName(event.getName());
+		if (tarnishedId < 0)
+		{
+			return;
+		}
+
+		// The Loot Tracker's event can include unrelated changes from the same tick, such as a potion sip
+		for (ItemStack stack : event.getItems())
+		{
+			if (isPolishResultCandidate(stack.getId()))
+			{
+				claimPendingPolish(tarnishedId);
+				resolvePolish(tarnishedId, stack.getId());
+				return;
+			}
+		}
+	}
+
+	/**
+	 * Without a Loot Tracker event, the item gained just after a Polish click is the result.
+	 */
+	private void collectPolishResults(Map<Integer, Long> gained, int tick)
+	{
+		for (PendingPolish polish : pendingPolishes)
+		{
+			if (polish.resultId < 0 && tick - polish.tick <= CLICK_MATCH_TICKS)
+			{
+				for (int itemId : gained.keySet())
+				{
+					if (isPolishResultCandidate(itemId))
+					{
+						polish.resultId = itemId;
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	private void applyPolishFallback(int tick)
+	{
+		for (Iterator<PendingPolish> it = pendingPolishes.iterator(); it.hasNext(); )
+		{
+			PendingPolish polish = it.next();
+			if (tick - polish.tick <= CLICK_MATCH_TICKS + 1)
+			{
+				continue;
+			}
+			it.remove();
+			if (polish.resultId >= 0)
+			{
+				log.debug("No Loot Tracker event for a polish; using inventory changes");
+				resolvePolish(polish.tarnishedId, polish.resultId);
+			}
+		}
+	}
+
+	private void claimPendingPolish(int tarnishedId)
+	{
+		for (Iterator<PendingPolish> it = pendingPolishes.iterator(); it.hasNext(); )
+		{
+			if (it.next().tarnishedId == tarnishedId)
+			{
+				it.remove();
+				return;
+			}
+		}
+	}
+
+	/**
+	 * Records the outcome and gives the oldest pending drop of this type its real item and value.
+	 */
+	private void resolvePolish(int tarnishedId, int resultId)
+	{
+		if (history == null || readOnly)
+		{
+			return;
+		}
+
+		history.getPolishOutcomes().computeIfAbsent(tarnishedId, k -> new HashMap<>()).merge(resultId, 1, Integer::sum);
+
+		ItemEntry pending = oldestPending(tarnishedId);
+		if (pending != null)
+		{
+			pending.setItemId(resultId);
+			pending.setPriceEach(prices.price(resultId));
+			pending.setPending(false);
+			pending.setPolishedFrom(tarnishedId);
+			alertForDrop(resultId, 1);
+		}
+		historyChanged();
+		requestSave();
+	}
+
+	private ItemEntry oldestPending(int tarnishedId)
+	{
+		for (Trip trip : history.getTrips())
+		{
+			for (Kill kill : trip.getKills())
+			{
+				for (ItemEntry entry : kill.getLoot())
+				{
+					if (entry.isPending() && entry.getItemId() == tarnishedId)
+					{
+						return entry;
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	private int tarnishedIdForName(String name)
+	{
+		for (int id : MaggotKingIds.TARNISHED_ITEMS)
+		{
+			if (prices.name(id).equalsIgnoreCase(name))
+			{
+				return id;
+			}
+		}
+		return -1;
+	}
+
+	private boolean isPolishResultCandidate(int itemId)
+	{
+		return itemId != ItemID.VIAL_EMPTY && itemId != ItemID.COINS
+			&& !MaggotKingIds.TARNISHED_ITEMS.contains(itemId) && prices.doseInfo(itemId) == null;
+	}
+
+	// ---- Eggs ----
+
+	private void recordEggPops(Map<Integer, Long> removed, int tick, long now)
+	{
+		if (history == null || readOnly || tick - lastEggClickTick > CLICK_MATCH_TICKS)
+		{
+			return;
+		}
+
+		for (int eggId : MaggotKingIds.EGGS)
+		{
+			Long quantity = removed.get(eggId);
+			if (quantity == null || !hasRecentPopClick(eggId, tick))
+			{
+				continue;
+			}
+			for (long i = 0; i < quantity; i++)
+			{
+				EggPop pop = new EggPop(eggId, now, false);
+				history.getEggPops().add(pop);
+				lastEggPop = pop;
+				lastEggPopTick = tick;
+			}
+			if (tick - unclaimedPetMessageTick <= EGG_WINDOW_TICKS)
+			{
+				unclaimedPetMessageTick = -100;
+				eggPet(lastEggPop);
+			}
+			historyChanged();
+			requestSave();
+		}
+	}
+
+	private void eggPet(EggPop pop)
+	{
+		if (pop.isPet())
+		{
+			return;
+		}
+		pop.setPet(true);
+		alertPet("Maggot King pet from a " + prices.name(pop.getEggItemId()) + "!");
+		historyChanged();
+		requestSave();
+	}
+
+	private boolean hasRecentPopClick(int eggId, int tick)
+	{
+		for (Click click : recentClicks)
+		{
+			if (click.itemId == eggId && tick - click.tick <= CLICK_MATCH_TICKS && isPopOption(click.option))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Any egg option that isn't dropping, using, examining or moving it. The pop option isn't hardcoded
+	 * because it has not been confirmed in game.
+	 */
+	private static boolean isPopOption(String option)
+	{
+		if (option == null)
+		{
+			return false;
+		}
+		String o = option.toLowerCase();
+		return !(o.equals("drop") || o.equals("use") || o.equals("examine") || o.equals("destroy")
+			|| o.equals("cancel") || o.startsWith("deposit") || o.startsWith("withdraw") || o.startsWith("offer")
+			|| o.startsWith("store") || o.startsWith("bank") || o.startsWith("take"));
+	}
+
+	// ---- Alerts ----
+
+	private void alertForDrop(int itemId, long quantity)
+	{
+		if (MaggotKingRates.UNIQUES.containsKey(itemId))
+		{
+			if (config.alertUniques())
+			{
+				alerter.accept("Maggot King unique: " + prices.name(itemId) + "!");
+			}
+			return;
+		}
+		if (itemId == MaggotKingIds.PET_ITEM || MaggotKingIds.TARNISHED_ITEMS.contains(itemId))
+		{
+			return;
+		}
+
+		long value = quantity * prices.price(itemId);
+		if (config.alertValue() > 0 && value >= config.alertValue())
+		{
+			alerter.accept("Maggot King drop: " + (quantity > 1 ? QuantityFormatter.formatNumber(quantity) + " x " : "")
+				+ prices.name(itemId) + " (" + QuantityFormatter.quantityToStackSize(value) + " gp)");
+		}
+	}
+
+	private void alertPet(String message)
+	{
+		if (config.alertPet())
+		{
+			alerter.accept(message);
+		}
 	}
 
 	// ---- Inventory changes ----
@@ -898,6 +1334,9 @@ public class TripTracker
 
 		boolean trackingTrip = inLair && currentTrip != null && !dead;
 		recordDrops(removed, tick, trackingTrip);
+
+		recordEggPops(removed, tick, now);
+		collectPolishResults(gained, tick);
 
 		// Popping eggs, polishing (tarnished items, dull ancient medals) and casting a spell on an item
 		// (e.g. High Level Alchemy) convert items rather than use them up
@@ -1325,7 +1764,7 @@ public class TripTracker
 			status,
 			shown,
 			historyViews,
-			history == null ? null : viewBuilder.lifetime(history.getTrips(), config.showCurrentValue(), System.currentTimeMillis()),
+			history == null ? null : viewBuilder.lifetime(history, config.showCurrentValue(), System.currentTimeMillis()),
 			readOnly);
 		stateListener.accept(state);
 	}
@@ -1356,6 +1795,19 @@ public class TripTracker
 		final GroundKind kind;
 		final Kill kill;
 		int tick;
+	}
+
+	private static class PendingPolish
+	{
+		final int tarnishedId;
+		final int tick;
+		int resultId = -1;
+
+		PendingPolish(int tarnishedId, int tick)
+		{
+			this.tarnishedId = tarnishedId;
+			this.tick = tick;
+		}
 	}
 
 	@AllArgsConstructor

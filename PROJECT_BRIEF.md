@@ -153,6 +153,12 @@ RuneLite does not accept new high-end PvM helper plugins.
    turned out not to update, so charges are counted from attacks (see
    ChargeCounter) and only in the lair. Tome pages default to searing. Eye of
    Ayak and Scythe stay in Phase 3.
+9. Phase 2 (2026-09-27): dryness counts Open-stomach kills only, since uniques
+   and the kill pet only come from Open-stomach. Egg pops are detected as an
+   egg leaving the inventory right after any click on it except drop / use /
+   examine / destroy / banking, because the Pop option name is unconfirmed.
+   Imports merge: only trips not already present are added, polish tallies
+   take the larger count.
 
 ## Observed in-game (diagnostic test trips, 2026-09-27)
 These come from diagnostic.log and take precedence over the assumptions above.

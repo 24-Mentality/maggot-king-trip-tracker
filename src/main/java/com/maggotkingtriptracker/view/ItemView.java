@@ -17,6 +17,10 @@ public class ItemView
 	 */
 	String chargeItemName;
 	int chargesPerItem;
+	/**
+	 * For a polished tarnished drop, the tarnished item's name; otherwise null.
+	 */
+	String polishedFromName;
 
 	public boolean isCharges()
 	{
