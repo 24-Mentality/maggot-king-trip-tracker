@@ -5,7 +5,9 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.Value;
+import net.runelite.client.game.ItemEquipmentStats;
 import net.runelite.client.game.ItemManager;
+import net.runelite.client.game.ItemStats;
 import net.runelite.http.api.item.ItemPrice;
 
 /**
@@ -19,6 +21,7 @@ public class PriceService
 	private final ItemManager itemManager;
 	private final Map<Integer, DoseInfo> doseInfoCache = new HashMap<>();
 	private final Map<String, FullDose> fullDoseCache = new HashMap<>();
+	private final Map<Integer, Boolean> meleeWeaponCache = new HashMap<>();
 
 	public PriceService(ItemManager itemManager)
 	{
@@ -33,6 +36,29 @@ public class PriceService
 	public String name(int itemId)
 	{
 		return itemManager.getItemComposition(itemId).getName();
+	}
+
+	/**
+	 * A weapon counts as melee when its best melee attack bonus is at least its ranged and magic bonus.
+	 * No weapon (unarmed) is melee.
+	 */
+	public boolean isMeleeWeapon(int itemId)
+	{
+		if (itemId <= 0)
+		{
+			return true;
+		}
+		return meleeWeaponCache.computeIfAbsent(itemId, id ->
+		{
+			ItemStats stats = itemManager.getItemStats(id);
+			ItemEquipmentStats equipment = stats != null ? stats.getEquipment() : null;
+			if (equipment == null)
+			{
+				return false;
+			}
+			int melee = Math.max(equipment.getAstab(), Math.max(equipment.getAslash(), equipment.getAcrush()));
+			return melee > 0 && melee >= equipment.getArange() && melee >= equipment.getAmagic();
+		});
 	}
 
 	/**

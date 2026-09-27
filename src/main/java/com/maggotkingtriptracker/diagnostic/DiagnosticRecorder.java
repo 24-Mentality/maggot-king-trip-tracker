@@ -2,7 +2,6 @@ package com.maggotkingtriptracker.diagnostic;
 
 import com.google.common.collect.ImmutableSet;
 import com.maggotkingtriptracker.MaggotKingIds;
-import com.maggotkingtriptracker.model.ChargeType;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -236,16 +235,6 @@ public class DiagnosticRecorder
 			+ " sender=\"" + event.getSender() + '"'
 			+ " message=\"" + event.getMessage() + '"');
 
-		String lower = event.getMessage().toLowerCase();
-		if (lower.contains("charge") || lower.contains("more hits"))
-		{
-			StringBuilder sb = new StringBuilder("varbit snapshot");
-			for (ChargeType type : ChargeType.values())
-			{
-				sb.append(' ').append(type.name()).append('=').append(client.getVarbitValue(type.getVarbit()));
-			}
-			record("CHARGES", sb.toString());
-		}
 	}
 
 	@Subscribe
@@ -294,14 +283,7 @@ public class DiagnosticRecorder
 			record("SPEC", "energy=" + event.getValue());
 			return;
 		}
-		for (ChargeType type : ChargeType.values())
-		{
-			if (type.getVarbit() == event.getVarbitId())
-			{
-				record("CHARGES", type.name() + " varbit=" + event.getVarbitId() + " value=" + event.getValue());
-				return;
-			}
-		}
+
 	}
 
 	@Subscribe

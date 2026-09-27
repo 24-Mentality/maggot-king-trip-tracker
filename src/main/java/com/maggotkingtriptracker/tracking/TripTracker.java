@@ -21,8 +21,8 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +36,11 @@ import java.util.function.Consumer;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
+import net.runelite.api.ActorSpotAnim;
+import net.runelite.api.EquipmentInventorySlot;
+import net.runelite.api.Hitsplat;
+import net.runelite.api.Item;
+import net.runelite.api.ItemContainer;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
@@ -44,9 +49,12 @@ import net.runelite.api.Player;
 import net.runelite.api.TileItem;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ActorDeath;
+import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.events.GraphicChanged;
+import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.ItemDespawned;
 import net.runelite.api.events.ItemSpawned;
@@ -144,10 +152,7 @@ public class TripTracker
 	private final List<GroundEntry> groundItems = new ArrayList<>();
 	private final List<GroundEntry> recentDespawns = new ArrayList<>();
 	private final Map<Integer, Long> pendingDrops = new HashMap<>();
-	/**
-	 * Last known value of each charge varbit; empty until read after login.
-	 */
-	private final Map<ChargeType, Integer> charges = new EnumMap<>(ChargeType.class);
+	private final ChargeCounter chargeCounter;
 	private final Deque<PreEntryUse> preEntryUses = new ArrayDeque<>();
 
 	private ScheduledFuture<?> saveFuture;
@@ -170,6 +175,7 @@ public class TripTracker
 		this.executor = executor;
 		this.stateListener = stateListener;
 		this.ledger = new InventoryLedger(client);
+		this.chargeCounter = new ChargeCounter(prices::isMeleeWeapon);
 	}
 
 	/**
@@ -180,6 +186,7 @@ public class TripTracker
 		if (client.getGameState() == GameState.LOGGED_IN)
 		{
 			ensureAccountLoaded();
+			chargeCounter.gearChanged(client.getTickCount(), gear(client.getItemContainer(InventoryID.WORN)));
 		}
 		pushState();
 	}
@@ -271,7 +278,7 @@ public class TripTracker
 					suspendTrip(System.currentTimeMillis());
 				}
 				ledger.reset();
-				charges.clear();
+				chargeCounter.reset();
 				recentClicks.clear();
 				preEntryUses.clear();
 				pushState();
@@ -293,13 +300,8 @@ public class TripTracker
 		int tick = client.getTickCount();
 		long now = System.currentTimeMillis();
 
-		if (charges.size() < ChargeType.values().length)
-		{
-			for (ChargeType type : ChargeType.values())
-			{
-				charges.computeIfAbsent(type, t -> client.getVarbitValue(t.getVarbit()));
-			}
-		}
+		// Attacks from the previous tick are complete, including gear switched in that tick
+		chargeCounter.process(tick - 1, this::chargesUsed);
 
 		// Changes are attributed to where the player was before any region change this tick
 		Map<Integer, Long> delta = ledger.poll();
@@ -349,6 +351,10 @@ public class TripTracker
 		{
 			ledger.markDirty();
 		}
+		if (containerId == InventoryID.WORN)
+		{
+			chargeCounter.gearChanged(client.getTickCount(), gear(event.getItemContainer()));
+		}
 		else if (containerId == InventoryID.BANK)
 		{
 			lastBankTick = client.getTickCount();
@@ -361,35 +367,79 @@ public class TripTracker
 		if (InventoryLedger.RUNE_POUCH_VARBITS.contains(event.getVarbitId()))
 		{
 			ledger.markDirty();
+		}
+	}
+
+	@Subscribe
+	public void onAnimationChanged(AnimationChanged event)
+	{
+		Actor actor = event.getActor();
+		if (actor == client.getLocalPlayer() && actor.getAnimation() != -1)
+		{
+			chargeCounter.animation(client.getTickCount());
+		}
+	}
+
+	@Subscribe
+	public void onGraphicChanged(GraphicChanged event)
+	{
+		Actor actor = event.getActor();
+		if (actor != client.getLocalPlayer())
+		{
 			return;
 		}
 
-		for (ChargeType type : ChargeType.values())
+		Set<Integer> ids = new HashSet<>();
+		for (ActorSpotAnim spotAnim : actor.getSpotAnims())
 		{
-			if (type.getVarbit() == event.getVarbitId())
-			{
-				chargesChanged(type, event.getValue());
-				return;
-			}
+			ids.add(spotAnim.getId());
+		}
+		chargeCounter.spotAnimsChanged(client.getTickCount(), ids);
+	}
+
+	@Subscribe
+	public void onHitsplatApplied(HitsplatApplied event)
+	{
+		Hitsplat hitsplat = event.getHitsplat();
+		if (hitsplat.isMine() && event.getActor() instanceof NPC)
+		{
+			chargeCounter.hitsplat(client.getTickCount(), hitsplat.getHitsplatType(), hitsplat.getAmount());
 		}
 	}
 
 	/**
-	 * Charges that go down in the lair are supplies. Recharging and changes elsewhere only move the baseline.
+	 * Charges used in the lair are supplies, priced from the item that recharges them.
 	 */
-	private void chargesChanged(ChargeType type, int value)
+	private void chargesUsed(ChargeType type, int used)
 	{
-		Integer before = charges.put(type, value);
-		if (before == null || value >= before || !inLair || currentTrip == null || dead)
+		if (!inLair || currentTrip == null || dead)
 		{
 			return;
 		}
 
 		int chargeItemId = type == ChargeType.TOME_OF_FIRE ? config.tomePage().getItemId() : type.getChargeItemId();
-		ItemEntries.merge(currentTrip.getSupplies(), ItemEntry.charges(type.getSourceItemId(), before - value,
+		ItemEntries.merge(currentTrip.getSupplies(), ItemEntry.charges(type.getSourceItemId(), used,
 			chargeItemId, prices.price(chargeItemId), type.getChargesPerItem()));
 		viewDirty = true;
 		requestSave();
+	}
+
+	private static ChargeCounter.Gear gear(ItemContainer worn)
+	{
+		if (worn == null)
+		{
+			return ChargeCounter.Gear.NONE;
+		}
+		return new ChargeCounter.Gear(
+			wornId(worn, EquipmentInventorySlot.WEAPON),
+			wornId(worn, EquipmentInventorySlot.SHIELD),
+			wornId(worn, EquipmentInventorySlot.AMULET));
+	}
+
+	private static int wornId(ItemContainer worn, EquipmentInventorySlot slot)
+	{
+		Item item = worn.getItem(slot.getSlotIdx());
+		return item == null ? -1 : item.getId();
 	}
 
 

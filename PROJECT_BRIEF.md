@@ -149,9 +149,10 @@ RuneLite does not accept new high-end PvM helper plugins.
 7. File IO goes through Filepath (AGENTS.md), so plugin files live in
    ~/.runelite/plugin-data/maggot-king-trip-tracker/.
 8. Charge costs (blood fury, Tome of fire, Webweaver bow) were moved ahead of
-   Phase 2 at the user's request (2026-09-27). Charges are read from the
-   CHARGES_*_QUANTITY varbits and count only when they go down in the lair.
-   Tome pages default to searing. Eye of Ayak and Scythe stay in Phase 3.
+   Phase 2 at the user's request (2026-09-27). The CHARGES_*_QUANTITY varbits
+   turned out not to update, so charges are counted from attacks (see
+   ChargeCounter) and only in the lair. Tome pages default to searing. Eye of
+   Ayak and Scythe stay in Phase 3.
 
 ## Observed in-game (diagnostic test trips, 2026-09-27)
 These come from diagnostic.log and take precedence over the assumptions above.
@@ -199,3 +200,14 @@ These come from diagnostic.log and take precedence over the assumptions above.
 - The Loot Tracker's polish EVENT can include unrelated inventory changes from
   the same tick (a Prayer potion(2) from a sip appeared alongside the Rune
   halberd). Phase 2 polish resolution must take only the replacement item.
+- Charge counting validated against in-game Check messages on one kill
+  (blood fury 2,113 -> 2,096, bow 591 -> 587, tome 6,590 -> 6,553):
+  Tome = FIRESURGE_CASTING spotanim on the player with the tome worn (37);
+  bow = WILD_CAVE_BOW_ARROW_LAUNCH02 spotanim (4); blood fury = DAMAGE_ME /
+  DAMAGE_MAX_ME hitsplats with damage > 0 while the amulet is worn and the
+  last attack was melee (17). Each elder maul attack produced 2-3 hitsplats
+  here, and each used a charge. Gear must be read at the end of the tick:
+  switches can arrive after the attack animation in the same tick. The log
+  is kept as a test fixture (charge-test-kill.log).
+- Animation 420 is HUMAN_STAFFORB_BLOCK (a block, not an attack); hitsplat 43
+  is DAMAGE_MAX_ME.
