@@ -10,6 +10,7 @@ import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
+import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 
@@ -32,6 +33,9 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 	private EventBus eventBus;
 
 	@Inject
+	private ItemManager itemManager;
+
+	@Inject
 	private MaggotKingTripTrackerConfig config;
 
 	private DiagnosticRecorder diagnosticRecorder;
@@ -39,10 +43,11 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
-		diagnosticRecorder = new DiagnosticRecorder(client, this::getPluginDirectory);
-		eventBus.register(diagnosticRecorder);
+		DiagnosticRecorder recorder = new DiagnosticRecorder(client, itemManager, this::getPluginDirectory);
+		diagnosticRecorder = recorder;
+		eventBus.register(recorder);
 		boolean diagnosticMode = config.diagnosticMode();
-		clientThread.invokeLater(() -> diagnosticRecorder.setEnabled(diagnosticMode));
+		clientThread.invokeLater(() -> recorder.setEnabled(diagnosticMode));
 		log.debug("Maggot King Trip Tracker started");
 	}
 

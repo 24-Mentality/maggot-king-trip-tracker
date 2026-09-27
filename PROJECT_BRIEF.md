@@ -130,3 +130,21 @@ RuneLite does not accept new high-end PvM helper plugins.
 5. Run ./gradlew build until it passes, commit with a clear message, and push.
 6. Then STOP and tell me exactly how to launch, where the diagnostic setting
    is, what to do on my test trip, and where the log file will be.
+
+## Decisions (answers to Phase 0 open questions)
+1. Prices: store the GE price recorded at the time of the drop/use. The
+   Lifetime tab may show today's value as an optional extra.
+2. Logout grace period: 5 minutes. Merging re-entries: off by default
+   (one trip = one inventory); when turned on, N defaults to 5 minutes.
+3. Pre-potting counts. Config option "Count supplies used before entry",
+   on by default, covering the 60 seconds before entering the lair.
+4. Dropped items: ignore zero-value junk (empty vials etc.). If a real
+   supply is dropped (e.g. food to make room for loot) and not picked back
+   up before leaving, record it as a "Dropped" cost line on the trip.
+5. Never hardcode item display names; get them from ItemManager at runtime.
+   (The medal's in-game name is "Dull ancient medal"; gameval constant is
+   DULL_ZAROSIAN_MEDAL.)
+6. Testing uses a non-Jagex account that logs in directly; skip the Jagex
+   Accounts login step. The user runs ./gradlew run themselves.
+7. File IO goes through Filepath (AGENTS.md), so plugin files live in
+   ~/.runelite/plugin-data/maggot-king-trip-tracker/.

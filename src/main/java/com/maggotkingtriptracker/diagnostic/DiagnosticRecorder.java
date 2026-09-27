@@ -31,6 +31,7 @@ import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.ItemStack;
 import net.runelite.client.plugins.loottracker.LootReceived;
 import net.runelite.client.util.Filepath;
@@ -54,6 +55,7 @@ public class DiagnosticRecorder
 	);
 
 	private final Client client;
+	private final ItemManager itemManager;
 	private final DiagnosticLogWriter writer;
 
 	private boolean enabled;
@@ -62,9 +64,10 @@ public class DiagnosticRecorder
 	private int clickWindowEndTick = -1;
 	private final Map<Integer, Map<Integer, Integer>> containerSnapshots = new HashMap<>();
 
-	public DiagnosticRecorder(Client client, Callable<Filepath> directorySupplier)
+	public DiagnosticRecorder(Client client, ItemManager itemManager, Callable<Filepath> directorySupplier)
 	{
 		this.client = client;
+		this.itemManager = itemManager;
 		this.writer = new DiagnosticLogWriter(directorySupplier);
 	}
 
@@ -397,7 +400,7 @@ public class DiagnosticRecorder
 
 	private String describeItem(int itemId, int quantity)
 	{
-		return client.getItemDefinition(itemId).getName() + " (" + itemId + ") x" + quantity;
+		return itemManager.getItemComposition(itemId).getName() + " (" + itemId + ") x" + quantity;
 	}
 
 	private static Map<Integer, Integer> toQuantities(ItemContainer container)
