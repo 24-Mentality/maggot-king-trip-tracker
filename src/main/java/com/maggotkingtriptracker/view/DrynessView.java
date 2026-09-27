@@ -57,4 +57,22 @@ public class DrynessView
 	Integer firstTrackedKc;
 	int uniquesReceived;
 	double expectedUniques;
+	/**
+	 * All-time figures from RuneLite's Loot Tracker; null when it has no record for this account.
+	 */
+	AllTime allTime;
+
+	@Value
+	public static class AllTime
+	{
+		int lootKills;
+		Integer killCount;
+		long firstRecordedAt;
+		int fang;
+		int kisten;
+		/**
+		 * Pets: the larger of the Loot Tracker's count and the pets this plugin tracked.
+		 */
+		int pets;
+	}
 }

@@ -30,6 +30,9 @@ with persistent per-account history in a side panel.
   - **Dryness:** Open-stomach kills since your last unique and the chance of being that dry,
     the kill counts of each Elder venator fang and Crimson kisten, and expected vs actual
     uniques and pets.
+  - **Drop chances** (Trip tab): Expected / Received bars for any unique, each unique and the pet,
+    using your all-time kills and drops from RuneLite's Loot Tracker (and your kill count from
+    Chat Commands) when available, otherwise the kills this plugin tracked.
   - **Eggs popped:** eggs popped per tier (anywhere, not just in the lair), pets from eggs,
     and your total pet chance from the eggs popped so far.
   - **Polish results:** what each type of tarnished item has polished into.

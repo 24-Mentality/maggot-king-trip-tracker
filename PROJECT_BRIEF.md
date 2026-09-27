@@ -227,3 +227,8 @@ These come from diagnostic.log and take precedence over the assumptions above.
   cost nothing ("The scout collects your gravestone and leaves it nearby.").
   No coins left the inventory, so looting your own gravestone was free; a
   reclaim fee would only apply at Death after the grave expires.
+- RuneLite core plugins keep all-time records in the RS profile config: Loot
+  Tracker `loottracker` / `drops_NPC_Maggot King` = {kills, first, drops:[id,
+  qty, ...]} (2,630 kills since 2026-07-30: 6 fangs, 5 kistens, no pet) and
+  Chat Commands `killcount` / `maggot king` = 2636. The drop chances and luck
+  cards read these through ConfigManager for all-time expected vs received.

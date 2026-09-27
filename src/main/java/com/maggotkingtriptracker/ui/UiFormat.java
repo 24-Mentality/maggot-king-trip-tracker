@@ -15,6 +15,7 @@ final class UiFormat
 	static final Color MUTED_TEXT = ColorScheme.LIGHT_GRAY_COLOR.darker();
 
 	private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("d MMM, HH:mm");
+	private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("d MMM yyyy");
 
 	private UiFormat()
 	{
@@ -58,6 +59,11 @@ final class UiFormat
 		}
 		long tenths = Math.round(ms / 100.0);
 		return String.format("%d:%02d.%d", tenths / 600, (tenths / 10) % 60, tenths % 10);
+	}
+
+	static String date(long epochMs)
+	{
+		return DATE.format(Instant.ofEpochMilli(epochMs).atZone(ZoneId.systemDefault()));
 	}
 
 	static String dateTime(long epochMs)

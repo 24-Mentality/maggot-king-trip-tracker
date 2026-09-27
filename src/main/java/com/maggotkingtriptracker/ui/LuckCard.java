@@ -1,5 +1,6 @@
 package com.maggotkingtriptracker.ui;
 
+import com.maggotkingtriptracker.MaggotKingIds;
 import com.maggotkingtriptracker.MaggotKingRates;
 import com.maggotkingtriptracker.model.DropOdds;
 import com.maggotkingtriptracker.view.DrynessView;
@@ -112,8 +113,10 @@ class LuckCard extends JPanel
 
 	void update(DrynessView dryness)
 	{
-		int received = dryness.getUniquesReceived();
-		double expected = dryness.getExpectedUniques();
+		DrynessView.AllTime allTime = dryness.getAllTime();
+		int received = allTime != null ? allTime.getFang() + allTime.getKisten() : dryness.getUniquesReceived();
+		double expected = allTime != null ? allTime.getLootKills() * RATE : dryness.getExpectedUniques();
+		int basisKills = allTime != null ? allTime.getLootKills() : dryness.getStomachKills();
 		int since = dryness.getStomachKillsSinceUnique();
 		Integer currentKc = dryness.getCurrentKc();
 		Integer lastKc = dryness.getLastUniqueKc();
@@ -121,20 +124,23 @@ class LuckCard extends JPanel
 		StringBuilder breakdown = new StringBuilder();
 		for (DrynessView.Unique unique : dryness.getUniques())
 		{
-			breakdown.append('\n').append(unique.getName()).append(": ").append(unique.getKillCounts().size())
-				.append(" (").append(String.format(Locale.ROOT, "%.2f", unique.getExpected())).append(" expected, 1/")
-				.append(Math.round(1 / MaggotKingRates.UNIQUES.get(unique.getItemId()))).append(')');
+			double rate = MaggotKingRates.UNIQUES.get(unique.getItemId());
+			int got = allTime == null ? unique.getKillCounts().size()
+				: unique.getItemId() == MaggotKingIds.UNIQUES_FANG ? allTime.getFang() : allTime.getKisten();
+			breakdown.append('\n').append(unique.getName()).append(": ").append(got)
+				.append(" (").append(String.format(Locale.ROOT, "%.2f", basisKills * rate)).append(" expected, 1/")
+				.append(Math.round(1 / rate)).append(')');
 		}
-		breakdown.append("\nPet: ").append(dryness.getPetsFromKills()).append(" (")
-			.append(String.format(Locale.ROOT, "%.3f", dryness.getExpectedPetsFromKills())).append(" expected, 1/3,500)");
+		String basis = allTime != null
+			? String.format(Locale.ROOT, "%,d kills recorded by RuneLite's Loot Tracker (all-time)", basisKills)
+			: basisKills + " Open-stomach kills tracked by this plugin";
 		set(uniques, "Uniques", received + " / " + String.format(Locale.ROOT, "%.2f", expected), null,
-			"Uniques received vs expected from " + dryness.getStomachKills() + " tracked Open-stomach kills at 1/205.6."
-				+ breakdown);
+			"Uniques received vs expected from " + basis + " at 1/205.6." + breakdown);
 
 		double percentile = DropOdds.luckPercentile(received, expected);
-		String verdict = dryness.getStomachKills() == 0 ? "N/A"
+		String verdict = basisKills == 0 ? "N/A"
 			: percentile >= 0.6 ? "Lucky" : percentile <= 0.4 ? "Dry" : "On rate";
-		Color verdictColor = dryness.getStomachKills() == 0 ? null
+		Color verdictColor = basisKills == 0 ? null
 			: percentile >= 0.6 ? UiFormat.PROFIT : percentile <= 0.4 ? UiFormat.LOSS : null;
 		set(luck, "Luck", verdict, verdictColor, "Compared with other players after the same number of kills, you've had"
 			+ " more uniques than about " + Math.round(percentile * 100) + "% of them (50% is exactly average)."
@@ -143,7 +149,8 @@ class LuckCard extends JPanel
 		String sinceWhat = lastKc != null ? "your last unique at KC " + String.format(Locale.ROOT, "%,d", lastKc)
 			: dryness.getFirstTrackedKc() != null ? "tracking began at KC " + String.format(Locale.ROOT, "%,d", dryness.getFirstTrackedKc())
 			: "tracking began";
-		set(dry, "Dry", since + " kc", null, "Open-stomach kills since " + sinceWhat + ".");
+		set(dry, "Dry", since + " kc", null, "Open-stomach kills since " + sinceWhat + ". This counts kills tracked by"
+			+ " this plugin, since the Loot Tracker only keeps totals, not when each drop happened.");
 
 		double chance = DropOdds.chanceByNow(RATE, since);
 		set(byNow, "By now", percent(chance), null, "Chance of at least one unique in " + since

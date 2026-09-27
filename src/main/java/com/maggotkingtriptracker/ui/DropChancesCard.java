@@ -43,7 +43,7 @@ class DropChancesCard extends JPanel
 		+ "<u>Bar</u>: Your 'luck' (actual drops vs. expectations).<br>"
 		+ "<u>Number</u>: Total drops you have actually received.<br><br>"
 		+ "Uniques and the kill pet only come from Open-stomach; eggs you pop add to the pet row."
-		+ " Only kills tracked by this plugin are counted.</html>";
+		+ " All-time numbers come from RuneLite's Loot Tracker when it has a record for this account.</html>";
 
 	/**
 	 * Remembered for the session, like the tab choice in other trackers.
@@ -53,6 +53,7 @@ class DropChancesCard extends JPanel
 	private final JLabel expectedTab = tabLabel("Expected");
 	private final JLabel receivedTab = tabLabel("Received");
 	private final List<Row> rows = new ArrayList<>();
+	private final JLabel source = new JLabel();
 	private DrynessView dryness;
 
 	DropChancesCard(ItemManager itemManager)
@@ -87,8 +88,12 @@ class DropChancesCard extends JPanel
 			rowPanel.add(row.panel);
 		}
 
+		source.setFont(FontManager.getRunescapeSmallFont());
+		source.setForeground(UiFormat.MUTED_TEXT);
+
 		add(header, BorderLayout.NORTH);
 		add(rowPanel, BorderLayout.CENTER);
+		add(source, BorderLayout.SOUTH);
 		styleTabs();
 	}
 
@@ -113,19 +118,55 @@ class DropChancesCard extends JPanel
 
 		DrynessView.Unique fang = unique(MaggotKingIds.UNIQUES_FANG);
 		DrynessView.Unique kisten = unique(MaggotKingIds.UNIQUES_KISTEN);
-		int kills = dryness.getStomachKills();
-		double[] expected = {
-			dryness.getExpectedUniques(),
-			fang == null ? 0 : fang.getExpected(),
-			kisten == null ? 0 : kisten.getExpected(),
-			dryness.getExpectedPetsFromKills() + eggPetExpected,
-		};
-		int[] received = {
-			dryness.getUniquesReceived(),
-			fang == null ? 0 : fang.getKillCounts().size(),
-			kisten == null ? 0 : kisten.getKillCounts().size(),
-			dryness.getPetsFromKills() + dryness.getPetsFromEggs(),
-		};
+		DrynessView.AllTime allTime = dryness.getAllTime();
+		double fangRate = MaggotKingRates.UNIQUES.get(MaggotKingIds.UNIQUES_FANG);
+		double kistenRate = MaggotKingRates.UNIQUES.get(MaggotKingIds.UNIQUES_KISTEN);
+
+		int kills;
+		double[] expected;
+		int[] received;
+		String basis;
+		if (allTime != null)
+		{
+			// All-time: the Loot Tracker records every loot-dropping (Open-stomach) kill and its drops
+			kills = allTime.getLootKills();
+			expected = new double[]{
+				kills * MaggotKingRates.ANY_UNIQUE,
+				kills * fangRate,
+				kills * kistenRate,
+				kills * MaggotKingRates.PET_PER_STOMACH + eggPetExpected,
+			};
+			received = new int[]{
+				allTime.getFang() + allTime.getKisten(),
+				allTime.getFang(),
+				allTime.getKisten(),
+				allTime.getPets(),
+			};
+			basis = String.format(Locale.ROOT, "%,d kills recorded by RuneLite's Loot Tracker since %s", kills,
+				UiFormat.date(allTime.getFirstRecordedAt()))
+				+ (allTime.getKillCount() != null ? String.format(Locale.ROOT, " (KC %,d)", allTime.getKillCount()) : "");
+			source.setText(String.format(Locale.ROOT, "All-time · %,d kills", kills)
+				+ (allTime.getKillCount() != null ? String.format(Locale.ROOT, " · KC %,d", allTime.getKillCount()) : ""));
+		}
+		else
+		{
+			kills = dryness.getStomachKills();
+			expected = new double[]{
+				dryness.getExpectedUniques(),
+				fang == null ? 0 : fang.getExpected(),
+				kisten == null ? 0 : kisten.getExpected(),
+				dryness.getExpectedPetsFromKills() + eggPetExpected,
+			};
+			received = new int[]{
+				dryness.getUniquesReceived(),
+				fang == null ? 0 : fang.getKillCounts().size(),
+				kisten == null ? 0 : kisten.getKillCounts().size(),
+				dryness.getPetsFromKills() + dryness.getPetsFromEggs(),
+			};
+			basis = kills + " Open-stomach kills tracked by this plugin";
+			source.setText("Tracked · " + kills + " kills (enable Loot Tracker for all-time)");
+		}
+		source.setToolTipText(UiFormat.tooltip("Based on " + basis + "."));
 		String[] names = {"Any unique (1/205.6)", fangName(fang), kistenName(kisten), "Maggot King pet (1/3,500 per kill, plus eggs)"};
 
 		double scale = 1;
@@ -150,9 +191,10 @@ class DropChancesCard extends JPanel
 				row.number.setText(String.valueOf((int) whole));
 			}
 			String help = names[i] + ": " + received[i] + " received, "
-				+ String.format(Locale.ROOT, "%.2f", expected[i]) + " expected from " + kills + " Open-stomach kills"
-				+ (i == 3 && eggPetExpected > 0 ? String.format(Locale.ROOT, " and eggs (%.3f)", eggPetExpected) : "")
-				+ ". " + String.format(Locale.ROOT, "%.0f%%", toNext * 100) + " of the way to the next expected drop.";
+				+ String.format(Locale.ROOT, "%.2f", expected[i]) + " expected from " + basis
+				+ (i == 3 && eggPetExpected > 0 ? String.format(Locale.ROOT, " plus eggs popped (%.3f)", eggPetExpected) : "")
+				+ ". " + String.format(Locale.ROOT, "%.0f%%", toNext * 100) + " of the way to the next expected drop."
+				+ (i == 3 && allTime != null ? " The Loot Tracker doesn't record pets, so pets are the ones this plugin saw." : "");
 			row.panel.setToolTipText(UiFormat.tooltip(help));
 			row.bar.setToolTipText(UiFormat.tooltip(help));
 		}

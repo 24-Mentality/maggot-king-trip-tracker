@@ -18,6 +18,7 @@ import com.maggotkingtriptracker.model.TripEndReason;
 import com.maggotkingtriptracker.model.TripMath;
 import com.maggotkingtriptracker.persistence.HistoryStore;
 import com.maggotkingtriptracker.pricing.PriceService;
+import com.maggotkingtriptracker.view.DrynessView;
 import com.maggotkingtriptracker.view.PanelState;
 import com.maggotkingtriptracker.view.TripView;
 import com.maggotkingtriptracker.view.ViewBuilder;
@@ -77,6 +78,7 @@ import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.client.callback.ClientThread;
+import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemStack;
 import net.runelite.client.plugins.loottracker.LootReceived;
@@ -141,6 +143,7 @@ public class TripTracker
 	private final Consumer<PanelState> stateListener;
 	private final Consumer<String> alerter;
 	private final Runnable onLairEntered;
+	private final AllTimeRecords allTimeRecords;
 	private final InventoryLedger ledger;
 
 	private AccountHistory history;
@@ -197,7 +200,8 @@ public class TripTracker
 
 	public TripTracker(Client client, ClientThread clientThread, MaggotKingTripTrackerConfig config,
 		PriceService prices, HistoryStore store, Gson gson, ScheduledExecutorService executor,
-		Consumer<PanelState> stateListener, Consumer<String> alerter, Runnable onLairEntered)
+		Consumer<PanelState> stateListener, Consumer<String> alerter, Runnable onLairEntered,
+		ConfigManager configManager)
 	{
 		this.client = client;
 		this.clientThread = clientThread;
@@ -210,6 +214,7 @@ public class TripTracker
 		this.stateListener = stateListener;
 		this.alerter = alerter;
 		this.onLairEntered = onLairEntered;
+		this.allTimeRecords = new AllTimeRecords(configManager, gson);
 		this.ledger = new InventoryLedger(client);
 		this.chargeCounter = new ChargeCounter(prices::isMeleeWeapon);
 	}
@@ -1718,6 +1723,38 @@ public class TripTracker
 		}
 	}
 
+	/**
+	 * All-time records from RuneLite's Loot Tracker and Chat Commands, combined with pets this plugin tracked.
+	 */
+	private DrynessView.AllTime allTime()
+	{
+		if (history == null)
+		{
+			return null;
+		}
+		AllTimeRecords.Snapshot snapshot = allTimeRecords.read(bossName());
+		if (snapshot == null)
+		{
+			return null;
+		}
+
+		int trackedPets = 0;
+		for (Trip trip : history.getTrips())
+		{
+			for (Kill kill : trip.getKills())
+			{
+				trackedPets += kill.isPet() ? 1 : 0;
+			}
+		}
+		for (EggPop pop : history.getEggPops())
+		{
+			trackedPets += pop.isPet() ? 1 : 0;
+		}
+		return new DrynessView.AllTime(snapshot.getLootKills(), snapshot.getKillCount(), snapshot.getFirstRecordedAt(),
+			snapshot.dropped(MaggotKingIds.UNIQUES_FANG), snapshot.dropped(MaggotKingIds.UNIQUES_KISTEN),
+			Math.max(snapshot.dropped(MaggotKingIds.PET_ITEM), trackedPets));
+	}
+
 	private String bossName()
 	{
 		if (bossName == null)
@@ -1900,7 +1937,7 @@ public class TripTracker
 			status,
 			shown,
 			historyViews,
-			history == null ? null : viewBuilder.lifetime(history, config.showCurrentValue(), System.currentTimeMillis()),
+			history == null ? null : viewBuilder.lifetime(history, allTime(), config.showCurrentValue(), System.currentTimeMillis()),
 			history == null ? null : viewBuilder.goal(history, lastGoalTickAt > 0, System.currentTimeMillis()),
 			readOnly);
 		stateListener.accept(state);

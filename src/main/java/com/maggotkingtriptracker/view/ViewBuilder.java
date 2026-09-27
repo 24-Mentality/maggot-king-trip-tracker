@@ -108,7 +108,7 @@ public class ViewBuilder
 	/**
 	 * @param now current time, for the running segment of an open trip
 	 */
-	public LifetimeView lifetime(AccountHistory history, boolean includeTodayValue, long now)
+	public LifetimeView lifetime(AccountHistory history, DrynessView.AllTime allTime, boolean includeTodayValue, long now)
 	{
 		List<Trip> trips = history.getTrips();
 		int kills = 0;
@@ -174,12 +174,12 @@ public class ViewBuilder
 			.averageKillMs(TripMath.averageKillMs(trips))
 			.lootValueToday(includeTodayValue ? today : null)
 			.netPerTrip(netPerTrip)
-			.dryness(dryness(history))
+			.dryness(dryness(history, allTime))
 			.polish(polish(history))
 			.build();
 	}
 
-	private DrynessView dryness(AccountHistory history)
+	private DrynessView dryness(AccountHistory history, DrynessView.AllTime allTime)
 	{
 		int stomachKills = 0;
 		int sinceUnique = 0;
@@ -271,7 +271,7 @@ public class ViewBuilder
 
 		return new DrynessView(stomachKills, sinceUnique, Math.pow(1 - MaggotKingRates.ANY_UNIQUE, sinceUnique),
 			uniques, stomachKills * MaggotKingRates.PET_PER_STOMACH, petsFromKills, tiers, 1 - noPetFromEggs, petsFromEggs,
-			currentKc, lastUniqueKc, firstTrackedKc, uniquesReceived, stomachKills * MaggotKingRates.ANY_UNIQUE);
+			currentKc, lastUniqueKc, firstTrackedKc, uniquesReceived, stomachKills * MaggotKingRates.ANY_UNIQUE, allTime);
 	}
 
 	private List<PolishView> polish(AccountHistory history)

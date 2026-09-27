@@ -64,6 +64,9 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 	@Inject
 	private MaggotKingTripTrackerConfig config;
 
+	@Inject
+	private ConfigManager configManager;
+
 	private DiagnosticRecorder diagnosticRecorder;
 	private ScheduledExecutorService executor;
 	private HistoryStore store;
@@ -94,7 +97,7 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 		TripTracker tracker = new TripTracker(client, clientThread, config, new PriceService(itemManager), store,
 			gson, executor, state -> SwingUtilities.invokeLater(() -> trackerPanel.update(state)),
 			message -> notifier.notify(config.alertNotification(), message),
-			this::lairEntered);
+			this::lairEntered, configManager);
 		tripTracker = tracker;
 		eventBus.register(tracker);
 		clientThread.invokeLater(tracker::start);
