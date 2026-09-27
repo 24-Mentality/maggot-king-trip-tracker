@@ -21,7 +21,7 @@ import net.runelite.client.util.QuantityFormatter;
  */
 class ItemGrid extends JPanel
 {
-	private static final int COLUMNS = 6;
+	private static final int COLUMNS = 5;
 	private static final Border NORMAL_BORDER = BorderFactory.createLineBorder(ColorScheme.DARKER_GRAY_COLOR, 1);
 	private static final Border UNIQUE_BORDER = BorderFactory.createLineBorder(UiFormat.UNIQUE_BORDER, 1);
 	private static final Border PENDING_BORDER = BorderFactory.createDashedBorder(ColorScheme.LIGHT_GRAY_COLOR, 3, 2);
@@ -47,7 +47,7 @@ class ItemGrid extends JPanel
 	{
 		JLabel label = new JLabel();
 		label.setHorizontalAlignment(SwingConstants.CENTER);
-		label.setPreferredSize(new Dimension(34, 36));
+		label.setPreferredSize(new Dimension(40, 40));
 		label.setOpaque(true);
 		label.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		label.setBorder(item.isPending() ? PENDING_BORDER : item.isUnique() ? UNIQUE_BORDER : NORMAL_BORDER);
@@ -63,7 +63,7 @@ class ItemGrid extends JPanel
 	private static JLabel emptyCell()
 	{
 		JLabel label = new JLabel();
-		label.setPreferredSize(new Dimension(34, 36));
+		label.setPreferredSize(new Dimension(40, 40));
 		label.setOpaque(true);
 		label.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		return label;

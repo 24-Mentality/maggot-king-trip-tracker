@@ -132,14 +132,9 @@ class GoalCard extends JPanel
 
 	private void setStats(String kphValue, String doneValue, String ttgValue, String leftValue)
 	{
-		kph.setText(pair("KPH", kphValue));
-		done.setText(pair("Kills Done", doneValue));
-		ttg.setText(pair("TTG", ttgValue));
-		left.setText(pair("Kills Left", leftValue));
-	}
-
-	private static String pair(String label, String value)
-	{
-		return "<html><font color='#a5a5a5'>" + label + ":</font> <font color='#ffffff'>" + value + "</font></html>";
+		kph.setText(UiFormat.pair("KPH", kphValue));
+		done.setText(UiFormat.pair("Kills Done", doneValue));
+		ttg.setText(UiFormat.pair("TTG", ttgValue));
+		left.setText(UiFormat.pair("Kills Left", leftValue));
 	}
 }

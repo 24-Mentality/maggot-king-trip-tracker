@@ -65,6 +65,14 @@ final class UiFormat
 		return DATE_TIME.format(Instant.ofEpochMilli(epochMs).atZone(ZoneId.systemDefault()));
 	}
 
+	/**
+	 * "Label: value" in the style of RuneLite's XP and loot trackers: grey label, white value.
+	 */
+	static String pair(String label, String value)
+	{
+		return "<html><font color='#a5a5a5'>" + html(label) + ":</font> <font color='#ffffff'>" + html(value) + "</font></html>";
+	}
+
 	static String html(String text)
 	{
 		return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
