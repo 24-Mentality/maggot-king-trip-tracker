@@ -36,6 +36,9 @@ with persistent per-account history in a side panel.
   - **Data:** export trips as CSV, export or import the account's full history as JSON
     (imports only add trips you don't already have), and clear all history.
 
+The panel opens on the Trip tab automatically when you enter the lair
+(Configuration → Display → **Open panel in the lair**; on by default).
+
 ## How trips are counted
 
 - A trip starts when you enter the lair and ends when you leave it: walking out,

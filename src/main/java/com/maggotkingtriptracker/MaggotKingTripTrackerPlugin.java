@@ -93,7 +93,8 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 		store = new HistoryStore(gson, this::getPluginDirectory, executor);
 		TripTracker tracker = new TripTracker(client, clientThread, config, new PriceService(itemManager), store,
 			gson, executor, state -> SwingUtilities.invokeLater(() -> trackerPanel.update(state)),
-			message -> notifier.notify(config.alertNotification(), message));
+			message -> notifier.notify(config.alertNotification(), message),
+			this::lairEntered);
 		tripTracker = tracker;
 		eventBus.register(tracker);
 		clientThread.invokeLater(tracker::start);
@@ -152,6 +153,27 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 			TripTracker tracker = tripTracker;
 			clientThread.invokeLater(tracker::refreshView);
 		}
+	}
+
+	/**
+	 * Called on the client thread when the player enters the lair.
+	 */
+	private void lairEntered()
+	{
+		if (!config.openPanelOnEntry())
+		{
+			return;
+		}
+		NavigationButton button = navigationButton;
+		TrackerPanel trackerPanel = panel;
+		SwingUtilities.invokeLater(() ->
+		{
+			if (button != null && trackerPanel != null)
+			{
+				clientToolbar.openPanel(button);
+				trackerPanel.showTripTab();
+			}
+		});
 	}
 
 	/**

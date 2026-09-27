@@ -140,6 +140,7 @@ public class TripTracker
 	private final ScheduledExecutorService executor;
 	private final Consumer<PanelState> stateListener;
 	private final Consumer<String> alerter;
+	private final Runnable onLairEntered;
 	private final InventoryLedger ledger;
 
 	private AccountHistory history;
@@ -196,7 +197,7 @@ public class TripTracker
 
 	public TripTracker(Client client, ClientThread clientThread, MaggotKingTripTrackerConfig config,
 		PriceService prices, HistoryStore store, Gson gson, ScheduledExecutorService executor,
-		Consumer<PanelState> stateListener, Consumer<String> alerter)
+		Consumer<PanelState> stateListener, Consumer<String> alerter, Runnable onLairEntered)
 	{
 		this.client = client;
 		this.clientThread = clientThread;
@@ -208,6 +209,7 @@ public class TripTracker
 		this.executor = executor;
 		this.stateListener = stateListener;
 		this.alerter = alerter;
+		this.onLairEntered = onLairEntered;
 		this.ledger = new InventoryLedger(client);
 		this.chargeCounter = new ChargeCounter(prices::isMeleeWeapon);
 	}
@@ -533,6 +535,7 @@ public class TripTracker
 		{
 			inLair = true;
 			enterLair(now);
+			onLairEntered.run();
 		}
 		else if (!nowInLair && inLair)
 		{

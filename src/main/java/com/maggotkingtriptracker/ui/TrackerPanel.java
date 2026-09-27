@@ -34,6 +34,8 @@ public class TrackerPanel extends PluginPanel
 	private final LifetimePanel lifetimeTab;
 	private final JLabel readOnlyWarning = new JLabel();
 	private final Timer timer;
+	private MaterialTabGroup tabGroup;
+	private MaterialTab tripTab;
 
 	public TrackerPanel(ItemManager itemManager, PanelActions actions)
 	{
@@ -63,6 +65,8 @@ public class TrackerPanel extends PluginPanel
 			tabs.addTab(tab);
 		}
 		tabs.select(current);
+		tabGroup = tabs;
+		tripTab = current;
 
 		readOnlyWarning.setFont(FontManager.getRunescapeSmallFont());
 		readOnlyWarning.setForeground(UiFormat.LOSS);
@@ -94,6 +98,11 @@ public class TrackerPanel extends PluginPanel
 		currentTab.update(state, System.currentTimeMillis());
 		historyTab.update(state.getHistory());
 		lifetimeTab.update(state.getLifetime(), state.isReadOnly());
+	}
+
+	public void showTripTab()
+	{
+		tabGroup.select(tripTab);
 	}
 
 	public void shutDown()

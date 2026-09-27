@@ -163,11 +163,23 @@ public interface MaggotKingTripTrackerConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "openPanelOnEntry",
+		name = "Open panel in the lair",
+		description = "Open this plugin's side panel on the Trip tab when you enter the Maggot King's lair",
+		section = displaySection,
+		position = 0
+	)
+	default boolean openPanelOnEntry()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = "showCurrentValue",
 		name = "Show today's value",
 		description = "On the Lifetime tab, also show all loot valued at today's GE prices",
 		section = displaySection,
-		position = 0
+		position = 1
 	)
 	default boolean showCurrentValue()
 	{
