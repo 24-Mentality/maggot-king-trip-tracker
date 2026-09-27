@@ -97,6 +97,7 @@ public class TripTracker
 	private static final String OPTION_TAKE_EGGS = "Take-eggs";
 	private static final String OPTION_DROP = "Drop";
 	private static final String OPTION_POLISH = "Polish";
+	private static final String OPTION_CAST = "Cast";
 	private static final Set<String> CONSUME_OPTIONS = ImmutableSet.of("Eat", "Drink", "Cast");
 
 	private final Client client;
@@ -848,10 +849,11 @@ public class TripTracker
 		boolean trackingTrip = inLair && currentTrip != null && !dead;
 		recordDrops(removed, tick, trackingTrip);
 
-		// Popping eggs and polishing (tarnished items, dull ancient medals) is not supply use
+		// Popping eggs, polishing (tarnished items, dull ancient medals) and casting a spell on an item
+		// (e.g. High Level Alchemy) convert items rather than use them up
 		removed.keySet().removeAll(MaggotKingIds.EGGS);
 		removed.keySet().removeAll(MaggotKingIds.TARNISHED_ITEMS);
-		removePolished(removed, tick);
+		removeConvertedItems(removed, tick);
 
 		if (trackingTrip)
 		{
@@ -931,11 +933,12 @@ public class TripTracker
 		}
 	}
 
-	private void removePolished(Map<Integer, Long> removed, int tick)
+	private void removeConvertedItems(Map<Integer, Long> removed, int tick)
 	{
 		for (Click click : recentClicks)
 		{
-			if (OPTION_POLISH.equals(click.option) && tick - click.tick <= CLICK_MATCH_TICKS)
+			if (tick - click.tick <= CLICK_MATCH_TICKS && click.itemId > 0
+				&& (OPTION_POLISH.equals(click.option) || OPTION_CAST.equals(click.option)))
 			{
 				removed.remove(click.itemId);
 			}

@@ -190,3 +190,12 @@ These come from diagnostic.log and take precedence over the assumptions above.
   ancient magic as it falls apart."); it is not a supply.
 - The pre-entry, rune pouch, overflow pickup, own-drop re-pickup and logout
   grace logic matched the diagnostic log on the first Phase 1 test trip.
+- Casting a spell on an item (e.g. High Level Alchemy) is a MENU click with
+  option "Cast", action WIDGET_TARGET_ON_WIDGET and itemId = the target item.
+  The target item is converted, not a supply; the spell's runes still are.
+- The CHARGES_*_QUANTITY varbits (blood fury, Tome of fire, wilderness weapon)
+  never changed during a kill, even after "Check"; charges must be counted
+  from attacks instead.
+- The Loot Tracker's polish EVENT can include unrelated inventory changes from
+  the same tick (a Prayer potion(2) from a sip appeared alongside the Rune
+  halberd). Phase 2 polish resolution must take only the replacement item.
