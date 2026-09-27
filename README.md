@@ -16,7 +16,7 @@ with persistent per-account history in a side panel.
 
 ## Side panel
 
-- **Current Trip:** trip time, kills, loot value, costs, net profit, GP/hr and average kill
+- **Trip:** the current (or last) trip's time, kills, loot value, costs, net profit, GP/hr and average kill
   time, plus item grids for loot, supplies and anything you dropped and left behind.
   Uniques have a gold border; tarnished drops waiting to be polished have a dashed border.
 - **History:** one card per completed trip. Click to expand it, right-click to delete it.

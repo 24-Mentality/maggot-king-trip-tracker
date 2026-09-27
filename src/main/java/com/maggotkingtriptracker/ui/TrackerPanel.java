@@ -3,11 +3,18 @@ package com.maggotkingtriptracker.ui;
 import com.maggotkingtriptracker.view.PanelState;
 import com.maggotkingtriptracker.view.TripView;
 import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.GridLayout;
+import java.awt.Rectangle;
 import java.util.function.Consumer;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.Scrollable;
+import javax.swing.SwingConstants;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.Timer;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
@@ -17,7 +24,8 @@ import net.runelite.client.ui.components.materialtabs.MaterialTab;
 import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
 
 /**
- * Side panel with Current Trip, History and Lifetime tabs. All methods run on the Swing thread.
+ * Side panel with Trip, History and Lifetime tabs pinned at the top and the selected tab scrolling below.
+ * All methods run on the Swing thread.
  */
 public class TrackerPanel extends PluginPanel
 {
@@ -29,37 +37,52 @@ public class TrackerPanel extends PluginPanel
 
 	public TrackerPanel(ItemManager itemManager, PanelActions actions)
 	{
-		setLayout(new BorderLayout(0, 8));
+		// Not wrapped in PluginPanel's scroll pane, so the tabs stay visible while content scrolls
+		super(false);
+		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARK_GRAY_COLOR);
-		setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
 		currentTab = new CurrentTripPanel(itemManager);
 		historyTab = new HistoryPanel(itemManager, trip -> confirmDelete(trip, actions::deleteTrip));
 		lifetimeTab = new LifetimePanel(actions, () -> confirmClear(actions::clearHistory));
 
-		JPanel display = new JPanel(new BorderLayout());
-		display.setOpaque(false);
+		ScrollableContent display = new ScrollableContent();
+		display.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		display.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
 		MaterialTabGroup tabs = new MaterialTabGroup(display);
-		tabs.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
-		MaterialTab current = new MaterialTab("Current Trip", tabs, currentTab);
-		tabs.addTab(current);
-		tabs.addTab(new MaterialTab("History", tabs, historyTab));
-		tabs.addTab(new MaterialTab("Lifetime", tabs, lifetimeTab));
+		// The default wrapping row hides the third tab at sidebar width; equal columns always fit
+		tabs.setLayout(new GridLayout(1, 0));
+		tabs.setBorder(BorderFactory.createEmptyBorder(8, 4, 4, 4));
+		MaterialTab current = new MaterialTab("Trip", tabs, currentTab);
+		MaterialTab history = new MaterialTab("History", tabs, historyTab);
+		MaterialTab lifetime = new MaterialTab("Lifetime", tabs, lifetimeTab);
+		for (MaterialTab tab : new MaterialTab[]{current, history, lifetime})
+		{
+			tab.setHorizontalAlignment(SwingConstants.CENTER);
+			tabs.addTab(tab);
+		}
 		tabs.select(current);
 
 		readOnlyWarning.setFont(FontManager.getRunescapeSmallFont());
 		readOnlyWarning.setForeground(UiFormat.LOSS);
 		readOnlyWarning.setText("<html>History could not be loaded or is from a newer version. Changes will not be saved.</html>");
 		readOnlyWarning.setVisible(false);
+		readOnlyWarning.setBorder(BorderFactory.createEmptyBorder(0, 8, 4, 8));
 
-		JPanel north = new JPanel(new BorderLayout(0, 4));
+		JPanel north = new JPanel(new BorderLayout());
 		north.setOpaque(false);
 		north.add(tabs, BorderLayout.NORTH);
 		north.add(readOnlyWarning, BorderLayout.SOUTH);
 
+		JScrollPane scroll = new JScrollPane(display);
+		scroll.setBorder(BorderFactory.createEmptyBorder());
+		scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		scroll.getVerticalScrollBar().setUnitIncrement(16);
+		scroll.getViewport().setBackground(ColorScheme.DARK_GRAY_COLOR);
+
 		add(north, BorderLayout.NORTH);
-		add(display, BorderLayout.CENTER);
+		add(scroll, BorderLayout.CENTER);
 
 		timer = new Timer(1000, e -> currentTab.tick(System.currentTimeMillis()));
 		timer.start();
@@ -109,6 +132,47 @@ public class TrackerPanel extends PluginPanel
 		if (choice == JOptionPane.YES_OPTION)
 		{
 			onClearHistory.run();
+		}
+	}
+
+	/**
+	 * Tab content that fills the scroll pane's width and scrolls vertically.
+	 */
+	private static class ScrollableContent extends JPanel implements Scrollable
+	{
+		ScrollableContent()
+		{
+			super(new BorderLayout());
+		}
+
+		@Override
+		public Dimension getPreferredScrollableViewportSize()
+		{
+			return getPreferredSize();
+		}
+
+		@Override
+		public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction)
+		{
+			return 16;
+		}
+
+		@Override
+		public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction)
+		{
+			return Math.max(16, visibleRect.height - 16);
+		}
+
+		@Override
+		public boolean getScrollableTracksViewportWidth()
+		{
+			return true;
+		}
+
+		@Override
+		public boolean getScrollableTracksViewportHeight()
+		{
+			return false;
 		}
 	}
 }
