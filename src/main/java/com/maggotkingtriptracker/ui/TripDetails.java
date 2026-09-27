@@ -25,7 +25,8 @@ class TripDetails extends JPanel
 		lootStats.add(new String[]{"GP/Kill", UiFormat.gp(lootPerKill)});
 		lootStats.add(new String[]{"Kills", String.valueOf(trip.getKills())});
 		lootStats.add(new String[]{"GP/Hr", UiFormat.gp(TripMath.gpPerHour(trip.getLootValue(), activeMs))});
-		lootStats.add(new String[]{"Total Gp", UiFormat.gp(trip.getLootValue())});
+		// Net profit (loot minus supplies, drops and death costs), as before; the screenshot only set the format
+		lootStats.add(new String[]{"Total Gp", UiFormat.gp(trip.getNetProfit())});
 		add(section(new ItemSection(itemManager, "Loot", trip.getLoot(), "No loot yet", lootStats)));
 
 		List<String[]> supplyStats = new ArrayList<>();
