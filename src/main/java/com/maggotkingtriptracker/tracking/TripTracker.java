@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.maggotkingtriptracker.MaggotKingIds;
 import com.maggotkingtriptracker.MaggotKingTripTrackerConfig;
 import com.maggotkingtriptracker.model.AccountHistory;
+import com.maggotkingtriptracker.model.ChargeType;
 import com.maggotkingtriptracker.model.CorpseChoice;
 import com.maggotkingtriptracker.model.DeathRecord;
 import com.maggotkingtriptracker.model.ItemEntry;
@@ -20,6 +21,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -141,6 +143,10 @@ public class TripTracker
 	private final List<GroundEntry> groundItems = new ArrayList<>();
 	private final List<GroundEntry> recentDespawns = new ArrayList<>();
 	private final Map<Integer, Long> pendingDrops = new HashMap<>();
+	/**
+	 * Last known value of each charge varbit; empty until read after login.
+	 */
+	private final Map<ChargeType, Integer> charges = new EnumMap<>(ChargeType.class);
 	private final Deque<PreEntryUse> preEntryUses = new ArrayDeque<>();
 
 	private ScheduledFuture<?> saveFuture;
@@ -264,6 +270,7 @@ public class TripTracker
 					suspendTrip(System.currentTimeMillis());
 				}
 				ledger.reset();
+				charges.clear();
 				recentClicks.clear();
 				preEntryUses.clear();
 				pushState();
@@ -284,6 +291,14 @@ public class TripTracker
 
 		int tick = client.getTickCount();
 		long now = System.currentTimeMillis();
+
+		if (charges.size() < ChargeType.values().length)
+		{
+			for (ChargeType type : ChargeType.values())
+			{
+				charges.computeIfAbsent(type, t -> client.getVarbitValue(t.getVarbit()));
+			}
+		}
 
 		// Changes are attributed to where the player was before any region change this tick
 		Map<Integer, Long> delta = ledger.poll();
@@ -345,8 +360,37 @@ public class TripTracker
 		if (InventoryLedger.RUNE_POUCH_VARBITS.contains(event.getVarbitId()))
 		{
 			ledger.markDirty();
+			return;
+		}
+
+		for (ChargeType type : ChargeType.values())
+		{
+			if (type.getVarbit() == event.getVarbitId())
+			{
+				chargesChanged(type, event.getValue());
+				return;
+			}
 		}
 	}
+
+	/**
+	 * Charges that go down in the lair are supplies. Recharging and changes elsewhere only move the baseline.
+	 */
+	private void chargesChanged(ChargeType type, int value)
+	{
+		Integer before = charges.put(type, value);
+		if (before == null || value >= before || !inLair || currentTrip == null || dead)
+		{
+			return;
+		}
+
+		int chargeItemId = type == ChargeType.TOME_OF_FIRE ? config.tomePage().getItemId() : type.getChargeItemId();
+		ItemEntries.merge(currentTrip.getSupplies(), ItemEntry.charges(type.getSourceItemId(), before - value,
+			chargeItemId, prices.price(chargeItemId), type.getChargesPerItem()));
+		viewDirty = true;
+		requestSave();
+	}
+
 
 	@Subscribe
 	public void onMenuOptionClicked(MenuOptionClicked event)

@@ -12,4 +12,14 @@ public class ItemView
 	boolean perDose;
 	boolean unique;
 	boolean pending;
+	/**
+	 * For charge lines, the name of what recharges the item (e.g. "Blood shard"); otherwise null.
+	 */
+	String chargeItemName;
+	int chargesPerItem;
+
+	public boolean isCharges()
+	{
+		return chargeItemName != null;
+	}
 }

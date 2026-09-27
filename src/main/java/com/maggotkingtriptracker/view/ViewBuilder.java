@@ -146,7 +146,8 @@ public class ViewBuilder
 		Map<String, ItemEntry> firsts = new LinkedHashMap<>();
 		for (ItemEntry entry : entries)
 		{
-			String key = entry.getItemId() + (entry.isPerDose() ? "d" : "") + (entry.isPending() ? "p" : "");
+			String key = entry.getItemId() + (entry.isPerDose() ? "d" : "") + (entry.isPending() ? "p" : "")
+				+ (entry.isCharges() ? "c" + entry.getChargeItemId() : "");
 			long[] sum = totals.computeIfAbsent(key, k -> new long[2]);
 			sum[0] += entry.getQuantity();
 			sum[1] += entry.totalValue();
@@ -160,7 +161,8 @@ public class ViewBuilder
 			long[] sum = totals.get(e.getKey());
 			int itemId = first.getItemId();
 			views.add(new ItemView(itemId, prices.name(itemId), sum[0], sum[1], first.isPerDose(),
-				MaggotKingIds.UNIQUES.contains(itemId), first.isPending()));
+				MaggotKingIds.UNIQUES.contains(itemId), first.isPending(),
+				first.isCharges() ? prices.name(first.getChargeItemId()) : null, first.getChargesPerItem()));
 		}
 		views.sort(BY_VALUE);
 		return views;

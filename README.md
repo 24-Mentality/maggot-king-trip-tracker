@@ -37,6 +37,10 @@ with persistent per-account history in a side panel.
   Potions are counted per dose. Gear switches don't count. With **Count supplies used
   before entry** (on by default), food, potions and spells used in the 60 seconds before
   entering are added to the trip too.
+- Charges used in the lair count as supplies: Amulet of blood fury (priced from blood
+  shards, 10,000 charges each), Tome of fire (searing or burnt pages, 20 charges each,
+  set by **Tome of fire pages**) and revenant weapons such as the Webweaver bow (one
+  revenant ether per shot).
 - Items you drop in the lair and don't pick up again are a "Dropped" cost. Zero-value items
   such as empty vials are ignored.
 - Gravestone moves paid to the aranei scout are recorded as death costs.

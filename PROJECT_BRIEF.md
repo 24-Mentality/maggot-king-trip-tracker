@@ -148,6 +148,10 @@ RuneLite does not accept new high-end PvM helper plugins.
    Accounts login step. The user runs ./gradlew run themselves.
 7. File IO goes through Filepath (AGENTS.md), so plugin files live in
    ~/.runelite/plugin-data/maggot-king-trip-tracker/.
+8. Charge costs (blood fury, Tome of fire, Webweaver bow) were moved ahead of
+   Phase 2 at the user's request (2026-09-27). Charges are read from the
+   CHARGES_*_QUANTITY varbits and count only when they go down in the lair.
+   Tome pages default to searing. Eye of Ayak and Scythe stay in Phase 3.
 
 ## Observed in-game (diagnostic test trips, 2026-09-27)
 These come from diagnostic.log and take precedence over the assumptions above.

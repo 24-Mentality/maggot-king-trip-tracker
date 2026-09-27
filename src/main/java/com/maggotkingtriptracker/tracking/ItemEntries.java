@@ -21,7 +21,7 @@ final class ItemEntries
 
 		for (ItemEntry entry : entries)
 		{
-			if (entry.getItemId() == itemId && entry.isPerDose() == perDose && !entry.isPending())
+			if (entry.getItemId() == itemId && entry.isPerDose() == perDose && !entry.isPending() && !entry.isCharges())
 			{
 				long total = entry.getQuantity() + quantity;
 				double value = (double) entry.getQuantity() * entry.getPriceEach() + (double) quantity * priceEach;
@@ -38,6 +38,28 @@ final class ItemEntries
 
 	static void merge(List<ItemEntry> entries, ItemEntry added)
 	{
-		merge(entries, added.getItemId(), added.getQuantity(), added.getPriceEach(), added.isPerDose());
+		if (!added.isCharges())
+		{
+			merge(entries, added.getItemId(), added.getQuantity(), added.getPriceEach(), added.isPerDose());
+			return;
+		}
+		if (added.getQuantity() <= 0)
+		{
+			return;
+		}
+
+		for (ItemEntry entry : entries)
+		{
+			if (entry.getItemId() == added.getItemId() && entry.getChargeItemId() == added.getChargeItemId())
+			{
+				long total = entry.getQuantity() + added.getQuantity();
+				double value = (double) entry.getQuantity() * entry.getPriceEach() + (double) added.getQuantity() * added.getPriceEach();
+				entry.setQuantity(total);
+				entry.setPriceEach(Math.round(value / total));
+				return;
+			}
+		}
+		entries.add(ItemEntry.charges(added.getItemId(), added.getQuantity(), added.getChargeItemId(),
+			added.getPriceEach(), added.getChargesPerItem()));
 	}
 }

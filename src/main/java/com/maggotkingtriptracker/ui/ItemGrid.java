@@ -71,8 +71,18 @@ class ItemGrid extends JPanel
 	private static String tooltip(ItemView item)
 	{
 		StringBuilder sb = new StringBuilder("<html>")
-			.append(UiFormat.html(item.getName()))
-			.append(" x ").append(QuantityFormatter.formatNumber(item.getQuantity()));
+			.append(UiFormat.html(item.getName()));
+		if (item.isCharges())
+		{
+			sb.append(": ").append(QuantityFormatter.formatNumber(item.getQuantity()))
+				.append(item.getQuantity() == 1 ? " charge" : " charges")
+				.append("<br>").append(QuantityFormatter.formatNumber(item.getChargesPerItem()))
+				.append(" per ").append(UiFormat.html(item.getChargeItemName()))
+				.append("<br>").append(UiFormat.fullGp(item.getTotalValue()))
+				.append("</html>");
+			return sb.toString();
+		}
+		sb.append(" x ").append(QuantityFormatter.formatNumber(item.getQuantity()));
 		if (item.isPerDose())
 		{
 			sb.append(item.getQuantity() == 1 ? " dose" : " doses");

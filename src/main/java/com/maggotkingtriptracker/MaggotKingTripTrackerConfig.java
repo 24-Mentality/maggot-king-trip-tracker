@@ -20,9 +20,16 @@ public interface MaggotKingTripTrackerConfig extends Config
 	String tripsSection = "trips";
 
 	@ConfigSection(
+		name = "Charges",
+		description = "Charged item costs",
+		position = 1
+	)
+	String chargesSection = "charges";
+
+	@ConfigSection(
 		name = "Display",
 		description = "Side panel options",
-		position = 1
+		position = 2
 	)
 	String displaySection = "display";
 
@@ -84,6 +91,18 @@ public interface MaggotKingTripTrackerConfig extends Config
 	default boolean countPreEntrySupplies()
 	{
 		return true;
+	}
+
+	@ConfigItem(
+		keyName = "tomePage",
+		name = "Tome of fire pages",
+		description = "Which page's GE price is used for Tome of fire charges (20 charges per page)",
+		section = chargesSection,
+		position = 0
+	)
+	default TomePage tomePage()
+	{
+		return TomePage.SEARING;
 	}
 
 	@ConfigItem(

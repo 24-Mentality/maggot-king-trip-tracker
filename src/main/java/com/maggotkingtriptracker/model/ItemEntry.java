@@ -27,14 +27,38 @@ public class ItemEntry
 	 */
 	private boolean pending;
 	private String pendingId;
+	/**
+	 * For charge lines: the item that recharges it (blood shard, page, ether), whose price is priceEach.
+	 * Quantity is then a number of charges and itemId is the charged item. 0 for normal lines.
+	 */
+	private int chargeItemId;
+	private int chargesPerItem;
 
 	public ItemEntry(int itemId, long quantity, long priceEach)
 	{
-		this(itemId, quantity, priceEach, false, false, null);
+		this(itemId, quantity, priceEach, false, false, null, 0, 0);
+	}
+
+	public static ItemEntry charges(int chargedItemId, long charges, int chargeItemId, long chargeItemPrice, int chargesPerItem)
+	{
+		return new ItemEntry(chargedItemId, charges, chargeItemPrice, false, false, null, chargeItemId, chargesPerItem);
+	}
+
+	public boolean isCharges()
+	{
+		return chargeItemId > 0 && chargesPerItem > 0;
 	}
 
 	public long totalValue()
 	{
-		return pending ? 0 : quantity * priceEach;
+		if (pending)
+		{
+			return 0;
+		}
+		if (isCharges())
+		{
+			return Math.round((double) quantity * priceEach / chargesPerItem);
+		}
+		return quantity * priceEach;
 	}
 }

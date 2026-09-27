@@ -2,6 +2,7 @@ package com.maggotkingtriptracker.diagnostic;
 
 import com.google.common.collect.ImmutableSet;
 import com.maggotkingtriptracker.MaggotKingIds;
+import com.maggotkingtriptracker.model.ChargeType;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -251,12 +252,24 @@ public class DiagnosticRecorder
 	@Subscribe
 	public void onVarbitChanged(VarbitChanged event)
 	{
-		if (!isRecording() || !RUNE_POUCH_VARBITS.contains(event.getVarbitId()))
+		if (!isRecording())
 		{
 			return;
 		}
 
-		record("RUNEPOUCH", "varbit=" + event.getVarbitId() + " value=" + event.getValue());
+		if (RUNE_POUCH_VARBITS.contains(event.getVarbitId()))
+		{
+			record("RUNEPOUCH", "varbit=" + event.getVarbitId() + " value=" + event.getValue());
+			return;
+		}
+		for (ChargeType type : ChargeType.values())
+		{
+			if (type.getVarbit() == event.getVarbitId())
+			{
+				record("CHARGES", type.name() + " varbit=" + event.getVarbitId() + " value=" + event.getValue());
+				return;
+			}
+		}
 	}
 
 	@Subscribe
