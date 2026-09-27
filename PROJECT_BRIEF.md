@@ -222,3 +222,8 @@ These come from diagnostic.log and take precedence over the assumptions above.
   reported [Inquisitor's great helm, Diamond necklace]. The polish result must
   be a net gain across inventory + equipment (gear swaps net to zero).
 - Empty vials have a 2 gp GE price; dropped items under 100 gp each are junk.
+- Deaths (2026-09-27, KC 2,633 and 2,636): items vanish in the respawn tick
+  (region 10106). The Aranei scout's "Retrieve-gravestone" option (NPC 15750)
+  cost nothing ("The scout collects your gravestone and leaves it nearby.").
+  No coins left the inventory, so looting your own gravestone was free; a
+  reclaim fee would only apply at Death after the grave expires.

@@ -50,11 +50,15 @@ import net.runelite.client.util.Filepath;
  * <p>
  * Recording is active while diagnostic mode is enabled and the player is in the lair or the region just
  * outside it, or for {@link #CLICK_WINDOW_TICKS} ticks after clicking the corpse, a maggot egg, a tarnished
- * item, or the aranei scout that handles death recovery.
+ * item, or the aranei scout that handles death recovery, and for {@link #DEATH_WINDOW_TICKS} ticks after dying in the lair.
  */
 public class DiagnosticRecorder
 {
 	private static final int CLICK_WINDOW_TICKS = 10;
+	/**
+	 * After dying in the lair, keep recording while the player respawns and recovers their gravestone.
+	 */
+	private static final int DEATH_WINDOW_TICKS = 200;
 
 	private static final Set<Integer> RUNE_POUCH_VARBITS = ImmutableSet.of(
 		VarbitID.RUNE_POUCH_TYPE_1, VarbitID.RUNE_POUCH_TYPE_2, VarbitID.RUNE_POUCH_TYPE_3,
@@ -321,7 +325,8 @@ public class DiagnosticRecorder
 		Actor actor = event.getActor();
 		if (actor == client.getLocalPlayer())
 		{
-			record("DEATH", "local player died");
+			record("DEATH", "local player died; recording for " + DEATH_WINDOW_TICKS + " ticks");
+			clickWindowEndTick = Math.max(clickWindowEndTick, client.getTickCount() + DEATH_WINDOW_TICKS);
 		}
 		else if (actor instanceof NPC && ((NPC) actor).getId() == MaggotKingIds.BOSS)
 		{
