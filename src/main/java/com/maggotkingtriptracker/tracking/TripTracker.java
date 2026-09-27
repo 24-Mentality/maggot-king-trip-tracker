@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -112,6 +113,10 @@ public class TripTracker
 	 */
 	private static final int EGG_WINDOW_TICKS = 10;
 	private static final long PRE_ENTRY_WINDOW_MS = 60_000;
+	/**
+	 * Dropped items worth less than this each (empty vials are 2 gp) are junk, not a cost.
+	 */
+	private static final long JUNK_PRICE = 100;
 	private static final long SAVE_DELAY_MS = 1_000;
 	private static final long ACTIVE_SAVE_INTERVAL_MS = 60_000;
 
@@ -463,7 +468,7 @@ public class TripTracker
 			processDelta(delta, tick, now);
 		}
 		applyLootFallback(tick);
-		applyPolishFallback(tick);
+		applyPolishResolution(tick);
 
 		int region = WorldPoint.fromLocalInstance(client, player.getLocalLocation()).getRegionID();
 		boolean nowInLair = region == MaggotKingIds.LAIR_REGION_ID;
@@ -1074,6 +1079,10 @@ public class TripTracker
 
 	// ---- Tarnished items ----
 
+	/**
+	 * The Loot Tracker's polish event lists every inventory change in that tick, which can include a potion sip
+	 * or gear that was just equipped. Its items are only candidates; see {@link #applyPolishResolution}.
+	 */
 	private void polishEvent(LootReceived event)
 	{
 		int tarnishedId = tarnishedIdForName(event.getName());
@@ -1082,40 +1091,51 @@ public class TripTracker
 			return;
 		}
 
-		// The Loot Tracker's event can include unrelated changes from the same tick, such as a potion sip
+		PendingPolish polish = null;
+		for (PendingPolish pending : pendingPolishes)
+		{
+			if (pending.tarnishedId == tarnishedId && pending.eventItems.isEmpty())
+			{
+				polish = pending;
+				break;
+			}
+		}
+		if (polish == null)
+		{
+			polish = new PendingPolish(tarnishedId, client.getTickCount());
+			pendingPolishes.add(polish);
+		}
 		for (ItemStack stack : event.getItems())
 		{
 			if (isPolishResultCandidate(stack.getId()))
 			{
-				claimPendingPolish(tarnishedId);
-				resolvePolish(tarnishedId, stack.getId());
-				return;
+				polish.eventItems.add(stack.getId());
 			}
 		}
 	}
 
 	/**
-	 * Without a Loot Tracker event, the item gained just after a Polish click is the result.
+	 * Net gains across inventory, equipment and rune pouch just after a Polish click. Equipping gear in the same
+	 * tick nets out here, so it can't be mistaken for the result.
 	 */
 	private void collectPolishResults(Map<Integer, Long> gained, int tick)
 	{
 		for (PendingPolish polish : pendingPolishes)
 		{
-			if (polish.resultId < 0 && tick - polish.tick <= CLICK_MATCH_TICKS)
+			if (tick - polish.tick <= CLICK_MATCH_TICKS)
 			{
 				for (int itemId : gained.keySet())
 				{
 					if (isPolishResultCandidate(itemId))
 					{
-						polish.resultId = itemId;
-						break;
+						polish.netGains.add(itemId);
 					}
 				}
 			}
 		}
 	}
 
-	private void applyPolishFallback(int tick)
+	private void applyPolishResolution(int tick)
 	{
 		for (Iterator<PendingPolish> it = pendingPolishes.iterator(); it.hasNext(); )
 		{
@@ -1125,24 +1145,42 @@ public class TripTracker
 				continue;
 			}
 			it.remove();
-			if (polish.resultId >= 0)
+
+			Integer result = choosePolishResult(polish.eventItems, polish.netGains);
+			if (result != null)
 			{
-				log.debug("No Loot Tracker event for a polish; using inventory changes");
-				resolvePolish(polish.tarnishedId, polish.resultId);
+				resolvePolish(polish.tarnishedId, result);
+			}
+			else if (!polish.eventItems.isEmpty() || !polish.netGains.isEmpty())
+			{
+				// Leave the drop pending rather than guess
+				log.debug("Ambiguous polish result for {}: event {} gains {}", polish.tarnishedId, polish.eventItems, polish.netGains);
 			}
 		}
 	}
 
-	private void claimPendingPolish(int tarnishedId)
+	/**
+	 * Picks the polished item: one the Loot Tracker reported that is also a real net gain; otherwise the only
+	 * net gain; otherwise the only reported item if nothing was gained. Returns null when ambiguous.
+	 */
+	static Integer choosePolishResult(Set<Integer> eventItems, Set<Integer> netGains)
 	{
-		for (Iterator<PendingPolish> it = pendingPolishes.iterator(); it.hasNext(); )
+		for (int itemId : eventItems)
 		{
-			if (it.next().tarnishedId == tarnishedId)
+			if (netGains.contains(itemId))
 			{
-				it.remove();
-				return;
+				return itemId;
 			}
 		}
+		if (netGains.size() == 1)
+		{
+			return netGains.iterator().next();
+		}
+		if (netGains.isEmpty() && eventItems.size() == 1)
+		{
+			return eventItems.iterator().next();
+		}
+		return null;
 	}
 
 	/**
@@ -1530,7 +1568,7 @@ public class TripTracker
 		for (Map.Entry<Integer, Long> e : pendingDrops.entrySet())
 		{
 			long price = prices.price(e.getKey());
-			if (price > 0 && e.getValue() > 0)
+			if (price >= JUNK_PRICE && e.getValue() > 0)
 			{
 				ItemEntries.merge(currentTrip.getDropped(), e.getKey(), e.getValue(), price, false);
 			}
@@ -1801,7 +1839,8 @@ public class TripTracker
 	{
 		final int tarnishedId;
 		final int tick;
-		int resultId = -1;
+		final Set<Integer> eventItems = new LinkedHashSet<>();
+		final Set<Integer> netGains = new LinkedHashSet<>();
 
 		PendingPolish(int tarnishedId, int tick)
 		{

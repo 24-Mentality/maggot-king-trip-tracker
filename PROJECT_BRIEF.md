@@ -217,3 +217,8 @@ These come from diagnostic.log and take precedence over the assumptions above.
   is kept as a test fixture (charge-test-kill.log).
 - Animation 420 is HUMAN_STAFFORB_BLOCK (a block, not an attack); hitsplat 43
   is DAMAGE_MAX_ME.
+- The Loot Tracker's polish EVENT lists every inventory change in that tick:
+  polishing a Tarnished necklace while equipping the Inquisitor's great helm
+  reported [Inquisitor's great helm, Diamond necklace]. The polish result must
+  be a net gain across inventory + equipment (gear swaps net to zero).
+- Empty vials have a 2 gp GE price; dropped items under 100 gp each are junk.
