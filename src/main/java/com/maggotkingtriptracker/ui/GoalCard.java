@@ -3,12 +3,12 @@ package com.maggotkingtriptracker.ui;
 import com.maggotkingtriptracker.MaggotKingIds;
 import com.maggotkingtriptracker.view.GoalView;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.Insets;
 import java.util.Locale;
 import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -17,20 +17,20 @@ import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.components.ProgressBar;
-import net.runelite.client.util.AsyncBufferedImage;
-import net.runelite.client.util.ImageUtil;
 
 /**
- * Kill goal progress: kills per hour, kills done and left, time to goal, and a progress bar.
+ * Kill goal progress in the style of RuneLite's XP tracker: the Maggot King icon, KPH / Kills Done / TTG /
+ * Kills Left, and a progress bar with the percentage.
  */
 class GoalCard extends JPanel
 {
-	private final JLabel title = new JLabel();
-	private final StatCell kph = new StatCell("KPH", false);
-	private final StatCell done = new StatCell("Done", false);
-	private final StatCell left = new StatCell("Left", false);
-	private final StatCell ttg = new StatCell("TTG", false);
-	private final JPanel stats = new JPanel(new GridLayout(1, 4, 4, 0));
+	private static final Color BAR_BACKGROUND = new Color(61, 56, 49);
+	private static final String NOT_AVAILABLE = "N/A";
+
+	private final JLabel kph = new JLabel();
+	private final JLabel done = new JLabel();
+	private final JLabel ttg = new JLabel();
+	private final JLabel left = new JLabel();
 	private final ProgressBar progress = new ProgressBar();
 	private final JButton resetButton = smallButton("Reset");
 
@@ -38,55 +38,52 @@ class GoalCard extends JPanel
 
 	GoalCard(ItemManager itemManager, Runnable onSetGoal, Runnable onReset)
 	{
-		setLayout(new BorderLayout(0, 3));
+		setLayout(new BorderLayout(0, 4));
 		setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		setBorder(BorderFactory.createEmptyBorder(4, 6, 5, 6));
+		setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
 		JLabel icon = new JLabel();
-		icon.setPreferredSize(new Dimension(24, 22));
+		icon.setPreferredSize(new Dimension(38, 32));
 		icon.setHorizontalAlignment(SwingConstants.CENTER);
-		AsyncBufferedImage image = itemManager.getImage(MaggotKingIds.PET_ITEM);
-		Runnable setIcon = () -> icon.setIcon(new ImageIcon(ImageUtil.resizeImage(image, 24, 21)));
-		image.onLoaded(setIcon);
-		setIcon.run();
+		itemManager.getImage(MaggotKingIds.PET_ITEM).addTo(icon);
 
-		title.setFont(FontManager.getRunescapeBoldFont());
-		title.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+		JPanel stats = new JPanel(new GridLayout(2, 2, 4, 0));
+		stats.setOpaque(false);
+		for (JLabel label : new JLabel[]{kph, done, ttg, left})
+		{
+			label.setFont(FontManager.getRunescapeSmallFont());
+			stats.add(label);
+		}
 
-		JButton setButton = smallButton("Set");
+		JPanel top = new JPanel(new BorderLayout(4, 0));
+		top.setOpaque(false);
+		top.add(icon, BorderLayout.WEST);
+		top.add(stats, BorderLayout.CENTER);
+
+		progress.setBackground(BAR_BACKGROUND);
+		progress.setForeground(ColorScheme.PROGRESS_COMPLETE_COLOR);
+		progress.setPreferredSize(new Dimension(0, 16));
+		progress.setLeftLabel("");
+		progress.setRightLabel("");
+
+		JButton setButton = smallButton("Set goal");
 		setButton.addActionListener(e -> onSetGoal.run());
 		resetButton.addActionListener(e -> onReset.run());
-		JPanel buttons = new JPanel(new GridLayout(1, 2, 3, 0));
+		JPanel buttons = new JPanel(new GridLayout(1, 2, 4, 0));
 		buttons.setOpaque(false);
 		buttons.add(setButton);
 		buttons.add(resetButton);
 
-		JPanel header = new JPanel(new BorderLayout(4, 0));
-		header.setOpaque(false);
-		header.add(icon, BorderLayout.WEST);
-		header.add(title, BorderLayout.CENTER);
-		header.add(buttons, BorderLayout.EAST);
-
-		stats.setOpaque(false);
-		stats.add(kph);
-		stats.add(done);
-		stats.add(left);
-		stats.add(ttg);
-
-		progress.setForeground(ColorScheme.PROGRESS_COMPLETE_COLOR);
-		progress.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		progress.setPreferredSize(new Dimension(0, 14));
-
-		add(header, BorderLayout.NORTH);
-		add(stats, BorderLayout.CENTER);
-		add(progress, BorderLayout.SOUTH);
+		add(top, BorderLayout.NORTH);
+		add(progress, BorderLayout.CENTER);
+		add(buttons, BorderLayout.SOUTH);
 	}
 
 	private static JButton smallButton(String text)
 	{
 		JButton button = new JButton(text);
 		button.setFont(FontManager.getRunescapeSmallFont());
-		button.setMargin(new Insets(1, 4, 1, 4));
+		button.setMargin(new Insets(0, 4, 0, 4));
 		button.setFocusPainted(false);
 		return button;
 	}
@@ -94,13 +91,14 @@ class GoalCard extends JPanel
 	void setGoal(GoalView goal, long now)
 	{
 		this.goal = goal;
-		boolean active = goal != null;
-		stats.setVisible(active);
-		progress.setVisible(active);
-		resetButton.setEnabled(active);
-		if (!active)
+		resetButton.setEnabled(goal != null);
+		if (goal == null)
 		{
-			title.setText("No kill goal");
+			setStats(NOT_AVAILABLE, NOT_AVAILABLE, NOT_AVAILABLE, NOT_AVAILABLE);
+			progress.setMaximumValue(1);
+			progress.setValue(0);
+			progress.setCenterLabel("No goal set");
+			setToolTipText(null);
 			return;
 		}
 		tick(now);
@@ -117,21 +115,31 @@ class GoalCard extends JPanel
 		int target = goal.getTarget();
 		int remaining = Math.max(0, target - doneKills);
 		long activeMs = goal.activeMsAt(now);
-		double killsPerHour = activeMs >= 60_000 ? doneKills * 3_600_000.0 / activeMs : 0;
+		double killsPerHour = activeMs >= 60_000 && doneKills > 0 ? doneKills * 3_600_000.0 / activeMs : 0;
 
-		title.setText("Goal " + doneKills + " / " + target);
-		title.setToolTipText("Logged-in time since the goal was set: " + UiFormat.duration(activeMs));
-		kph.setValue(killsPerHour > 0 ? String.format(Locale.ROOT, "%.1f", killsPerHour) : "-");
-		done.setValue(String.valueOf(doneKills));
-		left.setValue(String.valueOf(remaining));
-		ttg.setValue(remaining == 0 ? "Done" : killsPerHour > 0
-			? UiFormat.duration((long) (remaining / killsPerHour * 3_600_000)) : "-");
+		setStats(
+			killsPerHour > 0 ? String.format(Locale.ROOT, "%.1f", killsPerHour) : NOT_AVAILABLE,
+			String.valueOf(doneKills),
+			remaining == 0 ? "Done" : killsPerHour > 0 ? UiFormat.duration((long) (remaining / killsPerHour * 3_600_000)) : NOT_AVAILABLE,
+			String.valueOf(remaining));
 
 		progress.setMaximumValue(Math.max(1, target));
 		progress.setValue(Math.min(doneKills, target));
-		int percent = (int) Math.min(100, Math.floor(doneKills * 100.0 / Math.max(1, target)));
-		progress.setCenterLabel(percent + "%");
-		progress.setLeftLabel("");
-		progress.setRightLabel("");
+		double percent = Math.min(100, doneKills * 100.0 / Math.max(1, target));
+		progress.setCenterLabel(String.format(Locale.ROOT, "%.1f%%", percent));
+		setToolTipText("Goal: " + target + " kills · logged-in time " + UiFormat.duration(activeMs));
+	}
+
+	private void setStats(String kphValue, String doneValue, String ttgValue, String leftValue)
+	{
+		kph.setText(pair("KPH", kphValue));
+		done.setText(pair("Kills Done", doneValue));
+		ttg.setText(pair("TTG", ttgValue));
+		left.setText(pair("Kills Left", leftValue));
+	}
+
+	private static String pair(String label, String value)
+	{
+		return "<html><font color='#a5a5a5'>" + label + ":</font> <font color='#ffffff'>" + value + "</font></html>";
 	}
 }
