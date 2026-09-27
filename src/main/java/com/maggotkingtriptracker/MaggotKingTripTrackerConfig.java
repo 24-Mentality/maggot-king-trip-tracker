@@ -4,11 +4,27 @@ import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
+import net.runelite.client.config.Range;
+import net.runelite.client.config.Units;
 
 @ConfigGroup(MaggotKingTripTrackerConfig.GROUP)
 public interface MaggotKingTripTrackerConfig extends Config
 {
 	String GROUP = "maggotkingtriptracker";
+
+	@ConfigSection(
+		name = "Trips",
+		description = "When trips start and end",
+		position = 0
+	)
+	String tripsSection = "trips";
+
+	@ConfigSection(
+		name = "Display",
+		description = "Side panel options",
+		position = 1
+	)
+	String displaySection = "display";
 
 	@ConfigSection(
 		name = "Developer",
@@ -17,6 +33,70 @@ public interface MaggotKingTripTrackerConfig extends Config
 		closedByDefault = true
 	)
 	String developerSection = "developer";
+
+	@ConfigItem(
+		keyName = "logoutGraceMinutes",
+		name = "Logout grace period",
+		description = "After logging out in the lair, the trip continues if you are back in the lair within this time",
+		section = tripsSection,
+		position = 0
+	)
+	@Range(max = 60)
+	@Units(Units.MINUTES)
+	default int logoutGraceMinutes()
+	{
+		return 5;
+	}
+
+	@ConfigItem(
+		keyName = "mergeReentries",
+		name = "Merge re-entries",
+		description = "Count leaving and re-entering the lair within the merge window as one trip",
+		section = tripsSection,
+		position = 1
+	)
+	default boolean mergeReentries()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "mergeWindowMinutes",
+		name = "Merge window",
+		description = "How soon you must re-enter the lair for it to count as the same trip",
+		section = tripsSection,
+		position = 2
+	)
+	@Range(min = 1, max = 60)
+	@Units(Units.MINUTES)
+	default int mergeWindowMinutes()
+	{
+		return 5;
+	}
+
+	@ConfigItem(
+		keyName = "countPreEntrySupplies",
+		name = "Count supplies used before entry",
+		description = "Add food, potions and spells used in the 60 seconds before entering the lair to the trip",
+		section = tripsSection,
+		position = 3
+	)
+	default boolean countPreEntrySupplies()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "showCurrentValue",
+		name = "Show today's value",
+		description = "On the Lifetime tab, also show all loot valued at today's GE prices",
+		section = displaySection,
+		position = 0
+	)
+	default boolean showCurrentValue()
+	{
+		return false;
+	}
 
 	@ConfigItem(
 		keyName = "diagnosticMode",

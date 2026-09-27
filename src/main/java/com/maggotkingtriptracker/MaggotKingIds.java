@@ -42,6 +42,26 @@ public final class MaggotKingIds
 		ItemID.WRITHING_MAGGOT_EGG
 	);
 
+	/**
+	 * Drops highlighted as uniques in the panel.
+	 */
+	public static final Set<Integer> UNIQUES = ImmutableSet.of(
+		ItemID.ELDER_VENATOR_FANG,
+		ItemID.CRIMSON_KISTEN,
+		ItemID.MAGGOTKINGPET
+	);
+
+	public static final int PET_ITEM = ItemID.MAGGOTKINGPET;
+
+	/**
+	 * What the aranei scout accepts for moving a gravestone.
+	 */
+	public static final Set<Integer> GRAVE_MOVE_PAYMENTS = ImmutableSet.of(
+		ItemID.COINS,
+		ItemID.VIAL_BLOOD,
+		ItemID.STYMPHIKE_FEATHER
+	);
+
 	public static final Set<Integer> TARNISHED_ITEMS = ImmutableSet.of(
 		ItemID.TARNISHED_LONGSWORD,
 		ItemID.TARNISHED_SPEAR,
