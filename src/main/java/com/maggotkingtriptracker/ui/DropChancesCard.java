@@ -272,6 +272,10 @@ class DropChancesCard extends JPanel
 	{
 		JLabel label = new JLabel();
 		label.setHorizontalAlignment(SwingConstants.CENTER);
+		if (itemManager == null)
+		{
+			return label;
+		}
 		AsyncBufferedImage image = itemManager.getImage(itemId);
 		Runnable scaled = () -> label.setIcon(new ImageIcon(ImageUtil.resizeImage(image, 23, 20)));
 		image.onLoaded(scaled);
@@ -291,7 +295,7 @@ class DropChancesCard extends JPanel
 			icon.setPreferredSize(new Dimension(26, 20));
 			number.setFont(FontManager.getRunescapeSmallFont());
 			number.setForeground(new Color(229, 229, 229));
-			number.setPreferredSize(new Dimension(16, 20));
+			number.setPreferredSize(new Dimension(22, 20));
 			panel.add(icon, BorderLayout.WEST);
 			panel.add(bar, BorderLayout.CENTER);
 			panel.add(number, BorderLayout.EAST);

@@ -1,5 +1,6 @@
 package com.maggotkingtriptracker.ui;
 
+import com.maggotkingtriptracker.MaggotKingRates;
 import com.maggotkingtriptracker.model.TripMath;
 import com.maggotkingtriptracker.view.DrynessView;
 import com.maggotkingtriptracker.view.ItemView;
@@ -174,29 +175,31 @@ class LifetimePanel extends JPanel
 
 	private void updateDryness(DrynessView dryness)
 	{
-		List<String> rows = new ArrayList<>();
-		rows.add("Stomach kills " + dryness.getStomachKills() + " · since unique " + dryness.getStomachKillsSinceUnique()
-			+ " (" + percent(dryness.getChanceThisDry()) + " this dry)");
+		// One short fact per line so nothing wraps at sidebar width; details are in the hover text
+		List<String[]> rows = new ArrayList<>();
+		rows.add(new String[]{"Stomach kills: " + String.format(Locale.ROOT, "%,d", dryness.getStomachKills()),
+			"Open-stomach kills tracked by this plugin. Uniques and the kill pet only come from Open-stomach."});
+		rows.add(new String[]{"Since unique: " + String.format(Locale.ROOT, "%,d", dryness.getStomachKillsSinceUnique())
+			+ " (" + percent(dryness.getChanceThisDry()) + " this dry)",
+			"Open-stomach kills since your last tracked unique, and the chance of going that long without one at 1/205.6."});
 		for (DrynessView.Unique unique : dryness.getUniques())
 		{
-			StringBuilder row = new StringBuilder(unique.getName()).append(": ").append(unique.getKillCounts().size())
-				.append(" (expected ").append(String.format(Locale.ROOT, "%.2f", unique.getExpected())).append(')');
-			if (!unique.getKillCounts().isEmpty())
+			List<String> kcs = new ArrayList<>();
+			for (Integer kc : unique.getKillCounts())
 			{
-				List<String> kcs = new ArrayList<>();
-				for (Integer kc : unique.getKillCounts())
-				{
-					kcs.add(kc == null ? "?" : String.format(Locale.ROOT, "%,d", kc));
-				}
-				row.append(" at KC ").append(String.join(", ", kcs));
+				kcs.add(kc == null ? "?" : String.format(Locale.ROOT, "%,d", kc));
 			}
-			rows.add(row.toString());
+			rows.add(new String[]{unique.getName() + ": " + unique.getKillCounts().size() + " / "
+				+ String.format(Locale.ROOT, "%.2f", unique.getExpected()),
+				"Received / expected from tracked kills (1/" + Math.round(1 / MaggotKingRates.UNIQUES.get(unique.getItemId()))
+					+ ")." + (kcs.isEmpty() ? "" : " Received at KC " + String.join(", ", kcs) + ".")});
 		}
-		rows.add("Pet from kills: " + dryness.getPetsFromKills()
-			+ " (expected " + String.format(Locale.ROOT, "%.3f", dryness.getExpectedPetsFromKills()) + ")");
-		drynessCard.setLines(rows);
+		rows.add(new String[]{"Pet from kills: " + dryness.getPetsFromKills() + " / "
+			+ String.format(Locale.ROOT, "%.3f", dryness.getExpectedPetsFromKills()),
+			"Received / expected from tracked Open-stomach kills at 1/3,500."});
+		drynessCard.setRows(rows);
 
-		List<String> eggRows = new ArrayList<>();
+		List<String[]> eggRows = new ArrayList<>();
 		int popped = 0;
 		for (DrynessView.EggTier tier : dryness.getEggTiers())
 		{
@@ -206,27 +209,28 @@ class LifetimePanel extends JPanel
 				continue;
 			}
 			popped += tier.getPopped();
-			eggRows.add(tier.getName() + ": " + tier.getPopped()
-				+ " (1/" + Math.round(1 / tier.getPetRate()) + ")"
-				+ (tier.getPets() > 0 ? " · pets " + tier.getPets() : ""));
+			eggRows.add(new String[]{tier.getName() + ": " + String.format(Locale.ROOT, "%,d", tier.getPopped())
+				+ (tier.getPets() > 0 ? " · pets " + tier.getPets() : ""),
+				"Popped, with a 1/" + Math.round(1 / tier.getPetRate()) + " pet chance each."});
 		}
-		eggRows.add(popped == 0 ? "No eggs popped yet"
-			: "Pet chance from these eggs: " + percent(dryness.getEggPetChance())
-			+ (dryness.getPetsFromEggs() > 0 ? " · pets " + dryness.getPetsFromEggs() : ""));
-		eggCard.setLines(eggRows);
+		eggRows.add(popped == 0 ? new String[]{"No eggs popped yet", null}
+			: new String[]{"Egg pet chance: " + percent(dryness.getEggPetChance())
+			+ (dryness.getPetsFromEggs() > 0 ? " · pets " + dryness.getPetsFromEggs() : ""),
+			"Chance of at least one pet from all the eggs popped so far."});
+		eggCard.setRows(eggRows);
 	}
 
 	private void updatePolish(List<PolishView> polish)
 	{
+		// The type on one line, then one line per result
 		List<String> rows = new ArrayList<>();
 		for (PolishView view : polish)
 		{
-			List<String> outcomes = new ArrayList<>();
+			rows.add(view.getTarnishedName() + " (" + view.getTotal() + ")");
 			for (ItemView outcome : view.getOutcomes())
 			{
-				outcomes.add(outcome.getName() + " x" + outcome.getQuantity());
+				rows.add("  " + outcome.getName() + " x" + outcome.getQuantity());
 			}
-			rows.add(view.getTarnishedName() + " (" + view.getTotal() + "): " + String.join(", ", outcomes));
 		}
 		if (rows.isEmpty())
 		{

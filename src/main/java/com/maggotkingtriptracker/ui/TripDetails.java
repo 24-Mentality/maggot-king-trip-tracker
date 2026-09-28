@@ -27,8 +27,9 @@ class TripDetails extends JPanel
 			"Loot value divided by kills: " + UiFormat.fullGp(trip.getLootValue()) + " / " + trip.getKills() + "."));
 		lootStats.add(SectionStat.of("Kills", String.valueOf(trip.getKills()),
 			"Kills this trip, counted from the game's kill-count message."));
-		lootStats.add(SectionStat.of("GP/Hr", UiFormat.gp(TripMath.gpPerHour(trip.getLootValue(), activeMs)),
-			"Loot value per hour of time spent inside the lair (" + UiFormat.duration(activeMs) + ")."));
+		lootStats.add(SectionStat.of("Loot GP/hr", UiFormat.gp(TripMath.gpPerHour(trip.getLootValue(), activeMs)),
+			"Loot value per hour inside the lair (" + UiFormat.duration(activeMs) + "), before costs. The profit card's"
+				+ " Net GP/hr is after costs."));
 		lootStats.add(new SectionStat("Net", UiFormat.gp(net), UiFormat.profitColor(net),
 			"Net profit: loot " + UiFormat.fullGp(trip.getLootValue()) + " minus supplies, dropped items and death costs ("
 				+ UiFormat.fullGp(trip.getSupplyCost() + trip.getDroppedCost() + trip.getDeathCost()) + "). Green is a profit, red a loss."));

@@ -18,7 +18,11 @@ with persistent per-account history in a side panel.
 
 - **Kill goal** (top of the Trip tab): set a kill target and see kills per hour (logged-in
   time), kills done and left, time to goal, and a progress bar. **Reset** starts the count
-  again from now.
+  again from now. **Pause** stops the trip clock and the goal clock while you're AFK (kills,
+  loot and supplies still count); it resumes when you press it again or, with **Auto-resume
+  when I attack** on, when you next damage the boss.
+- **Luck** (Trip tab): uniques received vs expected with a luck tier (LUCKY AS RUCK, Lucky,
+  On Rate, Dry, DRY AS RUCK), your dry streak and when the next unique is due.
 - **Trip:** the current (or last) trip's time, kills, loot value, costs, net profit, GP/hr and average kill
   time, plus item grids for loot, supplies and anything you dropped and left behind.
   Uniques have a gold border; tarnished drops waiting to be polished have a dashed border.

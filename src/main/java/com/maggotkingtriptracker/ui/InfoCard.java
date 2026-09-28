@@ -1,5 +1,6 @@
 package com.maggotkingtriptracker.ui;
 
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -36,14 +37,28 @@ class InfoCard extends JPanel
 	}
 
 	/**
-	 * @param rows HTML-free text; each becomes one wrapped line
+	 * @param rows plain text, one line each; keep them short enough for the sidebar
 	 */
 	void setLines(List<String> rows)
 	{
-		lines.removeAll();
+		List<String[]> withoutTooltips = new ArrayList<>();
 		for (String row : rows)
 		{
-			JLabel label = new JLabel("<html>" + UiFormat.html(row) + "</html>");
+			withoutTooltips.add(new String[]{row, null});
+		}
+		setRows(withoutTooltips);
+	}
+
+	/**
+	 * @param rows text and an optional hover explanation for each line
+	 */
+	void setRows(List<String[]> rows)
+	{
+		lines.removeAll();
+		for (String[] row : rows)
+		{
+			JLabel label = new JLabel(row[0]);
+			label.setToolTipText(row[1] == null ? null : UiFormat.tooltip(row[1]));
 			label.setFont(FontManager.getRunescapeSmallFont());
 			label.setForeground(UiFormat.MUTED_TEXT.brighter());
 			label.setAlignmentX(LEFT_ALIGNMENT);
