@@ -50,7 +50,7 @@ class LuckCard extends JPanel
 			BorderFactory.createLineBorder(HEADER_BORDER, 1),
 			BorderFactory.createEmptyBorder(3, 6, 5, 6)));
 
-		JLabel title = new JLabel("Luck");
+		JLabel title = new JLabel("Luck Status:");
 		title.setFont(FontManager.getRunescapeBoldFont());
 		title.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 		title.setToolTipText(UiFormat.tooltip("Based on the Open-stomach kills this plugin has tracked (uniques only"
