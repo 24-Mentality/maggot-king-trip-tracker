@@ -95,8 +95,7 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 	private TrackerPanel panel;
 	private NavigationButton navigationButton;
 	private ShareCardExporter shareCardExporter;
-	private TrackerOverlay goalOverlay;
-	private TrackerOverlay tripOverlay;
+	private TrackerOverlay overlay;
 	/**
 	 * The latest panel state, for the overlays. Written and read on the client thread.
 	 */
@@ -136,10 +135,9 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 		eventBus.register(tracker);
 		clientThread.invokeLater(tracker::start);
 
-		goalOverlay = new TrackerOverlay(this, TrackerOverlay.Kind.GOAL, config, () -> latestState);
-		tripOverlay = new TrackerOverlay(this, TrackerOverlay.Kind.TRIP, config, () -> latestState);
-		overlayManager.add(goalOverlay);
-		overlayManager.add(tripOverlay);
+		// Item icons load in the background and fill in once ready; ItemManager caches them
+		overlay = new TrackerOverlay(this, config, () -> latestState, itemManager::getImage);
+		overlayManager.add(overlay);
 
 		BufferedImage icon = ImageUtil.loadImageResource(getClass(), "panel_icon.png");
 		navigationButton = NavigationButton.builder()
@@ -156,10 +154,8 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 	@Override
 	protected void shutDown() throws Exception
 	{
-		overlayManager.remove(goalOverlay);
-		overlayManager.remove(tripOverlay);
-		goalOverlay = null;
-		tripOverlay = null;
+		overlayManager.remove(overlay);
+		overlay = null;
 		latestState = null;
 
 		eventBus.unregister(tripTracker);

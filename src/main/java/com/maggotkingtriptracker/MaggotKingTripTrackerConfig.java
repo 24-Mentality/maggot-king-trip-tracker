@@ -1,7 +1,5 @@
 package com.maggotkingtriptracker;
 
-import java.util.EnumSet;
-import java.util.Set;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
@@ -48,7 +46,7 @@ public interface MaggotKingTripTrackerConfig extends Config
 
 	@ConfigSection(
 		name = "Overlay",
-		description = "Optional boxes on the game screen with your kill goal and trip times. Alt+drag to move them.",
+		description = "An optional box on the game screen with your kill goal, trip times and profit",
 		position = 4
 	)
 	String overlaySection = "overlay";
@@ -266,71 +264,72 @@ public interface MaggotKingTripTrackerConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "showGoalOverlay",
-		name = "Goal overlay",
-		description = "Show your kill goal progress in a box on the game screen. Hold Alt and drag it to move it.",
+		keyName = "showOverlay",
+		name = "Show overlay",
+		description = "Show a small box on the game screen with your kill goal, the trip's times and its profit, like"
+			+ " RuneLite's XP tracker box. Hold Alt and drag it to move it.",
 		section = overlaySection,
 		position = 0
 	)
-	default boolean showGoalOverlay()
+	default boolean showOverlay()
 	{
 		return false;
 	}
 
 	@ConfigItem(
-		keyName = "goalOverlayLines",
-		name = "Goal overlay shows",
-		description = "What the goal overlay shows. Ctrl+click to pick several.",
+		keyName = "overlayGoalRow",
+		name = "First row",
+		description = "Kill goal stat on the first row (hidden while no goal is set)",
 		section = overlaySection,
 		position = 1
 	)
-	default Set<GoalOverlayLine> goalOverlayLines()
+	default OverlayGoalStat overlayGoalRow()
 	{
-		return EnumSet.allOf(GoalOverlayLine.class);
+		return OverlayGoalStat.KILLS_PER_HOUR;
 	}
 
 	@ConfigItem(
-		keyName = "showTripOverlay",
-		name = "Trip overlay",
-		description = "Show the trip's times (trip time, kills, average kill, PB, current kill) in a box on the game"
-			+ " screen. Hold Alt and drag it to move it.",
+		keyName = "overlayTripRow",
+		name = "Second row",
+		description = "Trip stat on the second row. Current kill counts from the boss spawning, like the game's Fight"
+			+ " duration, and shows the last kill's time between kills.",
 		section = overlaySection,
 		position = 2
 	)
-	default boolean showTripOverlay()
+	default OverlayTripStat overlayTripRow()
 	{
-		return false;
+		return OverlayTripStat.CURRENT_KILL;
 	}
 
 	@ConfigItem(
-		keyName = "tripOverlayLines",
-		name = "Trip overlay shows",
-		description = "What the trip overlay shows. Ctrl+click to pick several.",
+		keyName = "overlayLootRow",
+		name = "Third row",
+		description = "The trip's net profit or net GP/hr on the third row",
 		section = overlaySection,
 		position = 3
 	)
-	default Set<TripOverlayLine> tripOverlayLines()
+	default OverlayLootStat overlayLootRow()
 	{
-		return EnumSet.allOf(TripOverlayLine.class);
+		return OverlayLootStat.NET_PROFIT;
 	}
 
 	@ConfigItem(
-		keyName = "combineOverlays",
-		name = "Combine into one box",
-		description = "With both overlays on, show them in a single box (where the goal overlay is) instead of two",
+		keyName = "overlayProgressBar",
+		name = "Goal progress bar",
+		description = "A progress bar under the rows with kills done, the percentage and your goal",
 		section = overlaySection,
 		position = 4
 	)
-	default boolean combineOverlays()
+	default boolean overlayProgressBar()
 	{
-		return false;
+		return true;
 	}
 
 	@ConfigItem(
 		keyName = "overlayOnlyOnTrip",
 		name = "Only during a trip",
-		description = "Only show the overlays while a trip is in progress (including paused or waiting just outside)."
-			+ " Off shows them whenever you're logged in, with your last trip.",
+		description = "Only show the overlay while a trip is in progress (including paused or waiting just outside)."
+			+ " Off shows it whenever you're logged in, with your last trip.",
 		section = overlaySection,
 		position = 5
 	)

@@ -4,17 +4,18 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * What the trip overlay can show: the Trip tab's time row.
+ * The overlay's second row: the trip's times.
  */
 @Getter
 @RequiredArgsConstructor
-public enum TripOverlayLine
+public enum OverlayTripStat
 {
-	TIME("Trip time"),
-	KILLS("Kills"),
+	CURRENT_KILL("Current kill"),
+	TRIP_TIME("Trip time"),
+	KILLS("Trip kills"),
 	AVERAGE_KILL("Average kill"),
 	PB("PB (fastest this trip)"),
-	CURRENT_KILL("Current kill");
+	NONE("Nothing");
 
 	private final String label;
 

@@ -4,17 +4,17 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * What the goal overlay can show.
+ * The overlay's first row: kill goal progress. Hidden while no goal is set.
  */
 @Getter
 @RequiredArgsConstructor
-public enum GoalOverlayLine
+public enum OverlayGoalStat
 {
-	KILLS_PER_HOUR("Kills per hour"),
+	KILLS_PER_HOUR("Kills per hour (KPH)"),
+	TIME_TO_GOAL("Time to goal (TTG)"),
 	KILLS_DONE("Kills done"),
 	KILLS_LEFT("Kills left"),
-	TIME_TO_GOAL("Time to goal"),
-	PROGRESS_BAR("Progress bar");
+	NONE("Nothing");
 
 	private final String label;
 

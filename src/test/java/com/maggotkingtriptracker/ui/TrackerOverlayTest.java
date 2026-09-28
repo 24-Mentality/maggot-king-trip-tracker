@@ -3,6 +3,10 @@ package com.maggotkingtriptracker.ui;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import com.maggotkingtriptracker.MaggotKingTripTrackerConfig;
+import com.maggotkingtriptracker.OverlayGoalStat;
+import com.maggotkingtriptracker.OverlayLootStat;
+import com.maggotkingtriptracker.OverlayTripStat;
+import com.maggotkingtriptracker.boss.MaggotKingBoss;
 import com.maggotkingtriptracker.view.GoalView;
 import com.maggotkingtriptracker.view.LifetimeView;
 import com.maggotkingtriptracker.view.PanelState;
@@ -21,35 +25,49 @@ import org.junit.Test;
 
 public class TrackerOverlayTest
 {
-	private boolean goal;
-	private boolean trip;
-	private boolean combine;
+	private boolean show;
 	private boolean onlyOnTrip = true;
+	private boolean bar = true;
+	private OverlayGoalStat goalRow = OverlayGoalStat.KILLS_PER_HOUR;
+	private OverlayTripStat tripRow = OverlayTripStat.CURRENT_KILL;
+	private OverlayLootStat lootRow = OverlayLootStat.NET_PROFIT;
 
 	private final MaggotKingTripTrackerConfig config = new MaggotKingTripTrackerConfig()
 	{
 		@Override
-		public boolean showGoalOverlay()
+		public boolean showOverlay()
 		{
-			return goal;
-		}
-
-		@Override
-		public boolean showTripOverlay()
-		{
-			return trip;
-		}
-
-		@Override
-		public boolean combineOverlays()
-		{
-			return combine;
+			return show;
 		}
 
 		@Override
 		public boolean overlayOnlyOnTrip()
 		{
 			return onlyOnTrip;
+		}
+
+		@Override
+		public boolean overlayProgressBar()
+		{
+			return bar;
+		}
+
+		@Override
+		public OverlayGoalStat overlayGoalRow()
+		{
+			return goalRow;
+		}
+
+		@Override
+		public OverlayTripStat overlayTripRow()
+		{
+			return tripRow;
+		}
+
+		@Override
+		public OverlayLootStat overlayLootRow()
+		{
+			return lootRow;
 		}
 
 		@Override
@@ -61,53 +79,58 @@ public class TrackerOverlayTest
 	@Test
 	public void offByDefaultAndOnlyDuringATrip()
 	{
-		PanelState inTrip = state(PanelState.Status.IN_TRIP);
-		assertNull(render(TrackerOverlay.Kind.GOAL, inTrip));
-		assertNull(render(TrackerOverlay.Kind.TRIP, inTrip));
-
-		goal = true;
-		trip = true;
-		assertNotNull(render(TrackerOverlay.Kind.GOAL, inTrip));
-		assertNotNull(render(TrackerOverlay.Kind.TRIP, inTrip));
-		// Between trips they hide, unless told to stay
-		assertNull(render(TrackerOverlay.Kind.GOAL, state(PanelState.Status.IDLE)));
+		assertNull(render(state(PanelState.Status.IN_TRIP, true)));
+		show = true;
+		assertNotNull(render(state(PanelState.Status.IN_TRIP, true)));
+		assertNull(render(state(PanelState.Status.IDLE, true)));
 		onlyOnTrip = false;
-		assertNotNull(render(TrackerOverlay.Kind.TRIP, state(PanelState.Status.IDLE)));
+		assertNotNull(render(state(PanelState.Status.IDLE, true)));
 	}
 
 	@Test
-	public void combinedGoesInTheGoalBox()
+	public void boxOnlyAppearsWithSomethingToShow()
 	{
-		goal = true;
-		trip = true;
-		combine = true;
-		PanelState inTrip = state(PanelState.Status.IN_TRIP);
-		assertNotNull(render(TrackerOverlay.Kind.GOAL, inTrip));
-		assertNull(render(TrackerOverlay.Kind.TRIP, inTrip));
+		show = true;
+		lootRow = OverlayLootStat.NONE;
+		tripRow = OverlayTripStat.NONE;
+		bar = false;
+		// Just the goal row
+		assertNotNull(render(state(PanelState.Status.IN_TRIP, true)));
+		// Without a goal the goal row and bar are hidden, and nothing is left
+		assertNull(render(state(PanelState.Status.IN_TRIP, false)));
+		// The progress bar alone is enough
+		bar = true;
+		goalRow = OverlayGoalStat.NONE;
+		assertNotNull(render(state(PanelState.Status.IN_TRIP, true)));
+		// A trip row shows without a goal
+		bar = false;
+		tripRow = OverlayTripStat.PB;
+		assertNotNull(render(state(PanelState.Status.IN_TRIP, false)));
 	}
 
 	@Test
 	public void preview() throws Exception
 	{
-		goal = true;
-		trip = true;
-		BufferedImage image = new BufferedImage(480, 260, BufferedImage.TYPE_INT_RGB);
+		show = true;
+		BufferedImage image = new BufferedImage(340, 110, BufferedImage.TYPE_INT_RGB);
 		Graphics2D g = image.createGraphics();
 		g.setColor(new Color(70, 90, 60));
 		g.fillRect(0, 0, image.getWidth(), image.getHeight());
-		// Separate boxes on the left, combined on the right. RuneLite's overlay renderer normally supplies the font
-		// and the translucent background
 		g.setFont(FontManager.getRunescapeFont());
-		draw(g, overlay(TrackerOverlay.Kind.GOAL), 10, 10);
-		draw(g, overlay(TrackerOverlay.Kind.TRIP), 10, 130);
-		combine = true;
-		draw(g, overlay(TrackerOverlay.Kind.GOAL), 170, 10);
+		// Defaults on the left (KPH, current kill, net profit, bar); TTG / trip time / GP/hr on the right
+		draw(g, 10, 10);
+		goalRow = OverlayGoalStat.TIME_TO_GOAL;
+		tripRow = OverlayTripStat.TRIP_TIME;
+		lootRow = OverlayLootStat.NET_GP_PER_HOUR;
+		draw(g, 175, 10);
 		g.dispose();
 		ImageIO.write(image, "PNG", new File("build/overlay-preview.png"));
 	}
 
-	private static void draw(Graphics2D g, TrackerOverlay overlay, int x, int y)
+	private void draw(Graphics2D g, int x, int y)
 	{
+		TrackerOverlay overlay = overlay(state(PanelState.Status.IN_TRIP, true));
+		// RuneLite's overlay renderer normally supplies the font and the translucent background
 		overlay.getPanelComponent().setBackgroundColor(ComponentConstants.STANDARD_BACKGROUND_COLOR);
 		Graphics2D at = (Graphics2D) g.create();
 		at.translate(x, y);
@@ -115,21 +138,31 @@ public class TrackerOverlayTest
 		at.dispose();
 	}
 
-	private Dimension render(TrackerOverlay.Kind kind, PanelState state)
+	private Dimension render(PanelState state)
 	{
 		Graphics2D g = new BufferedImage(300, 300, BufferedImage.TYPE_INT_RGB).createGraphics();
-		Dimension size = new TrackerOverlay(null, kind, config, () -> state).render(g);
+		g.setFont(FontManager.getRunescapeFont());
+		Dimension size = overlay(state).render(g);
 		g.dispose();
 		return size;
 	}
 
-	private TrackerOverlay overlay(TrackerOverlay.Kind kind)
+	private TrackerOverlay overlay(PanelState state)
 	{
-		PanelState inTrip = state(PanelState.Status.IN_TRIP);
-		return new TrackerOverlay(null, kind, config, () -> inTrip);
+		return new TrackerOverlay(null, config, () -> state, TrackerOverlayTest::placeholderIcon);
 	}
 
-	private static PanelState state(PanelState.Status status)
+	private static BufferedImage placeholderIcon(int itemId)
+	{
+		BufferedImage icon = new BufferedImage(36, 32, BufferedImage.TYPE_INT_ARGB);
+		Graphics2D g = icon.createGraphics();
+		g.setColor(new Color(150, 100, 70));
+		g.fillOval(6, 1, 24, 30);
+		g.dispose();
+		return icon;
+	}
+
+	private static PanelState state(PanelState.Status status, boolean withGoal)
 	{
 		long now = System.currentTimeMillis();
 		TripView trip = TripView.builder()
@@ -138,6 +171,7 @@ public class TrackerOverlayTest
 			.activeMs(2_985_000)
 			.kills(21)
 			.bossStat(new StatView("Stom / Eggs", "21 / 0", null))
+			.netProfit(-1_240_000)
 			.averageKillMs(131_200L)
 			.fastestKillMs(104_400L)
 			.lastKillMs(122_000L)
@@ -148,10 +182,11 @@ public class TrackerOverlayTest
 			.build();
 		LifetimeView lifetime = LifetimeView.builder().netPerTrip(Collections.<Long>emptyList()).build();
 		return PanelState.builder()
+			.boss(new MaggotKingBoss())
 			.status(status)
 			.currentTrip(trip)
 			.lifetime(lifetime)
-			.goal(new GoalView(150, 59, 10_385_888, now, true))
+			.goal(withGoal ? new GoalView(392, 163, 24_247_000, now, true) : null)
 			.killStartedAt(now - 73_000)
 			.build();
 	}
