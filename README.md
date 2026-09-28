@@ -2,8 +2,10 @@
 
 > **No combat or mechanic assistance, for any supported boss.** This plugin only tracks loot,
 > supplies, costs, deaths, time and luck. It has no attack, prayer, phase or hazard cues, no
-> tile or NPC highlighting, no alerts tied to boss mechanics, and it draws nothing on the game
-> screen. It only listens to game events and never creates input or menu actions.
+> tile or NPC highlighting, and no alerts tied to boss mechanics. The only thing it can draw on
+> the game screen is an optional box, off by default, with your kill goal progress and trip
+> times; it never shows anything about the boss or its mechanics. It only listens to game
+> events and never creates input or menu actions.
 
 Tracks loot, supplies used and net profit for each boss trip, with persistent per-account
 history in a side panel. Formerly **Maggot King Trip Tracker**.
@@ -26,6 +28,11 @@ history in a side panel. Formerly **Maggot King Trip Tracker**.
   to the clipboard ready to paste into Discord, and saves it to your RuneLite screenshots
   folder under "Boss Trip Tracker". Nothing is uploaded. Your name is on the card unless you
   turn off **Show my name on share cards** (Configuration → Display).
+- **Overlay** (Configuration → Overlay, off by default): small boxes on the game screen with
+  your kill goal progress (kills per hour, kills done and left, time to goal, progress bar)
+  and the trip's times (trip time, kills, average kill, PB, current kill). Turn on either or
+  both, pick which lines each shows, and combine them into one box if you like. Hold Alt and
+  drag a box to move it. By default they only show during a trip.
 - **Boss dropdown** (top of the panel): picks the boss shown in all three tabs. Entering a
   tracked boss's area selects it; otherwise your last choice is kept, so you can browse any
   boss's trips while a trip keeps tracking in the background. A green dot marks the boss with

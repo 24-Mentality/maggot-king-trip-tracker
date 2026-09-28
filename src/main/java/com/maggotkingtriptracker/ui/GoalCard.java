@@ -164,14 +164,15 @@ class GoalCard extends JPanel
 
 		int doneKills = goal.getDone();
 		int target = goal.getTarget();
-		int remaining = Math.max(0, target - doneKills);
+		int remaining = goal.getRemaining();
 		long activeMs = goal.activeMsAt(now);
-		double killsPerHour = activeMs >= 60_000 && doneKills > 0 ? doneKills * 3_600_000.0 / activeMs : 0;
+		double killsPerHour = goal.killsPerHourAt(now);
+		Long toGoal = goal.msToGoalAt(now);
 
 		setStats(
 			killsPerHour > 0 ? String.format(Locale.ROOT, "%.1f", killsPerHour) : NOT_AVAILABLE,
 			count(doneKills),
-			remaining == 0 ? "Done" : killsPerHour > 0 ? timeToGoal((long) (remaining / killsPerHour * 3_600_000)) : NOT_AVAILABLE,
+			remaining == 0 ? "Done" : toGoal != null ? timeToGoal(toGoal) : NOT_AVAILABLE,
 			count(remaining));
 
 		progress.setMaximumValue(Math.max(1, target));
@@ -185,12 +186,12 @@ class GoalCard extends JPanel
 	/**
 	 * Exact up to 9,999, then compact ("12.3K") so the stat still fits beside the icon.
 	 */
-	private static String count(int n)
+	static String count(int n)
 	{
 		return n >= 10_000 ? String.format(Locale.ROOT, "%.1fK", n / 1000.0) : String.format(Locale.ROOT, "%,d", n);
 	}
 
-	private static String timeToGoal(long ms)
+	static String timeToGoal(long ms)
 	{
 		return ms >= 100L * 3_600_000 ? "100h+" : UiFormat.duration(ms);
 	}

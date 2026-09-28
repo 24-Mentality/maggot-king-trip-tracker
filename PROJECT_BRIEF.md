@@ -101,7 +101,8 @@ Phase 3: charged weapon and Tome page costs, historical edit mode.
   Uniques get a gold border; pending tarnished items look distinct.
 - History: one compact card per trip, expandable to its item grid.
 - Lifetime: totals, profit-per-trip trend drawn with plain Swing, dryness card.
-- No overlays on the game screen at all.
+- No overlays on the game screen, except the optional goal / trip-time
+  overlays (decision 13).
 
 ## Compliance
 Loot, supply and profit tracking only. No boss mechanic aids of any kind: no
@@ -181,6 +182,13 @@ RuneLite does not accept new high-end PvM helper plugins.
     count (Take-eggs kills included, since they can't be told apart), then
     tracked Open-stomach kills; a newer tracked unique wins. Export file names
     carry a date and time stamp; CSV is per boss, JSON covers every boss.
+
+13. Overlay (2026-09-28, replaces "No overlays on the game screen at all"):
+    optional overlays, off by default, for the kill goal (KPH, kills done /
+    left, TTG, progress bar) and the trip's times (trip time, kills, average
+    kill, PB, current kill), with a choice of lines, separate or combined
+    boxes, and "only during a trip" (on by default). Nothing about the boss
+    or its mechanics is ever drawn.
 
 ## Observed in-game (diagnostic test trips, 2026-09-27)
 These come from diagnostic.log and take precedence over the assumptions above.

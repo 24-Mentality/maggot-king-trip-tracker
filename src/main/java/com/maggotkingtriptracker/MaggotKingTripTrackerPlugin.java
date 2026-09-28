@@ -9,6 +9,8 @@ import com.maggotkingtriptracker.pricing.PriceService;
 import com.maggotkingtriptracker.tracking.TripTracker;
 import com.maggotkingtriptracker.ui.PanelActions;
 import com.maggotkingtriptracker.ui.ShareCardExporter;
+import com.maggotkingtriptracker.ui.TrackerOverlay;
+import com.maggotkingtriptracker.view.PanelState;
 import com.maggotkingtriptracker.ui.TrackerPanel;
 import java.awt.image.BufferedImage;
 import java.time.LocalDateTime;
@@ -33,6 +35,7 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
+import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.Filepath;
 import net.runelite.client.util.ImageCapture;
 import net.runelite.client.util.ImageUtil;
@@ -82,6 +85,9 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 	@Inject
 	private ChatMessageManager chatMessageManager;
 
+	@Inject
+	private OverlayManager overlayManager;
+
 	private DiagnosticRecorder diagnosticRecorder;
 	private ScheduledExecutorService executor;
 	private HistoryStore store;
@@ -89,6 +95,12 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 	private TrackerPanel panel;
 	private NavigationButton navigationButton;
 	private ShareCardExporter shareCardExporter;
+	private TrackerOverlay goalOverlay;
+	private TrackerOverlay tripOverlay;
+	/**
+	 * The latest panel state, for the overlays. Written and read on the client thread.
+	 */
+	private volatile PanelState latestState;
 
 	@Override
 	protected void startUp() throws Exception
@@ -113,12 +125,21 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 		store = new HistoryStore(gson, this::getPluginDirectory, executor);
 		shareCardExporter = new ShareCardExporter(client, itemManager, imageCapture, chatMessageManager, executor);
 		TripTracker tracker = new TripTracker(client, clientThread, config, new PriceService(itemManager), store,
-			gson, executor, state -> SwingUtilities.invokeLater(() -> trackerPanel.update(state)),
+			gson, executor, state ->
+			{
+				latestState = state;
+				SwingUtilities.invokeLater(() -> trackerPanel.update(state));
+			},
 			message -> notifier.notify(config.alertNotification(), message),
 			this::lairEntered, configManager, registry);
 		tripTracker = tracker;
 		eventBus.register(tracker);
 		clientThread.invokeLater(tracker::start);
+
+		goalOverlay = new TrackerOverlay(this, TrackerOverlay.Kind.GOAL, config, () -> latestState);
+		tripOverlay = new TrackerOverlay(this, TrackerOverlay.Kind.TRIP, config, () -> latestState);
+		overlayManager.add(goalOverlay);
+		overlayManager.add(tripOverlay);
 
 		BufferedImage icon = ImageUtil.loadImageResource(getClass(), "panel_icon.png");
 		navigationButton = NavigationButton.builder()
@@ -135,6 +156,12 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 	@Override
 	protected void shutDown() throws Exception
 	{
+		overlayManager.remove(goalOverlay);
+		overlayManager.remove(tripOverlay);
+		goalOverlay = null;
+		tripOverlay = null;
+		latestState = null;
+
 		eventBus.unregister(tripTracker);
 		tripTracker.shutDown();
 		tripTracker = null;

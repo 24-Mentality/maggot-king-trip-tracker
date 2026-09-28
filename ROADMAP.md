@@ -30,7 +30,8 @@ from loot kills only).
 ## Compliance (every boss)
 
 Loot, supplies, costs, deaths, time and luck only. For every boss and raid:
-nothing drawn on the game screen, no alerts or cues tied to boss mechanics, no
+nothing drawn on the game screen except the optional goal / trip-time overlay
+(off by default; never boss information), no alerts or cues tied to boss mechanics, no
 attack, prayer, phase or hazard information, and no menu changes. The plugin
 only listens to game events. Don't store or show other players' names: for a
 teammate's drop, record only that a teammate received the item. The README

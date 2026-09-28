@@ -1,5 +1,7 @@
 package com.maggotkingtriptracker;
 
+import java.util.EnumSet;
+import java.util.Set;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
@@ -43,6 +45,13 @@ public interface MaggotKingTripTrackerConfig extends Config
 		position = 3
 	)
 	String displaySection = "display";
+
+	@ConfigSection(
+		name = "Overlay",
+		description = "Optional boxes on the game screen with your kill goal and trip times. Alt+drag to move them.",
+		position = 4
+	)
+	String overlaySection = "overlay";
 
 	@ConfigSection(
 		name = "Developer",
@@ -252,6 +261,80 @@ public interface MaggotKingTripTrackerConfig extends Config
 		position = 3
 	)
 	default boolean shareShowName()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "showGoalOverlay",
+		name = "Goal overlay",
+		description = "Show your kill goal progress in a box on the game screen. Hold Alt and drag it to move it.",
+		section = overlaySection,
+		position = 0
+	)
+	default boolean showGoalOverlay()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "goalOverlayLines",
+		name = "Goal overlay shows",
+		description = "What the goal overlay shows. Ctrl+click to pick several.",
+		section = overlaySection,
+		position = 1
+	)
+	default Set<GoalOverlayLine> goalOverlayLines()
+	{
+		return EnumSet.allOf(GoalOverlayLine.class);
+	}
+
+	@ConfigItem(
+		keyName = "showTripOverlay",
+		name = "Trip overlay",
+		description = "Show the trip's times (trip time, kills, average kill, PB, current kill) in a box on the game"
+			+ " screen. Hold Alt and drag it to move it.",
+		section = overlaySection,
+		position = 2
+	)
+	default boolean showTripOverlay()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "tripOverlayLines",
+		name = "Trip overlay shows",
+		description = "What the trip overlay shows. Ctrl+click to pick several.",
+		section = overlaySection,
+		position = 3
+	)
+	default Set<TripOverlayLine> tripOverlayLines()
+	{
+		return EnumSet.allOf(TripOverlayLine.class);
+	}
+
+	@ConfigItem(
+		keyName = "combineOverlays",
+		name = "Combine into one box",
+		description = "With both overlays on, show them in a single box (where the goal overlay is) instead of two",
+		section = overlaySection,
+		position = 4
+	)
+	default boolean combineOverlays()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "overlayOnlyOnTrip",
+		name = "Only during a trip",
+		description = "Only show the overlays while a trip is in progress (including paused or waiting just outside)."
+			+ " Off shows them whenever you're logged in, with your last trip.",
+		section = overlaySection,
+		position = 5
+	)
+	default boolean overlayOnlyOnTrip()
 	{
 		return true;
 	}
