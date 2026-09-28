@@ -171,6 +171,9 @@ RuneLite does not accept new high-end PvM helper plugins.
       you left the lair. Teleports and deaths still end the trip immediately.
       Supplies used while waiting outside count toward the open trip.
     - The Pause button stays for manual pauses (in the lair on a trip only).
+11. Trips that end with no kills, no deaths and no dropped items are
+    discarded (e.g. walking in and straight back out). Existing ones in the
+    saved history are left alone.
 
 ## Observed in-game (diagnostic test trips, 2026-09-27)
 These come from diagnostic.log and take precedence over the assumptions above.

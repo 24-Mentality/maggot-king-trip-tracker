@@ -76,6 +76,24 @@ public class TripMathTest
 	}
 
 	@Test
+	public void tripsWithoutKillsDeathsOrDropsAreEmpty()
+	{
+		Trip trip = new Trip();
+		trip.getSupplies().add(new ItemEntry(2434, 1, 2_000));
+		assertEquals(true, TripMath.isEmpty(trip));
+
+		Trip died = new Trip();
+		died.getDeaths().add(new DeathRecord());
+		assertEquals(false, TripMath.isEmpty(died));
+
+		Trip dropped = new Trip();
+		dropped.getDropped().add(new ItemEntry(13441, 1, 1_500));
+		assertEquals(false, TripMath.isEmpty(dropped));
+
+		assertEquals(false, TripMath.isEmpty(sampleTrip()));
+	}
+
+	@Test
 	public void missingListsDefaultToEmpty()
 	{
 		Trip trip = new Gson().fromJson("{\"id\":\"x\",\"startedAt\":1}", Trip.class);

@@ -1118,7 +1118,16 @@ public class TripTracker
 		currentTrip.setEndedAt(at);
 		currentTrip.setEndReason(reason);
 		currentTrip.setLastActiveAt(at);
-		lastEndedTrip = currentTrip;
+		if (TripMath.isEmpty(currentTrip))
+		{
+			// Nothing happened (e.g. walked in and straight back out): don't keep it
+			history.getTrips().remove(currentTrip);
+			lastEndedTrip = null;
+		}
+		else
+		{
+			lastEndedTrip = currentTrip;
+		}
 		currentTrip = null;
 		suspendedAt = null;
 		resetKillState();

@@ -51,6 +51,15 @@ public final class TripMath
 		return lootValue(trip) - totalCost(trip);
 	}
 
+	/**
+	 * A trip worth keeping has at least one kill, death or dropped item. Walking in and straight back out
+	 * leaves none of these.
+	 */
+	public static boolean isEmpty(Trip trip)
+	{
+		return trip.getKills().isEmpty() && trip.getDeaths().isEmpty() && trip.getDropped().isEmpty();
+	}
+
 	public static int countChoice(Trip trip, CorpseChoice choice)
 	{
 		int count = 0;
