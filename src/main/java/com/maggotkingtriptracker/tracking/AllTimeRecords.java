@@ -2,14 +2,17 @@ package com.maggotkingtriptracker.tracking;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
+import com.maggotkingtriptracker.boss.AllTimeSource;
+import com.maggotkingtriptracker.model.AllTimeCounts;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import lombok.Value;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.config.ConfigManager;
 
 /**
- * Reads all-time Maggot King records kept by RuneLite's core plugins for the logged-in account:
+ * Reads all-time boss records kept by RuneLite's core plugins for the logged-in account:
  * the kill count saved by Chat Commands and the loot saved by the Loot Tracker.
  */
 @Slf4j
@@ -20,8 +23,10 @@ class AllTimeRecords
 
 	private final ConfigManager configManager;
 	private final Gson gson;
-	private String cachedJson;
-	private LootTrackerRecord cachedRecord;
+	/**
+	 * Loot Tracker key to the last JSON read and its parsed record, so unchanged records aren't parsed again.
+	 */
+	private final Map<String, Cached> cache = new HashMap<>();
 
 	AllTimeRecords(ConfigManager configManager, Gson gson)
 	{
@@ -30,18 +35,43 @@ class AllTimeRecords
 	}
 
 	/**
+	 * Combines the records of every source for this variant (or all of them when {@code variant} is null).
+	 *
 	 * @return the records, or null if the Loot Tracker has none for this boss on this account
 	 */
-	Snapshot read(String bossName)
+	AllTimeCounts read(List<AllTimeSource> sources, String variant)
 	{
-		String json = configManager.getRSProfileConfiguration(LOOT_TRACKER_GROUP, "drops_NPC_" + bossName);
-		LootTrackerRecord record = parse(json);
-		Integer killCount = record == null ? null
-			: configManager.getRSProfileConfiguration(KILL_COUNT_GROUP, bossName.toLowerCase(), Integer.class);
-		return snapshot(record, killCount);
+		AllTimeCounts combined = null;
+		for (AllTimeSource source : sources)
+		{
+			if (variant != null && source.getVariant() != null && !variant.equals(source.getVariant()))
+			{
+				continue;
+			}
+			LootTrackerRecord record = parse(source.getLootTrackerKey(),
+				configManager.getRSProfileConfiguration(LOOT_TRACKER_GROUP, source.getLootTrackerKey()));
+			Integer killCount = record == null || source.getKillCountKey() == null ? null
+				: configManager.getRSProfileConfiguration(KILL_COUNT_GROUP, source.getKillCountKey(), Integer.class);
+			combined = combine(combined, snapshot(record, killCount));
+		}
+		return combined;
 	}
 
-	static Snapshot snapshot(LootTrackerRecord record, Integer killCount)
+	static AllTimeCounts combine(AllTimeCounts a, AllTimeCounts b)
+	{
+		if (a == null || b == null)
+		{
+			return a == null ? b : a;
+		}
+		Map<Integer, Integer> drops = new HashMap<>(a.getDrops());
+		b.getDrops().forEach((id, quantity) -> drops.merge(id, quantity, Integer::sum));
+		Integer killCount = a.getKillCount() == null ? b.getKillCount()
+			: b.getKillCount() == null ? a.getKillCount() : Integer.valueOf(a.getKillCount() + b.getKillCount());
+		return new AllTimeCounts(a.getLootKills() + b.getLootKills(), killCount,
+			Math.min(a.getFirstRecordedAt(), b.getFirstRecordedAt()), drops);
+	}
+
+	static AllTimeCounts snapshot(LootTrackerRecord record, Integer killCount)
 	{
 		if (record == null || record.kills <= 0)
 		{
@@ -56,30 +86,39 @@ class AllTimeRecords
 				drops.merge(record.drops[i], record.drops[i + 1], Integer::sum);
 			}
 		}
-		return new Snapshot(record.kills, killCount, record.first, drops);
+		return new AllTimeCounts(record.kills, killCount, record.first, drops);
 	}
 
-	private LootTrackerRecord parse(String json)
+	private LootTrackerRecord parse(String key, String json)
 	{
 		if (json == null)
 		{
 			return null;
 		}
-		if (json.equals(cachedJson))
+		Cached cached = cache.get(key);
+		if (cached != null && json.equals(cached.json))
 		{
-			return cachedRecord;
+			return cached.record;
 		}
+		LootTrackerRecord record;
 		try
 		{
-			cachedRecord = gson.fromJson(json, LootTrackerRecord.class);
+			record = gson.fromJson(json, LootTrackerRecord.class);
 		}
 		catch (JsonParseException e)
 		{
 			log.debug("Unreadable Loot Tracker record", e);
-			cachedRecord = null;
+			record = null;
 		}
-		cachedJson = json;
-		return cachedRecord;
+		cache.put(key, new Cached(json, record));
+		return record;
+	}
+
+	@AllArgsConstructor
+	private static class Cached
+	{
+		final String json;
+		final LootTrackerRecord record;
 	}
 
 	/**
@@ -93,25 +132,5 @@ class AllTimeRecords
 		 * Item id and quantity pairs.
 		 */
 		int[] drops;
-	}
-
-	@Value
-	public static class Snapshot
-	{
-		/**
-		 * Kills recorded by the Loot Tracker (loot-dropping kills, i.e. Open-stomach).
-		 */
-		int lootKills;
-		/**
-		 * The game's kill count, if Chat Commands has seen it; null otherwise.
-		 */
-		Integer killCount;
-		long firstRecordedAt;
-		Map<Integer, Integer> drops;
-
-		public int dropped(int itemId)
-		{
-			return drops.getOrDefault(itemId, 0);
-		}
 	}
 }

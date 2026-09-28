@@ -30,6 +30,11 @@ class StatCell extends JPanel
 		add(value, BorderLayout.CENTER);
 	}
 
+	void setCaption(String text)
+	{
+		caption.setText(text);
+	}
+
 	void setValue(String text)
 	{
 		value.setText(text);
@@ -47,7 +52,7 @@ class StatCell extends JPanel
 	 */
 	StatCell help(String text)
 	{
-		caption.setToolTipText(UiFormat.tooltip(text));
+		caption.setToolTipText(text == null ? null : UiFormat.tooltip(text));
 		return this;
 	}
 }

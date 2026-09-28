@@ -1,5 +1,6 @@
 package com.maggotkingtriptracker.ui;
 
+import com.maggotkingtriptracker.boss.BossDefinition;
 import com.maggotkingtriptracker.view.PanelState;
 import com.maggotkingtriptracker.view.TripView;
 import java.awt.BorderLayout;
@@ -24,7 +25,8 @@ import net.runelite.client.ui.components.materialtabs.MaterialTab;
 import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
 
 /**
- * Side panel with Trip, History and Lifetime tabs pinned at the top and the selected tab scrolling below.
+ * Side panel with the boss dropdown and the Trip, History and Lifetime tabs pinned at the top, and the selected
+ * tab scrolling below.
  * All methods run on the Swing thread.
  */
 public class TrackerPanel extends PluginPanel
@@ -33,19 +35,23 @@ public class TrackerPanel extends PluginPanel
 	private final HistoryPanel historyTab;
 	private final LifetimePanel lifetimeTab;
 	private final JLabel readOnlyWarning = new JLabel();
+	private final BossSelector bossSelector;
+	private final VariantChips variantChips;
+	private BossDefinition boss;
 	private final Timer timer;
 	private MaterialTabGroup tabGroup;
 	private MaterialTab tripTab;
 
-	public TrackerPanel(ItemManager itemManager, PanelActions actions)
+	public TrackerPanel(ItemManager itemManager, PanelActions actions, BossDefinition initialBoss)
 	{
 		// Not wrapped in PluginPanel's scroll pane, so the tabs stay visible while content scrolls
 		super(false);
+		boss = initialBoss;
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARK_GRAY_COLOR);
 
 		currentTab = new CurrentTripPanel(itemManager, () -> promptGoal(actions), actions::togglePause,
-			() -> confirmResetGoal(actions));
+			() -> confirmResetGoal(actions), () -> promptLastUniqueKc(actions), () -> actions.setLastUniqueKc(null));
 		historyTab = new HistoryPanel(itemManager, trip -> confirmDelete(trip, actions::deleteTrip));
 		lifetimeTab = new LifetimePanel(actions, () -> confirmClear(actions::clearHistory));
 
@@ -56,7 +62,7 @@ public class TrackerPanel extends PluginPanel
 		MaterialTabGroup tabs = new MaterialTabGroup(display);
 		// The default wrapping row hides the third tab at sidebar width; equal columns always fit
 		tabs.setLayout(new GridLayout(1, 0));
-		tabs.setBorder(BorderFactory.createEmptyBorder(6, 2, 2, 2));
+		tabs.setBorder(BorderFactory.createEmptyBorder(4, 2, 2, 2));
 		MaterialTab current = new MaterialTab("Trip", tabs, currentTab);
 		MaterialTab history = new MaterialTab("History", tabs, historyTab);
 		MaterialTab lifetime = new MaterialTab("Lifetime", tabs, lifetimeTab);
@@ -75,9 +81,18 @@ public class TrackerPanel extends PluginPanel
 		readOnlyWarning.setVisible(false);
 		readOnlyWarning.setBorder(BorderFactory.createEmptyBorder(0, 8, 4, 8));
 
+		bossSelector = new BossSelector(itemManager, actions::selectBoss);
+		variantChips = new VariantChips(actions::selectVariant);
+		JPanel header = new JPanel(new BorderLayout());
+		header.setOpaque(false);
+		header.setBorder(BorderFactory.createEmptyBorder(6, 5, 0, 5));
+		header.add(bossSelector, BorderLayout.CENTER);
+		header.add(variantChips, BorderLayout.SOUTH);
+
 		JPanel north = new JPanel(new BorderLayout());
 		north.setOpaque(false);
-		north.add(tabs, BorderLayout.NORTH);
+		north.add(header, BorderLayout.NORTH);
+		north.add(tabs, BorderLayout.CENTER);
 		north.add(readOnlyWarning, BorderLayout.SOUTH);
 
 		JScrollPane scroll = new JScrollPane(display);
@@ -95,10 +110,21 @@ public class TrackerPanel extends PluginPanel
 
 	public void update(PanelState state)
 	{
+		boss = state.getBoss();
+		bossSelector.update(state.getBosses(), boss.getId());
+		variantChips.update(boss, state.getVariant());
 		readOnlyWarning.setVisible(state.isReadOnly());
 		currentTab.update(state, System.currentTimeMillis());
 		historyTab.update(state.getHistory());
-		lifetimeTab.update(state.getLifetime(), state.isReadOnly());
+		lifetimeTab.update(state.getLifetime(), state.isReadOnly(), boss);
+	}
+
+	/**
+	 * The boss shown in the tabs.
+	 */
+	public BossDefinition getBoss()
+	{
+		return boss;
 	}
 
 	public void showTripTab()
@@ -145,7 +171,8 @@ public class TrackerPanel extends PluginPanel
 	private void promptGoal(PanelActions actions)
 	{
 		String input = JOptionPane.showInputDialog(this,
-			"How many Maggot King kills is your goal? (0 removes it)", "Set kill goal", JOptionPane.QUESTION_MESSAGE);
+			"How many " + boss.getDisplayName() + " kills is your goal? (0 removes it)", "Set kill goal",
+			JOptionPane.QUESTION_MESSAGE);
 		if (input == null)
 		{
 			return;
@@ -165,6 +192,31 @@ public class TrackerPanel extends PluginPanel
 		}
 	}
 
+	private void promptLastUniqueKc(PanelActions actions)
+	{
+		String input = JOptionPane.showInputDialog(this,
+			"At what " + boss.getDisplayName() + " kill count did you get your last unique?\n"
+				+ "Your dry streak counts from there unless the plugin tracks a newer unique.",
+			"Last unique", JOptionPane.QUESTION_MESSAGE);
+		if (input == null)
+		{
+			return;
+		}
+		try
+		{
+			int killCount = Integer.parseInt(input.trim().replace(",", ""));
+			if (killCount < 0 || killCount > 10_000_000)
+			{
+				throw new NumberFormatException();
+			}
+			actions.setLastUniqueKc(killCount);
+		}
+		catch (NumberFormatException e)
+		{
+			showMessage("Last unique", "Enter a kill count, like 1,234.", true);
+		}
+	}
+
 	private void confirmResetGoal(PanelActions actions)
 	{
 		if (confirm("Reset kill goal", "Start counting the goal again from 0 kills now?"))
@@ -176,7 +228,7 @@ public class TrackerPanel extends PluginPanel
 	private void confirmClear(Runnable onClearHistory)
 	{
 		int choice = JOptionPane.showConfirmDialog(this,
-			"Delete all Maggot King trip history for this account? This can't be undone.",
+			"Delete all " + boss.getDisplayName() + " trip history for this account? This can't be undone.",
 			"Clear all history", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 		if (choice == JOptionPane.YES_OPTION)
 		{

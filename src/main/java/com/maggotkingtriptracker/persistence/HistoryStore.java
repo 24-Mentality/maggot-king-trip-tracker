@@ -1,15 +1,16 @@
 package com.maggotkingtriptracker.persistence;
 
+import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import com.maggotkingtriptracker.model.AccountHistory;
 import java.io.IOException;
-import java.io.Reader;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
@@ -26,6 +27,8 @@ import net.runelite.client.util.Filepath;
 @Slf4j
 public class HistoryStore
 {
+	private static final DateTimeFormatter BACKUP_STAMP = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
+
 	private final Gson gson;
 	private final Callable<Filepath> directorySupplier;
 	private final ExecutorService executor;
@@ -81,14 +84,14 @@ public class HistoryStore
 	{
 		submit(() ->
 		{
-			try (Reader reader = file.openBufferedReader())
+			try
 			{
-				AccountHistory history = gson.fromJson(reader, AccountHistory.class);
-				if (history == null || history.getTrips() == null)
+				HistoryCodec.Decoded decoded = HistoryCodec.decode(gson, readString(file));
+				if (decoded == null)
 				{
-					throw new IOException("Not a Maggot King Trip Tracker export");
+					throw new IOException("Not a Boss Trip Tracker export");
 				}
-				callback.accept(history, null);
+				callback.accept(decoded.getHistory(), null);
 			}
 			catch (Exception e)
 			{
@@ -120,49 +123,53 @@ public class HistoryStore
 				return new LoadResult(emptyHistory(accountHash), false);
 			}
 
-			AccountHistory history;
-			try (Reader reader = file.openBufferedReader())
+			HistoryCodec.Decoded decoded;
+			try
 			{
-				history = gson.fromJson(reader, AccountHistory.class);
+				decoded = HistoryCodec.decode(gson, readString(file));
 			}
 			catch (JsonParseException e)
 			{
 				Filepath backup = directory().joinSegment(fileName(accountHash) + ".corrupt-" + System.currentTimeMillis());
-				log.warn("Maggot King history for this account is unreadable; moving it to {}", backup.getFileName(), e);
+				log.warn("Trip history for this account is unreadable; moving it to {}", backup.getFileName(), e);
 				file.moveTo(backup);
 				return new LoadResult(emptyHistory(accountHash), false);
 			}
 
-			if (history == null)
+			if (decoded == null)
 			{
 				return new LoadResult(emptyHistory(accountHash), false);
 			}
-			if (history.getTrips() == null)
+			if (decoded.isMigrated())
 			{
-				history.setTrips(new ArrayList<>());
+				// Keep the old file as it was before it's rewritten in the new format
+				Filepath backup = directory().joinSegment(fileName(accountHash) + ".v" + decoded.getSourceVersion()
+					+ "-backup-" + BACKUP_STAMP.format(LocalDateTime.now()));
+				if (!backup.exists())
+				{
+					file.copyTo(backup);
+				}
+				log.info("Upgraded trip history from schema {} to {}; the old file is kept as {}",
+					decoded.getSourceVersion(), AccountHistory.CURRENT_SCHEMA_VERSION, backup.getFileName());
 			}
-			if (history.getEggPops() == null)
-			{
-				history.setEggPops(new ArrayList<>());
-			}
-			if (history.getPolishOutcomes() == null)
-			{
-				history.setPolishOutcomes(new HashMap<>());
-			}
-			if (history.getSchemaVersion() <= 0)
-			{
-				history.setSchemaVersion(AccountHistory.CURRENT_SCHEMA_VERSION);
-			}
-			history.setAccountHash(accountHash);
 
+			AccountHistory history = decoded.getHistory();
+			history.setAccountHash(accountHash);
 			// A file from a newer plugin version is shown but never overwritten
-			boolean readOnly = history.getSchemaVersion() > AccountHistory.CURRENT_SCHEMA_VERSION;
-			return new LoadResult(history, readOnly);
+			return new LoadResult(history, decoded.isNewer());
 		}
 		catch (Exception e)
 		{
-			log.warn("Unable to load Maggot King history", e);
+			log.warn("Unable to load trip history", e);
 			return new LoadResult(emptyHistory(accountHash), true);
+		}
+	}
+
+	private static String readString(Filepath file) throws IOException
+	{
+		try (InputStream in = file.openInputStream())
+		{
+			return new String(ByteStreams.toByteArray(in), StandardCharsets.UTF_8);
 		}
 	}
 
@@ -185,7 +192,7 @@ public class HistoryStore
 		}
 		catch (Exception e)
 		{
-			log.warn("Unable to save Maggot King history", e);
+			log.warn("Unable to save trip history", e);
 		}
 	}
 

@@ -1,16 +1,22 @@
 package com.maggotkingtriptracker.view;
 
-import com.maggotkingtriptracker.MaggotKingIds;
-import com.maggotkingtriptracker.MaggotKingRates;
-import com.maggotkingtriptracker.model.AccountHistory;
+import com.maggotkingtriptracker.boss.BossDefinition;
+import com.maggotkingtriptracker.boss.DropKind;
+import com.maggotkingtriptracker.boss.ExpectedDrop;
+import com.maggotkingtriptracker.boss.KillContext;
+import com.maggotkingtriptracker.boss.LootChoice;
+import com.maggotkingtriptracker.boss.TripStat;
+import com.maggotkingtriptracker.model.AllTimeCounts;
+import com.maggotkingtriptracker.model.BossHistory;
+import com.maggotkingtriptracker.model.DryStreak;
 import com.maggotkingtriptracker.model.EggPop;
-import com.maggotkingtriptracker.model.CorpseChoice;
 import com.maggotkingtriptracker.model.ItemEntry;
-import com.maggotkingtriptracker.model.KillGoal;
 import com.maggotkingtriptracker.model.Kill;
+import com.maggotkingtriptracker.model.KillGoal;
 import com.maggotkingtriptracker.model.Trip;
 import com.maggotkingtriptracker.model.TripClock;
 import com.maggotkingtriptracker.model.TripMath;
+import com.maggotkingtriptracker.model.VariantFilter;
 import com.maggotkingtriptracker.pricing.PriceService;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -49,9 +55,9 @@ public class ViewBuilder
 	}
 
 	/**
-	 * @param currentTrip the open trip, whose running segment keeps the goal clock going; null if none
+	 * @param currentTrip this boss's open trip, whose running segment keeps the goal clock going; null if none
 	 */
-	public GoalView goal(AccountHistory history, Trip currentTrip, long now)
+	public GoalView goal(BossHistory history, Trip currentTrip, long now)
 	{
 		KillGoal goal = history.getGoal();
 		if (goal == null)
@@ -75,7 +81,7 @@ public class ViewBuilder
 			segmentStart != null);
 	}
 
-	public TripView trip(Trip trip)
+	public TripView trip(BossDefinition boss, Trip trip)
 	{
 		List<ItemEntry> loot = new ArrayList<>();
 		boolean pet = false;
@@ -85,6 +91,7 @@ public class ViewBuilder
 			pet |= kill.isPet();
 		}
 
+		TripStat stat = boss.getProfitCell();
 		return TripView.builder()
 			.id(trip.getId())
 			.startedAt(trip.getStartedAt())
@@ -93,8 +100,7 @@ public class ViewBuilder
 			.activeMs(trip.getActiveMs())
 			.segmentStartedAt(trip.getSegmentStartedAt())
 			.kills(trip.getKills().size())
-			.stomachKills(TripMath.countChoice(trip, CorpseChoice.STOMACH))
-			.eggKills(TripMath.countChoice(trip, CorpseChoice.EGGS))
+			.bossStat(new StatView(stat.getLabel(), stat.valueOf(trip), stat.getHelp()))
 			.deaths(trip.getDeaths().size())
 			.pet(pet)
 			.lootValue(TripMath.lootValue(trip))
@@ -104,22 +110,31 @@ public class ViewBuilder
 			.netProfit(TripMath.netProfit(trip))
 			.averageKillMs(TripMath.averageKillMs(Collections.singletonList(trip)))
 			.fastestKillMs(TripMath.fastestKillMs(Collections.singletonList(trip)))
-			.loot(items(loot))
-			.supplies(items(trip.getSupplies()))
-			.dropped(items(trip.getDropped()))
+			.loot(items(boss, loot))
+			.supplies(items(boss, trip.getSupplies()))
+			.dropped(items(boss, trip.getDropped()))
 			.supplyCategories(supplyCategories(trip.getSupplies()))
 			.build();
 	}
 
 	/**
+	 * @param variant variant chip selected, or null for All
+	 * @param allTime records from RuneLite's core plugins; null if there are none
 	 * @param now current time, for the running segment of an open trip
 	 */
-	public LifetimeView lifetime(AccountHistory history, DrynessView.AllTime allTime, boolean includeTodayValue, long now)
+	public LifetimeView lifetime(BossDefinition boss, BossHistory history, String variant, AllTimeCounts allTime,
+		boolean includeTodayValue, long now)
 	{
-		List<Trip> trips = history.getTrips();
+		List<Trip> trips = new ArrayList<>();
+		for (Trip trip : history.getTrips())
+		{
+			if (VariantFilter.matches(trip, variant))
+			{
+				trips.add(trip);
+			}
+		}
+
 		int kills = 0;
-		int stomach = 0;
-		int eggs = 0;
 		int deaths = 0;
 		int pets = 0;
 		long activeMs = 0;
@@ -133,8 +148,6 @@ public class ViewBuilder
 		for (Trip trip : trips)
 		{
 			kills += trip.getKills().size();
-			stomach += TripMath.countChoice(trip, CorpseChoice.STOMACH);
-			eggs += TripMath.countChoice(trip, CorpseChoice.EGGS);
 			deaths += trip.getDeaths().size();
 			activeMs += trip.activeMsAt(now);
 			loot += TripMath.lootValue(trip);
@@ -164,11 +177,21 @@ public class ViewBuilder
 			}
 		}
 
+		List<String> choices = new ArrayList<>();
+		for (LootChoice choice : boss.getLootChoices())
+		{
+			int count = 0;
+			for (Trip trip : trips)
+			{
+				count += TripMath.countChoice(trip, choice.getKey());
+			}
+			choices.add(choice.getLabel() + " " + count);
+		}
+
 		return LifetimeView.builder()
 			.trips(trips.size())
 			.kills(kills)
-			.stomachKills(stomach)
-			.eggKills(eggs)
+			.choiceSummary(String.join(" · ", choices))
 			.deaths(deaths)
 			.pets(pets)
 			.activeMs(activeMs)
@@ -180,30 +203,47 @@ public class ViewBuilder
 			.averageKillMs(TripMath.averageKillMs(trips))
 			.lootValueToday(includeTodayValue ? today : null)
 			.netPerTrip(netPerTrip)
-			.dryness(dryness(history, allTime))
-			.polish(polish(history))
+			.dryness(dryness(boss, history, trips, variant, allTime))
+			.polish(polish(boss, history))
 			.build();
 	}
 
-	private DrynessView dryness(AccountHistory history, DrynessView.AllTime allTime)
+	DrynessView dryness(BossDefinition boss, BossHistory history, List<Trip> trips, String variant,
+		AllTimeCounts allTime)
 	{
-		int stomachKills = 0;
-		int sinceUnique = 0;
+		List<ExpectedDrop> uniqueDrops = new ArrayList<>();
+		for (ExpectedDrop drop : boss.getDrops())
+		{
+			if (drop.getKind() == DropKind.UNIQUE)
+			{
+				uniqueDrops.add(drop);
+			}
+		}
+		ExpectedDrop petDrop = boss.getPet();
+
+		List<Kill> kills = new ArrayList<>();
+		int luckKills = 0;
 		int petsFromKills = 0;
 		Integer currentKc = null;
-		Integer lastUniqueKc = null;
 		Integer firstTrackedKc = null;
-		int uniquesReceived = 0;
+		double expectedAny = 0;
+		double expectedPet = 0;
+		double[] expected = new double[uniqueDrops.size()];
 		Map<Integer, List<Integer>> received = new LinkedHashMap<>();
-		for (int uniqueId : MaggotKingRates.UNIQUES.keySet())
+		for (ExpectedDrop drop : uniqueDrops)
 		{
-			received.put(uniqueId, new ArrayList<>());
+			received.put(drop.getItemId(), new ArrayList<>());
 		}
 
-		for (Trip trip : history.getTrips())
+		for (Trip trip : trips)
 		{
 			for (Kill kill : trip.getKills())
 			{
+				if (!VariantFilter.matches(kill, variant))
+				{
+					continue;
+				}
+				kills.add(kill);
 				if (kill.isPet())
 				{
 					petsFromKills++;
@@ -216,12 +256,20 @@ public class ViewBuilder
 						firstTrackedKc = kill.getKillCount();
 					}
 				}
-				if (kill.getChoice() != CorpseChoice.STOMACH)
+				if (!boss.countsForLuck(kill))
 				{
 					continue;
 				}
-				stomachKills++;
-				sinceUnique++;
+
+				// Each kill at its own rate, so "All" mixes variants correctly
+				KillContext context = KillContext.of(kill);
+				luckKills++;
+				expectedAny += boss.anyUniqueChance(context);
+				expectedPet += petDrop == null ? 0 : petDrop.chance(context);
+				for (int i = 0; i < uniqueDrops.size(); i++)
+				{
+					expected[i] += uniqueDrops.get(i).chance(context);
+				}
 				for (ItemEntry entry : kill.getLoot())
 				{
 					List<Integer> kcs = received.get(entry.getItemId());
@@ -230,27 +278,28 @@ public class ViewBuilder
 						for (long i = 0; i < entry.getQuantity(); i++)
 						{
 							kcs.add(kill.getKillCount());
-							uniquesReceived++;
-						}
-						sinceUnique = 0;
-						if (kill.getKillCount() != null)
-						{
-							lastUniqueKc = kill.getKillCount();
 						}
 					}
 				}
 			}
 		}
 
-		List<DrynessView.Unique> uniques = new ArrayList<>();
-		for (Map.Entry<Integer, List<Integer>> e : received.entrySet())
+		int uniquesReceived = 0;
+		List<DrynessView.Drop> uniques = new ArrayList<>();
+		for (int i = 0; i < uniqueDrops.size(); i++)
 		{
-			uniques.add(new DrynessView.Unique(e.getKey(), prices.name(e.getKey()),
-				stomachKills * MaggotKingRates.UNIQUES.get(e.getKey()), e.getValue()));
+			ExpectedDrop drop = uniqueDrops.get(i);
+			List<Integer> kcs = received.get(drop.getItemId());
+			uniquesReceived += kcs.size();
+			uniques.add(new DrynessView.Drop(drop.getItemId(), prices.name(drop.getItemId()),
+				averageRate(expected[i], luckKills, drop.chance(KillContext.DEFAULT)), expected[i], kcs.size(), kcs));
 		}
+		DrynessView.Drop pet = petDrop == null ? null : new DrynessView.Drop(petDrop.getItemId(),
+			prices.name(petDrop.getItemId()), averageRate(expectedPet, luckKills, petDrop.chance(KillContext.DEFAULT)),
+			expectedPet, petsFromKills, Collections.emptyList());
 
 		Map<Integer, int[]> eggCounts = new LinkedHashMap<>();
-		for (int eggId : MaggotKingRates.EGG_PET.keySet())
+		for (int eggId : boss.getEggPetRates().keySet())
 		{
 			eggCounts.put(eggId, new int[2]);
 		}
@@ -266,24 +315,106 @@ public class ViewBuilder
 
 		List<DrynessView.EggTier> tiers = new ArrayList<>();
 		double noPetFromEggs = 1;
+		double eggPetExpected = 0;
 		int petsFromEggs = 0;
 		for (Map.Entry<Integer, int[]> e : eggCounts.entrySet())
 		{
-			double rate = MaggotKingRates.EGG_PET.get(e.getKey());
+			double rate = boss.getEggPetRates().get(e.getKey());
 			tiers.add(new DrynessView.EggTier(e.getKey(), prices.name(e.getKey()), e.getValue()[0], e.getValue()[1], rate));
 			noPetFromEggs *= Math.pow(1 - rate, e.getValue()[0]);
+			eggPetExpected += e.getValue()[0] * rate;
 			petsFromEggs += e.getValue()[1];
 		}
 
-		return new DrynessView(stomachKills, sinceUnique, Math.pow(1 - MaggotKingRates.ANY_UNIQUE, sinceUnique),
-			uniques, stomachKills * MaggotKingRates.PET_PER_STOMACH, petsFromKills, tiers, 1 - noPetFromEggs, petsFromEggs,
-			currentKc, lastUniqueKc, firstTrackedKc, uniquesReceived, stomachKills * MaggotKingRates.ANY_UNIQUE, allTime);
+		double anyRate = averageRate(expectedAny, luckKills, boss.anyUniqueChance(KillContext.DEFAULT));
+		DryStreak.Result streak = DryStreak.compute(kills, boss::countsForLuck,
+			kill -> kill.getLoot().stream().anyMatch(e -> boss.isUnique(e.getItemId())),
+			history.getLastUniqueKc(), allTime == null ? null : allTime.getKillCount());
+
+		return DrynessView.builder()
+			.luckKills(luckKills)
+			.killsSinceUnique(streak.getSince())
+			.sinceFromEnteredKc(streak.isFromEnteredKc())
+			.chanceThisDry(Math.pow(1 - anyRate, streak.getSince()))
+			.anyUniqueRate(anyRate)
+			.uniquesReceived(uniquesReceived)
+			.expectedUniques(expectedAny)
+			.uniques(uniques)
+			.pet(pet)
+			.eggTiers(tiers)
+			.eggPetChance(1 - noPetFromEggs)
+			.eggPetExpected(eggPetExpected)
+			.petsFromEggs(petsFromEggs)
+			.currentKc(currentKc)
+			.lastUniqueKc(streak.getLastUniqueKc())
+			.firstTrackedKc(firstTrackedKc)
+			.enteredLastUniqueKc(history.getLastUniqueKc())
+			.allTime(allTime(boss, uniqueDrops, allTime, petsFromKills + petsFromEggs, eggPetExpected))
+			.build();
 	}
 
-	private List<PolishView> polish(AccountHistory history)
+	/**
+	 * All-time figures at the default rates: the Loot Tracker doesn't record the variant or party size of a kill.
+	 */
+	private DrynessView.AllTime allTime(BossDefinition boss, List<ExpectedDrop> uniqueDrops, AllTimeCounts counts,
+		int trackedPets, double eggPetExpected)
+	{
+		if (counts == null)
+		{
+			return null;
+		}
+
+		int kills = counts.getLootKills();
+		int received = 0;
+		List<DrynessView.Drop> uniques = new ArrayList<>();
+		for (ExpectedDrop drop : uniqueDrops)
+		{
+			double rate = drop.chance(KillContext.DEFAULT);
+			int got = counts.dropped(drop.getItemId());
+			received += got;
+			uniques.add(new DrynessView.Drop(drop.getItemId(), prices.name(drop.getItemId()), rate, kills * rate, got,
+				Collections.emptyList()));
+		}
+
+		ExpectedDrop petDrop = boss.getPet();
+		DrynessView.Drop pet = null;
+		if (petDrop != null)
+		{
+			double rate = petDrop.chance(KillContext.DEFAULT);
+			// The Loot Tracker doesn't record every pet, so take the larger count
+			pet = new DrynessView.Drop(petDrop.getItemId(), prices.name(petDrop.getItemId()), rate,
+				kills * rate + eggPetExpected, Math.max(counts.dropped(petDrop.getItemId()), trackedPets),
+				Collections.emptyList());
+		}
+
+		return DrynessView.AllTime.builder()
+			.lootKills(kills)
+			.killCount(counts.getKillCount())
+			.firstRecordedAt(counts.getFirstRecordedAt())
+			.uniquesReceived(received)
+			.expectedUniques(kills * boss.anyUniqueChance(KillContext.DEFAULT))
+			.uniques(uniques)
+			.pet(pet)
+			.build();
+	}
+
+	/**
+	 * The average chance per kill, or the default rate when there are no kills or every kill had it.
+	 */
+	static double averageRate(double expected, int kills, double defaultRate)
+	{
+		if (kills == 0)
+		{
+			return defaultRate;
+		}
+		double average = expected / kills;
+		return Math.abs(average - defaultRate) < 1e-12 ? defaultRate : average;
+	}
+
+	private List<PolishView> polish(BossDefinition boss, BossHistory history)
 	{
 		List<PolishView> views = new ArrayList<>();
-		for (int tarnishedId : MaggotKingIds.TARNISHED_ITEMS)
+		for (int tarnishedId : boss.getTarnishedItems())
 		{
 			Map<Integer, Integer> outcomes = history.getPolishOutcomes().get(tarnishedId);
 			if (outcomes == null || outcomes.isEmpty())
@@ -355,7 +486,7 @@ public class ViewBuilder
 		}
 	}
 
-	private List<ItemView> items(Collection<ItemEntry> entries)
+	private List<ItemView> items(BossDefinition boss, Collection<ItemEntry> entries)
 	{
 		// Combine lines for the same item; pending tarnished drops stay separate
 		Map<String, long[]> totals = new LinkedHashMap<>();
@@ -371,6 +502,7 @@ public class ViewBuilder
 			firsts.putIfAbsent(key, entry);
 		}
 
+		Set<Integer> highlighted = boss.getHighlightedItems();
 		List<ItemView> views = new ArrayList<>();
 		for (Map.Entry<String, ItemEntry> e : firsts.entrySet())
 		{
@@ -378,7 +510,7 @@ public class ViewBuilder
 			long[] sum = totals.get(e.getKey());
 			int itemId = first.getItemId();
 			views.add(new ItemView(itemId, prices.name(itemId), sum[0], sum[1], first.isPerDose(),
-				MaggotKingIds.UNIQUES.contains(itemId), first.isPending(),
+				highlighted.contains(itemId), first.isPending(),
 				first.isCharges() ? prices.name(first.getChargeItemId()) : null, first.getChargesPerItem(),
 				first.getPolishedFrom() > 0 ? prices.name(first.getPolishedFrom()) : null));
 		}

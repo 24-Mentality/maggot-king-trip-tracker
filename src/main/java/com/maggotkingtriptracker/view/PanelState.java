@@ -1,5 +1,6 @@
 package com.maggotkingtriptracker.view;
 
+import com.maggotkingtriptracker.boss.BossDefinition;
 import java.util.List;
 import lombok.Value;
 
@@ -16,15 +17,30 @@ public class PanelState
 		 */
 		PAUSED,
 		/**
-		 * Paused in the lair (Pause button or idle), or waiting just outside it.
+		 * Paused in the boss's area (Pause button or idle), or waiting just outside it.
 		 */
 		AFK_PAUSED,
 		IDLE,
 	}
 
+	/**
+	 * The boss shown in all three tabs.
+	 */
+	BossDefinition boss;
+	/**
+	 * Every boss in the dropdown, with which one has a trip in progress.
+	 */
+	List<BossOption> bosses;
+	/**
+	 * Selected variant chip; null for All.
+	 */
+	String variant;
+	/**
+	 * Status of the shown boss: a trip for another boss keeps tracking but shows here as IDLE.
+	 */
 	Status status;
 	/**
-	 * The trip in progress, or the most recent completed trip when idle; null if there are none.
+	 * The shown boss's trip in progress, or its most recent completed trip when idle; null if there are none.
 	 */
 	TripView currentTrip;
 	/**
@@ -41,11 +57,11 @@ public class PanelState
 	 */
 	String pauseText;
 	/**
-	 * The clock is paused in the lair, so the Pause button reads Resume.
+	 * The clock is paused in the boss's area, so the Pause button reads Resume.
 	 */
 	boolean pausedInLair;
 	/**
-	 * Pausing is possible: in the lair on an open trip.
+	 * Pausing is possible: in the shown boss's area on an open trip.
 	 */
 	boolean canPause;
 	boolean readOnly;

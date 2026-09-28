@@ -10,8 +10,10 @@ public class LifetimeView
 {
 	int trips;
 	int kills;
-	int stomachKills;
-	int eggKills;
+	/**
+	 * Kills per loot choice, e.g. "Stomach 10 · Eggs 2"; empty for bosses without choices.
+	 */
+	String choiceSummary;
 	int deaths;
 	int pets;
 	long activeMs;
@@ -30,5 +32,8 @@ public class LifetimeView
 	 */
 	List<Long> netPerTrip;
 	DrynessView dryness;
+	/**
+	 * Tarnished items polished; empty for bosses without them.
+	 */
 	List<PolishView> polish;
 }

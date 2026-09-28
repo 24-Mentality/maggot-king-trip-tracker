@@ -10,7 +10,7 @@ import net.runelite.client.ui.ColorScheme;
 
 /**
  * Headline numbers for one trip: a time card (time, kills, average and fastest kill) and a profit card
- * (net, GP/hr, loot, costs, stomach/eggs, deaths). For a trip in progress, {@link #tick(long)} keeps the timer
+ * (net, GP/hr, a boss-specific cell, loot, costs, deaths). For a trip in progress, {@link #tick(long)} keeps the timer
  * and GP/hr live.
  */
 class TripSummaryCard extends JPanel
@@ -35,8 +35,10 @@ class TripSummaryCard extends JPanel
 			+ " once polished.");
 	private final StatCell costs = new StatCell("Costs", false)
 		.help("Supplies used + items dropped and left behind + death costs. Hover the value for the split.");
-	private final StatCell split = new StatCell("Stom / Eggs", false)
-		.help("Kills where you chose Open-stomach / Take-eggs on the corpse.");
+	/**
+	 * Boss-specific: for the Maggot King, Stom / Eggs.
+	 */
+	private final StatCell bossStat = new StatCell("", false);
 	private final StatCell deaths = new StatCell("Deaths", false)
 		.help("Deaths in the lair this trip.");
 
@@ -49,7 +51,7 @@ class TripSummaryCard extends JPanel
 		setOpaque(false);
 
 		JPanel timeCard = card(new GridLayout(1, 4, 4, 0), time, kills, averageKill, fastestKill);
-		JPanel profitCard = card(new GridLayout(2, 3, 4, 3), net, gpPerHour, split, loot, costs, deaths);
+		JPanel profitCard = card(new GridLayout(2, 3, 4, 3), net, gpPerHour, bossStat, loot, costs, deaths);
 
 		JPanel gap = new JPanel();
 		gap.setOpaque(false);
@@ -87,7 +89,9 @@ class TripSummaryCard extends JPanel
 		costs.setValue(UiFormat.gp(totalCosts), ColorScheme.LIGHT_GRAY_COLOR, "<html>Supplies: " + UiFormat.fullGp(trip.getSupplyCost())
 			+ "<br>Dropped: " + UiFormat.fullGp(trip.getDroppedCost())
 			+ "<br>Deaths: " + UiFormat.fullGp(trip.getDeathCost()) + "</html>");
-		split.setValue(trip.getStomachKills() + " / " + trip.getEggKills());
+		bossStat.setCaption(trip.getBossStat().getLabel());
+		bossStat.help(trip.getBossStat().getHelp());
+		bossStat.setValue(trip.getBossStat().getValue());
 		deaths.setValue(trip.getDeaths() + (trip.isPet() ? " · Pet!" : ""));
 		tick(now);
 	}

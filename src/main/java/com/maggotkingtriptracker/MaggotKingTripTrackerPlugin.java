@@ -2,6 +2,7 @@ package com.maggotkingtriptracker;
 
 import com.google.gson.Gson;
 import com.google.inject.Provides;
+import com.maggotkingtriptracker.boss.BossRegistry;
 import com.maggotkingtriptracker.diagnostic.DiagnosticRecorder;
 import com.maggotkingtriptracker.persistence.HistoryStore;
 import com.maggotkingtriptracker.pricing.PriceService;
@@ -9,6 +10,8 @@ import com.maggotkingtriptracker.tracking.TripTracker;
 import com.maggotkingtriptracker.ui.PanelActions;
 import com.maggotkingtriptracker.ui.TrackerPanel;
 import java.awt.image.BufferedImage;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -40,6 +43,8 @@ import net.runelite.client.util.ImageUtil;
 )
 public class MaggotKingTripTrackerPlugin extends Plugin
 {
+	private static final DateTimeFormatter EXPORT_STAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd-HHmmss");
+
 	@Inject
 	private Client client;
 
@@ -77,7 +82,8 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
-		DiagnosticRecorder recorder = new DiagnosticRecorder(client, itemManager, this::getPluginDirectory);
+		BossRegistry registry = BossRegistry.standard();
+		DiagnosticRecorder recorder = new DiagnosticRecorder(client, itemManager, registry, this::getPluginDirectory);
 		diagnosticRecorder = recorder;
 		eventBus.register(recorder);
 		boolean diagnosticMode = config.diagnosticMode();
@@ -90,14 +96,14 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 			return thread;
 		});
 
-		TrackerPanel trackerPanel = new TrackerPanel(itemManager, new Actions());
+		TrackerPanel trackerPanel = new TrackerPanel(itemManager, new Actions(), registry.first());
 		panel = trackerPanel;
 
 		store = new HistoryStore(gson, this::getPluginDirectory, executor);
 		TripTracker tracker = new TripTracker(client, clientThread, config, new PriceService(itemManager), store,
 			gson, executor, state -> SwingUtilities.invokeLater(() -> trackerPanel.update(state)),
 			message -> notifier.notify(config.alertNotification(), message),
-			this::lairEntered, configManager);
+			this::lairEntered, configManager, registry);
 		tripTracker = tracker;
 		eventBus.register(tracker);
 		clientThread.invokeLater(tracker::start);
@@ -159,7 +165,7 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 	}
 
 	/**
-	 * Called on the client thread when the player enters the lair.
+	 * Called on the client thread when the player enters a tracked boss's area.
 	 */
 	private void lairEntered()
 	{
@@ -221,15 +227,45 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 		}
 
 		@Override
+		public void selectBoss(String bossId)
+		{
+			TripTracker tracker = tripTracker;
+			clientThread.invokeLater(() -> tracker.selectBoss(bossId));
+		}
+
+		@Override
+		public void selectVariant(String variant)
+		{
+			TripTracker tracker = tripTracker;
+			clientThread.invokeLater(() -> tracker.selectVariant(variant));
+		}
+
+		@Override
+		public void setLastUniqueKc(Integer killCount)
+		{
+			TripTracker tracker = tripTracker;
+			clientThread.invokeLater(() -> tracker.setLastUniqueKc(killCount));
+		}
+
+		@Override
 		public void exportCsv()
 		{
-			export("Export trips", "maggot-king-trips.csv", "CSV files", "csv", TripTracker::exportCsv);
+			// Only the shown boss's trips
+			export("Export trips", panel.getBoss().getFileSlug() + "-trips-" + fileStamp() + ".csv", "CSV files", "csv",
+				TripTracker::exportCsv);
 		}
 
 		@Override
 		public void exportJson()
 		{
-			export("Export history", "maggot-king-history.json", "JSON files", "json", TripTracker::exportJson);
+			// Every boss on this account
+			export("Export history", "boss-trip-tracker-history-" + fileStamp() + ".json", "JSON files", "json",
+				TripTracker::exportJson);
+		}
+
+		private String fileStamp()
+		{
+			return EXPORT_STAMP.format(LocalDateTime.now());
 		}
 
 		@Override
@@ -253,7 +289,7 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 				if (error != null)
 				{
 					SwingUtilities.invokeLater(() -> trackerPanel.showMessage("Import history",
-						"That file couldn't be read as a Maggot King Trip Tracker export.", true));
+						"That file couldn't be read as a Boss Trip Tracker export.", true));
 					return;
 				}
 				clientThread.invokeLater(() ->

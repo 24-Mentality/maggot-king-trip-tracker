@@ -15,12 +15,14 @@ public class TripView
 	TripEndReason endReason;
 	long activeMs;
 	/**
-	 * Start of the running in-lair segment, for the live timer; null when not in the lair.
+	 * Start of the running segment, for the live timer; null when the clock isn't running.
 	 */
 	Long segmentStartedAt;
 	int kills;
-	int stomachKills;
-	int eggKills;
+	/**
+	 * The boss-specific third cell of the profit card (for the Maggot King, Stom / Eggs).
+	 */
+	StatView bossStat;
 	int deaths;
 	boolean pet;
 	long lootValue;

@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.util.QuantityFormatter;
 
@@ -28,6 +29,16 @@ final class UiFormat
 	{
 		String formatted = QuantityFormatter.quantityToStackSize(Math.abs(value));
 		return value < 0 ? "-" + formatted : formatted;
+	}
+
+	/**
+	 * The "N" of a 1/N drop rate: whole numbers with separators ("3,500"), otherwise one decimal ("205.6").
+	 */
+	static String oneIn(double rate)
+	{
+		double n = 1 / rate;
+		return Math.abs(n - Math.round(n)) < 0.05 ? String.format(Locale.ROOT, "%,d", Math.round(n))
+			: String.format(Locale.ROOT, "%,.1f", n);
 	}
 
 	static String fullGp(long value)

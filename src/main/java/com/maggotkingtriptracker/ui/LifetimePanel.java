@@ -1,6 +1,6 @@
 package com.maggotkingtriptracker.ui;
 
-import com.maggotkingtriptracker.MaggotKingRates;
+import com.maggotkingtriptracker.boss.BossDefinition;
 import com.maggotkingtriptracker.model.TripMath;
 import com.maggotkingtriptracker.view.DrynessView;
 import com.maggotkingtriptracker.view.ItemView;
@@ -122,7 +122,7 @@ class LifetimePanel extends JPanel
 		return spacer;
 	}
 
-	void update(LifetimeView view, boolean readOnly)
+	void update(LifetimeView view, boolean readOnly, BossDefinition boss)
 	{
 		if (view == null)
 		{
@@ -130,6 +130,11 @@ class LifetimePanel extends JPanel
 			return;
 		}
 		setVisible(true);
+
+		String area = boss.getAreaNoun();
+		time.setCaption(Character.toUpperCase(area.charAt(0)) + area.substring(1) + " time");
+		eggCard.setVisible(!boss.getEggPetRates().isEmpty());
+		polishCard.setVisible(!boss.getTarnishedItems().isEmpty());
 
 		trips.setValue(String.valueOf(view.getTrips()));
 		kills.setValue(String.valueOf(view.getKills()));
@@ -144,11 +149,12 @@ class LifetimePanel extends JPanel
 			+ "<br>Deaths: " + UiFormat.fullGp(view.getDeathCost()) + "</html>");
 		net.setValue(UiFormat.gp(view.getNetProfit()), UiFormat.profitColor(view.getNetProfit()), UiFormat.fullGp(view.getNetProfit()));
 		long rate = TripMath.gpPerHour(view.getNetProfit(), view.getActiveMs());
-		gpPerHour.setValue(UiFormat.gp(rate), UiFormat.profitColor(rate), UiFormat.fullGp(rate) + " per hour in the lair");
+		gpPerHour.setValue(UiFormat.gp(rate), UiFormat.profitColor(rate), UiFormat.fullGp(rate) + " per hour in the " + area);
 		deaths.setValue(String.valueOf(view.getDeaths()));
 
-		details.setText("Stomach " + view.getStomachKills() + " · Eggs " + view.getEggKills()
-			+ (view.getPets() > 0 ? " · Pets " + view.getPets() : ""));
+		String pets = view.getPets() > 0 ? "Pets " + view.getPets() : "";
+		details.setText(view.getChoiceSummary().isEmpty() ? pets
+			: view.getChoiceSummary() + (pets.isEmpty() ? "" : " · " + pets));
 
 		Long today = view.getLootValueToday();
 		todayValue.setVisible(today != null);
@@ -162,7 +168,7 @@ class LifetimePanel extends JPanel
 		chartTitle.setText(shown == 0 ? "Profit per trip" : "Profit per trip (last " + shown + ")");
 		chart.setValues(view.getNetPerTrip());
 
-		updateDryness(view.getDryness());
+		updateDryness(view.getDryness(), boss);
 		updatePolish(view.getPolish());
 
 		exportCsvButton.setEnabled(view.getTrips() > 0);
@@ -173,16 +179,20 @@ class LifetimePanel extends JPanel
 		repaint();
 	}
 
-	private void updateDryness(DrynessView dryness)
+	private void updateDryness(DrynessView dryness, BossDefinition boss)
 	{
+		String luckKills = boss.getLuckKillsName();
+		String capitalised = Character.toUpperCase(luckKills.charAt(0)) + luckKills.substring(1);
 		// One short fact per line so nothing wraps at sidebar width; details are in the hover text
 		List<String[]> rows = new ArrayList<>();
-		rows.add(new String[]{"Stomach kills: " + String.format(Locale.ROOT, "%,d", dryness.getStomachKills()),
-			"Open-stomach kills tracked by this plugin. Uniques and the kill pet only come from Open-stomach."});
-		rows.add(new String[]{"Since unique: " + String.format(Locale.ROOT, "%,d", dryness.getStomachKillsSinceUnique())
+		rows.add(new String[]{boss.getLuckKillsLabel() + ": " + String.format(Locale.ROOT, "%,d", dryness.getLuckKills()),
+			(capitalised + " tracked by this plugin. " + boss.getLuckNote()).trim()});
+		rows.add(new String[]{"Since unique: " + String.format(Locale.ROOT, "%,d", dryness.getKillsSinceUnique())
 			+ " (" + percent(dryness.getChanceThisDry()) + " this dry)",
-			"Open-stomach kills since your last tracked unique, and the chance of going that long without one at 1/205.6."});
-		for (DrynessView.Unique unique : dryness.getUniques())
+			capitalised + " since your last " + (dryness.isSinceFromEnteredKc() ? "unique (the kill count you entered)"
+				: "tracked unique") + ", and the chance of going that long without one at 1/"
+				+ UiFormat.oneIn(dryness.getAnyUniqueRate()) + "."});
+		for (DrynessView.Drop unique : dryness.getUniques())
 		{
 			List<String> kcs = new ArrayList<>();
 			for (Integer kc : unique.getKillCounts())
@@ -191,12 +201,16 @@ class LifetimePanel extends JPanel
 			}
 			rows.add(new String[]{unique.getName() + ": " + unique.getKillCounts().size() + " / "
 				+ String.format(Locale.ROOT, "%.2f", unique.getExpected()),
-				"Received / expected from tracked kills (1/" + Math.round(1 / MaggotKingRates.UNIQUES.get(unique.getItemId()))
-					+ ")." + (kcs.isEmpty() ? "" : " Received at KC " + String.join(", ", kcs) + ".")});
+				"Received / expected from tracked kills (1/" + UiFormat.oneIn(unique.getRate()) + ")."
+					+ (kcs.isEmpty() ? "" : " Received at KC " + String.join(", ", kcs) + ".")});
 		}
-		rows.add(new String[]{"Pet from kills: " + dryness.getPetsFromKills() + " / "
-			+ String.format(Locale.ROOT, "%.3f", dryness.getExpectedPetsFromKills()),
-			"Received / expected from tracked Open-stomach kills at 1/3,500."});
+		DrynessView.Drop pet = dryness.getPet();
+		if (pet != null)
+		{
+			rows.add(new String[]{"Pet from kills: " + pet.getReceived() + " / "
+				+ String.format(Locale.ROOT, "%.3f", pet.getExpected()),
+				"Received / expected from tracked " + luckKills + " at 1/" + UiFormat.oneIn(pet.getRate()) + "."});
+		}
 		drynessCard.setRows(rows);
 
 		List<String[]> eggRows = new ArrayList<>();

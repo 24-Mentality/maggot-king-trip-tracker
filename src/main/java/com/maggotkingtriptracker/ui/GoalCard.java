@@ -1,6 +1,6 @@
 package com.maggotkingtriptracker.ui;
 
-import com.maggotkingtriptracker.MaggotKingIds;
+import com.maggotkingtriptracker.boss.BossDefinition;
 import com.maggotkingtriptracker.view.GoalView;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -22,7 +22,7 @@ import net.runelite.client.util.AsyncBufferedImage;
 import net.runelite.client.util.ImageUtil;
 
 /**
- * Kill goal progress in the style of RuneLite's XP tracker: the Maggot King icon, KPH / Kills Done / TTG /
+ * Kill goal progress in the style of RuneLite's XP tracker: the boss icon, KPH / Kills Done / TTG /
  * Kills Left, and a progress bar with the percentage.
  */
 class GoalCard extends JPanel
@@ -43,6 +43,9 @@ class GoalCard extends JPanel
 	private boolean paused;
 
 	private GoalView goal;
+	private final ItemManager itemManager;
+	private final JLabel icon = new JLabel();
+	private int iconItemId = -1;
 
 	GoalCard(ItemManager itemManager, Runnable onSetGoal, Runnable onPause, Runnable onReset)
 	{
@@ -50,16 +53,9 @@ class GoalCard extends JPanel
 		setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
-		JLabel icon = new JLabel();
+		this.itemManager = itemManager;
 		icon.setPreferredSize(new Dimension(30, 28));
 		icon.setHorizontalAlignment(SwingConstants.CENTER);
-		if (itemManager != null)
-		{
-			AsyncBufferedImage image = itemManager.getImage(MaggotKingIds.PET_ITEM);
-			Runnable scaled = () -> icon.setIcon(new ImageIcon(ImageUtil.resizeImage(image, 30, 27)));
-			image.onLoaded(scaled);
-			scaled.run();
-		}
 
 		JPanel stats = new JPanel(new GridLayout(2, 2, 3, 0));
 		stats.setOpaque(false);
@@ -98,6 +94,29 @@ class GoalCard extends JPanel
 		add(top, BorderLayout.NORTH);
 		add(progress, BorderLayout.CENTER);
 		add(buttons, BorderLayout.SOUTH);
+	}
+
+	/**
+	 * Shows the boss's icon beside the stats.
+	 */
+	void setBoss(BossDefinition boss)
+	{
+		int itemId = boss.getIconItemId();
+		if (itemId == iconItemId || itemManager == null)
+		{
+			return;
+		}
+		iconItemId = itemId;
+		AsyncBufferedImage image = itemManager.getImage(itemId);
+		Runnable scaled = () ->
+		{
+			if (iconItemId == itemId)
+			{
+				icon.setIcon(new ImageIcon(ImageUtil.resizeImage(image, 30, 27)));
+			}
+		};
+		image.onLoaded(scaled);
+		scaled.run();
 	}
 
 	private static JButton smallButton(String text)

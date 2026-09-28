@@ -1,7 +1,8 @@
 package com.maggotkingtriptracker.ui;
 
-import com.maggotkingtriptracker.MaggotKingIds;
-import com.maggotkingtriptracker.MaggotKingRates;
+import com.maggotkingtriptracker.boss.BossDefinition;
+import com.maggotkingtriptracker.boss.DropKind;
+import com.maggotkingtriptracker.boss.ExpectedDrop;
 import com.maggotkingtriptracker.view.DrynessView;
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
@@ -32,7 +33,7 @@ import net.runelite.client.util.ImageUtil;
 
 /**
  * Expected vs received drops per unique, with an Expected tab (progress to the next statistical drop) and a
- * Received tab (luck: actual minus expected).
+ * Received tab (luck: actual minus expected). Rows follow the shown boss: any unique, each unique, the pet.
  */
 class DropChancesCard extends JPanel
 {
@@ -42,28 +43,29 @@ class DropChancesCard extends JPanel
 		+ "<b>Received tab:</b><br>"
 		+ "<u>Bar</u>: Your 'luck' (actual drops vs. expectations).<br>"
 		+ "<u>Number</u>: Total drops you have actually received.<br><br>"
-		+ "Uniques and the kill pet only come from Open-stomach; eggs you pop add to the pet row."
-		+ " All-time numbers come from RuneLite's Loot Tracker when it has a record for this account.</html>";
+		+ "%s All-time numbers come from RuneLite's Loot Tracker when it has a record for this account.</html>";
 
 	/**
 	 * Remembered for the session, like the tab choice in other trackers.
 	 */
 	private static boolean showReceived;
 
+	private final ItemManager itemManager;
 	private final JLabel expectedTab = tabLabel("Expected");
 	private final JLabel receivedTab = tabLabel("Received");
+	private final JLabel help = new JLabel(new HelpIcon());
+	private final JPanel rowPanel = new JPanel(new GridLayout(0, 1, 0, 3));
 	private final List<Row> rows = new ArrayList<>();
 	private final JLabel source = new JLabel();
 	private DrynessView dryness;
+	private BossDefinition boss;
 
 	DropChancesCard(ItemManager itemManager)
 	{
+		this.itemManager = itemManager;
 		setLayout(new BorderLayout(0, 3));
 		setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		setBorder(BorderFactory.createEmptyBorder(3, 6, 6, 6));
-
-		JLabel help = new JLabel(new HelpIcon());
-		help.setToolTipText(HELP);
 
 		expectedTab.addMouseListener(select(false));
 		receivedTab.addMouseListener(select(true));
@@ -77,16 +79,7 @@ class DropChancesCard extends JPanel
 		header.add(tabs, BorderLayout.CENTER);
 		header.add(help, BorderLayout.EAST);
 
-		JPanel rowPanel = new JPanel(new GridLayout(0, 1, 0, 3));
 		rowPanel.setOpaque(false);
-		rows.add(new Row(anyLabel()));
-		rows.add(new Row(itemIcon(itemManager, MaggotKingIds.UNIQUES_FANG)));
-		rows.add(new Row(itemIcon(itemManager, MaggotKingIds.UNIQUES_KISTEN)));
-		rows.add(new Row(itemIcon(itemManager, MaggotKingIds.PET_ITEM)));
-		for (Row row : rows)
-		{
-			rowPanel.add(row.panel);
-		}
 
 		source.setFont(FontManager.getRunescapeSmallFont());
 		source.setForeground(UiFormat.MUTED_TEXT);
@@ -97,51 +90,94 @@ class DropChancesCard extends JPanel
 		styleTabs();
 	}
 
-	void update(DrynessView dryness)
+	void update(DrynessView dryness, BossDefinition boss)
 	{
 		this.dryness = dryness;
+		if (boss != this.boss)
+		{
+			this.boss = boss;
+			buildRows();
+		}
 		refresh();
+	}
+
+	private void buildRows()
+	{
+		rows.clear();
+		rowPanel.removeAll();
+		rows.add(new Row(anyLabel()));
+		for (ExpectedDrop drop : boss.getDrops())
+		{
+			if (drop.getKind() == DropKind.UNIQUE)
+			{
+				rows.add(new Row(itemIcon(itemManager, drop.getItemId())));
+			}
+		}
+		if (boss.getPet() != null)
+		{
+			rows.add(new Row(itemIcon(itemManager, boss.getPet().getItemId())));
+		}
+		for (Row row : rows)
+		{
+			rowPanel.add(row.panel);
+		}
+		String note = boss.getLuckNote();
+		if (!boss.getEggPetRates().isEmpty())
+		{
+			note += (note.isEmpty() ? "" : " ") + "Eggs you pop add to the pet row.";
+		}
+		help.setToolTipText(String.format(HELP, note));
+		rowPanel.revalidate();
 	}
 
 	private void refresh()
 	{
-		if (dryness == null)
+		if (dryness == null || boss == null)
 		{
 			return;
 		}
 
-		double eggPetExpected = 0;
-		for (DrynessView.EggTier tier : dryness.getEggTiers())
+		// Rows: any unique, each unique, then the pet
+		List<String> names = new ArrayList<>();
+		List<Double> expected = new ArrayList<>();
+		List<Integer> received = new ArrayList<>();
+		DrynessView.AllTime allTime = dryness.getAllTime();
+		List<DrynessView.Drop> uniques = allTime != null ? allTime.getUniques() : dryness.getUniques();
+		names.add("Any unique (1/" + UiFormat.oneIn(dryness.getAnyUniqueRate()) + ")");
+		expected.add(allTime != null ? allTime.getExpectedUniques() : dryness.getExpectedUniques());
+		received.add(allTime != null ? allTime.getUniquesReceived() : dryness.getUniquesReceived());
+		for (DrynessView.Drop unique : uniques)
 		{
-			eggPetExpected += tier.getPopped() * tier.getPetRate();
+			names.add(unique.getName() + " (1/" + UiFormat.oneIn(unique.getRate()) + ")");
+			expected.add(unique.getExpected());
+			received.add(unique.getReceived());
 		}
 
-		DrynessView.Unique fang = unique(MaggotKingIds.UNIQUES_FANG);
-		DrynessView.Unique kisten = unique(MaggotKingIds.UNIQUES_KISTEN);
-		DrynessView.AllTime allTime = dryness.getAllTime();
-		double fangRate = MaggotKingRates.UNIQUES.get(MaggotKingIds.UNIQUES_FANG);
-		double kistenRate = MaggotKingRates.UNIQUES.get(MaggotKingIds.UNIQUES_KISTEN);
+		boolean hasEggs = !dryness.getEggTiers().isEmpty();
+		double eggPetExpected = dryness.getEggPetExpected();
+		DrynessView.Drop pet = dryness.getPet();
+		if (pet != null)
+		{
+			names.add(boss.getDisplayName() + " pet (1/" + UiFormat.oneIn(pet.getRate()) + " per kill"
+				+ (hasEggs ? ", plus eggs" : "") + ")");
+			if (allTime != null)
+			{
+				expected.add(allTime.getPet().getExpected());
+				received.add(allTime.getPet().getReceived());
+			}
+			else
+			{
+				expected.add(pet.getExpected() + eggPetExpected);
+				received.add(pet.getReceived() + dryness.getPetsFromEggs());
+			}
+		}
+		int petRow = pet != null ? names.size() - 1 : -1;
 
-		int kills;
-		double[] expected;
-		int[] received;
 		String basis;
 		if (allTime != null)
 		{
-			// All-time: the Loot Tracker records every loot-dropping (Open-stomach) kill and its drops
-			kills = allTime.getLootKills();
-			expected = new double[]{
-				kills * MaggotKingRates.ANY_UNIQUE,
-				kills * fangRate,
-				kills * kistenRate,
-				kills * MaggotKingRates.PET_PER_STOMACH + eggPetExpected,
-			};
-			received = new int[]{
-				allTime.getFang() + allTime.getKisten(),
-				allTime.getFang(),
-				allTime.getKisten(),
-				allTime.getPets(),
-			};
+			// All-time: the Loot Tracker records every loot-dropping kill and its drops
+			int kills = allTime.getLootKills();
 			basis = String.format(Locale.ROOT, "%,d kills recorded by RuneLite's Loot Tracker since %s", kills,
 				UiFormat.date(allTime.getFirstRecordedAt()))
 				+ (allTime.getKillCount() != null ? String.format(Locale.ROOT, " (KC %,d)", allTime.getKillCount()) : "");
@@ -150,78 +186,41 @@ class DropChancesCard extends JPanel
 		}
 		else
 		{
-			kills = dryness.getStomachKills();
-			expected = new double[]{
-				dryness.getExpectedUniques(),
-				fang == null ? 0 : fang.getExpected(),
-				kisten == null ? 0 : kisten.getExpected(),
-				dryness.getExpectedPetsFromKills() + eggPetExpected,
-			};
-			received = new int[]{
-				dryness.getUniquesReceived(),
-				fang == null ? 0 : fang.getKillCounts().size(),
-				kisten == null ? 0 : kisten.getKillCounts().size(),
-				dryness.getPetsFromKills() + dryness.getPetsFromEggs(),
-			};
-			basis = kills + " Open-stomach kills tracked by this plugin";
+			int kills = dryness.getLuckKills();
+			basis = kills + " " + boss.getLuckKillsName() + " tracked by this plugin";
 			source.setText("Tracked · " + kills + " kills (enable Loot Tracker for all-time)");
 		}
 		source.setToolTipText(UiFormat.tooltip("Based on " + basis + "."));
-		String[] names = {"Any unique (1/205.6)", fangName(fang), kistenName(kisten), "Maggot King pet (1/3,500 per kill, plus eggs)"};
 
 		double scale = 1;
 		for (int i = 0; i < rows.size(); i++)
 		{
-			scale = Math.max(scale, Math.abs(received[i] - expected[i]));
+			scale = Math.max(scale, Math.abs(received.get(i) - expected.get(i)));
 		}
 
 		for (int i = 0; i < rows.size(); i++)
 		{
 			Row row = rows.get(i);
-			double whole = Math.floor(expected[i]);
-			double toNext = expected[i] - whole;
+			double whole = Math.floor(expected.get(i));
+			double toNext = expected.get(i) - whole;
 			if (showReceived)
 			{
-				row.bar.showReceived(received[i] - expected[i], scale);
-				row.number.setText(String.valueOf(received[i]));
+				row.bar.showReceived(received.get(i) - expected.get(i), scale);
+				row.number.setText(String.valueOf(received.get(i)));
 			}
 			else
 			{
 				row.bar.showExpected(toNext);
 				row.number.setText(String.valueOf((int) whole));
 			}
-			String help = names[i] + ": " + received[i] + " received, "
-				+ String.format(Locale.ROOT, "%.2f", expected[i]) + " expected from " + basis
-				+ (i == 3 && eggPetExpected > 0 ? String.format(Locale.ROOT, " plus eggs popped (%.3f)", eggPetExpected) : "")
+			String help = names.get(i) + ": " + received.get(i) + " received, "
+				+ String.format(Locale.ROOT, "%.2f", expected.get(i)) + " expected from " + basis
+				+ (i == petRow && eggPetExpected > 0 ? String.format(Locale.ROOT, " plus eggs popped (%.3f)", eggPetExpected) : "")
 				+ ". " + String.format(Locale.ROOT, "%.0f%%", toNext * 100) + " of the way to the next expected drop."
-				+ (i == 3 && allTime != null ? " The Loot Tracker doesn't record pets, so pets are the ones this plugin saw." : "");
+				+ (i == petRow && allTime != null ? " The Loot Tracker doesn't record pets, so pets are the ones this plugin saw." : "");
 			row.panel.setToolTipText(UiFormat.tooltip(help));
 			row.bar.setToolTipText(UiFormat.tooltip(help));
 		}
-	}
-
-	private DrynessView.Unique unique(int itemId)
-	{
-		for (DrynessView.Unique unique : dryness.getUniques())
-		{
-			if (unique.getItemId() == itemId)
-			{
-				return unique;
-			}
-		}
-		return null;
-	}
-
-	private static String fangName(DrynessView.Unique fang)
-	{
-		return (fang == null ? "Elder venator fang" : fang.getName()) + " (1/"
-			+ Math.round(1 / MaggotKingRates.UNIQUES.get(MaggotKingIds.UNIQUES_FANG)) + ")";
-	}
-
-	private static String kistenName(DrynessView.Unique kisten)
-	{
-		return (kisten == null ? "Crimson kisten" : kisten.getName()) + " (1/"
-			+ Math.round(1 / MaggotKingRates.UNIQUES.get(MaggotKingIds.UNIQUES_KISTEN)) + ")";
 	}
 
 	private MouseAdapter select(boolean received)

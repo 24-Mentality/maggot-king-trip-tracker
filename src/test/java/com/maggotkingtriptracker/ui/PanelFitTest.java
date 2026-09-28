@@ -1,13 +1,17 @@
 package com.maggotkingtriptracker.ui;
 
 import static org.junit.Assert.assertTrue;
+import com.maggotkingtriptracker.boss.BossDefinition;
+import com.maggotkingtriptracker.boss.MaggotKingBoss;
 import com.maggotkingtriptracker.model.TripEndReason;
+import com.maggotkingtriptracker.view.BossOption;
 import com.maggotkingtriptracker.view.DrynessView;
 import com.maggotkingtriptracker.view.GoalView;
 import com.maggotkingtriptracker.view.ItemView;
 import com.maggotkingtriptracker.view.LifetimeView;
 import com.maggotkingtriptracker.view.PanelState;
 import com.maggotkingtriptracker.view.PolishView;
+import com.maggotkingtriptracker.view.StatView;
 import com.maggotkingtriptracker.view.SupplyCategory;
 import com.maggotkingtriptracker.view.TripView;
 import java.awt.Component;
@@ -31,6 +35,7 @@ public class PanelFitTest
 	 * The sidebar gives a non-scrolling PluginPanel 242px, minus room for our own vertical scrollbar.
 	 */
 	private static final int WIDTH = 242 - 17;
+	private static final BossDefinition BOSS = new MaggotKingBoss();
 
 	@Test
 	public void everyLabelFitsOnAllTabs() throws Exception
@@ -38,7 +43,7 @@ public class PanelFitTest
 		List<String> problems = new ArrayList<>();
 		SwingUtilities.invokeAndWait(() ->
 		{
-			TrackerPanel panel = new TrackerPanel(null, new NoActions());
+			TrackerPanel panel = new TrackerPanel(null, new NoActions(), BOSS);
 			panel.update(worstCaseState(PanelState.Status.IN_TRIP, false));
 			for (int tab = 0; tab < 3; tab++)
 			{
@@ -112,8 +117,7 @@ public class PanelFitTest
 			.endReason(TripEndReason.TELEPORT)
 			.activeMs((12 * 3600 + 34 * 60 + 56) * 1000L)
 			.kills(999)
-			.stomachKills(999)
-			.eggKills(999)
+			.bossStat(new StatView(BOSS.getProfitCell().getLabel(), "999 / 999", BOSS.getProfitCell().getHelp()))
 			.deaths(99)
 			.pet(true)
 			.lootValue(123_456_789_000L)
@@ -134,9 +138,11 @@ public class PanelFitTest
 				new SupplyCategory("Other", 99_999_999_000L)))
 			.build();
 
-		List<DrynessView.Unique> uniques = Arrays.asList(
-			new DrynessView.Unique(ItemID.ELDER_VENATOR_FANG, "Elder venator fang", 36.31, Arrays.asList(12_345, 12_346)),
-			new DrynessView.Unique(ItemID.CRIMSON_KISTEN, "Crimson kisten", 23.74, Collections.singletonList(12_345)));
+		List<DrynessView.Drop> uniques = Arrays.asList(
+			new DrynessView.Drop(ItemID.ELDER_VENATOR_FANG, "Elder venator fang", 1 / 340.0, 36.31, 2, Arrays.asList(12_345, 12_346)),
+			new DrynessView.Drop(ItemID.CRIMSON_KISTEN, "Crimson kisten", 1 / 520.0, 23.74, 1, Collections.singletonList(12_345)));
+		DrynessView.Drop pet = new DrynessView.Drop(ItemID.MAGGOTKINGPET, "Maggot marquess", 1 / 3500.0, 3.53, 9,
+			Collections.<Integer>emptyList());
 		List<DrynessView.EggTier> eggs = new ArrayList<>();
 		for (int id : new int[]{ItemID.MAGGOT_EGG, ItemID.SICKLY_MAGGOT_EGG, ItemID.WARM_MAGGOT_EGG,
 			ItemID.PULSATING_MAGGOT_EGG, ItemID.WRIGGLING_MAGGOT_EGG, ItemID.WRITHING_MAGGOT_EGG})
@@ -144,9 +150,32 @@ public class PanelFitTest
 			eggs.add(new DrynessView.EggTier(id, "Pulsating maggot egg", 999, 99, 1 / 3000.0));
 		}
 		// Realistic but large: KC 12,345 with 99 uniques
-		DrynessView dryness = new DrynessView(12_345, 1_234, 0.0024, uniques, 3.53, 9, eggs, 0.9999, 9,
-			12_345, 11_111, 2_565, 99, 60.04,
-			new DrynessView.AllTime(12_345, 12_345, 1_785_447_588_633L, 60, 39, 9));
+		DrynessView dryness = DrynessView.builder()
+			.luckKills(12_345)
+			.killsSinceUnique(1_234)
+			.chanceThisDry(0.0024)
+			.anyUniqueRate(1 / 205.6)
+			.uniquesReceived(99)
+			.expectedUniques(60.04)
+			.uniques(uniques)
+			.pet(pet)
+			.eggTiers(eggs)
+			.eggPetChance(0.9999)
+			.eggPetExpected(1.5)
+			.petsFromEggs(9)
+			.currentKc(12_345)
+			.lastUniqueKc(11_111)
+			.firstTrackedKc(2_565)
+			.allTime(DrynessView.AllTime.builder()
+				.lootKills(12_345)
+				.killCount(12_345)
+				.firstRecordedAt(1_785_447_588_633L)
+				.uniquesReceived(99)
+				.expectedUniques(60.04)
+				.uniques(uniques)
+				.pet(pet)
+				.build())
+			.build();
 
 		List<PolishView> polish = Collections.singletonList(new PolishView(ItemID.TARNISHED_NECKLACE, "Tarnished necklace",
 			999, Collections.singletonList(new ItemView(ItemID.DIAMOND_NECKLACE, "Diamond necklace", 999, 0, false, false,
@@ -155,8 +184,7 @@ public class PanelFitTest
 		LifetimeView lifetime = LifetimeView.builder()
 			.trips(9_999)
 			.kills(99_999)
-			.stomachKills(99_999)
-			.eggKills(99_999)
+			.choiceSummary("Stomach 99999 · Eggs 99999")
 			.deaths(9_999)
 			.pets(99)
 			.activeMs(999L * 3600 * 1000)
@@ -174,12 +202,29 @@ public class PanelFitTest
 
 		// 1 kill per hour for 12,000 hours: KPH and the time to goal are at their longest
 		GoalView goal = new GoalView(99_999, 12_345, 12_345L * 3600 * 1000, System.currentTimeMillis(), !paused);
-		return new PanelState(status, trip, Collections.singletonList(trip), lifetime, goal,
+		List<BossOption> bosses = Collections.singletonList(
+			new BossOption(BOSS.getId(), BOSS.getDisplayName(), BOSS.getIconItemId(), true));
+		return new PanelState(BOSS, bosses, null, status, trip, Collections.singletonList(trip), lifetime, goal,
 			paused ? "Trip paused (outside the lair)" : null, paused, true, false);
 	}
 
 	private static class NoActions implements PanelActions
 	{
+		@Override
+		public void selectBoss(String bossId)
+		{
+		}
+
+		@Override
+		public void selectVariant(String variant)
+		{
+		}
+
+		@Override
+		public void setLastUniqueKc(Integer killCount)
+		{
+		}
+
 		@Override
 		public void deleteTrip(String tripId)
 		{

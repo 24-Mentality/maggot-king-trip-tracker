@@ -60,12 +60,12 @@ public final class TripMath
 		return trip.getKills().isEmpty() && trip.getDeaths().isEmpty() && trip.getDropped().isEmpty();
 	}
 
-	public static int countChoice(Trip trip, CorpseChoice choice)
+	public static int countChoice(Trip trip, String choice)
 	{
 		int count = 0;
 		for (Kill kill : trip.getKills())
 		{
-			if (kill.getChoice() == choice)
+			if (choice.equals(kill.getChoice()))
 			{
 				count++;
 			}

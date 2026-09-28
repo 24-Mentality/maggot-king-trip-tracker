@@ -11,6 +11,9 @@ import net.runelite.client.config.Units;
 @ConfigGroup(MaggotKingTripTrackerConfig.GROUP)
 public interface MaggotKingTripTrackerConfig extends Config
 {
+	/**
+	 * Kept from when the plugin only tracked the Maggot King, so saved settings carry over.
+	 */
 	String GROUP = "maggotkingtriptracker";
 
 	@ConfigSection(
@@ -52,7 +55,7 @@ public interface MaggotKingTripTrackerConfig extends Config
 	@ConfigItem(
 		keyName = "logoutGraceMinutes",
 		name = "Logout grace period",
-		description = "After logging out in the lair, the trip continues if you are back in the lair within this time",
+		description = "After logging out during a trip, the trip continues if you are back at the boss within this time",
 		section = tripsSection,
 		position = 0
 	)
@@ -66,7 +69,7 @@ public interface MaggotKingTripTrackerConfig extends Config
 	@ConfigItem(
 		keyName = "mergeReentries",
 		name = "Merge re-entries",
-		description = "Count leaving and re-entering the lair within the merge window as one trip",
+		description = "Count leaving and re-entering a boss's area within the merge window as one trip",
 		section = tripsSection,
 		position = 1
 	)
@@ -78,7 +81,7 @@ public interface MaggotKingTripTrackerConfig extends Config
 	@ConfigItem(
 		keyName = "mergeWindowMinutes",
 		name = "Merge window",
-		description = "How soon you must re-enter the lair for it to count as the same trip",
+		description = "How soon you must re-enter for it to count as the same trip",
 		section = tripsSection,
 		position = 2
 	)
@@ -92,7 +95,7 @@ public interface MaggotKingTripTrackerConfig extends Config
 	@ConfigItem(
 		keyName = "countPreEntrySupplies",
 		name = "Count supplies used before entry",
-		description = "Add food, potions and spells used in the 60 seconds before entering the lair to the trip",
+		description = "Add food, potions and spells used in the 60 seconds before entering a boss's area to the trip",
 		section = tripsSection,
 		position = 3
 	)
@@ -104,7 +107,7 @@ public interface MaggotKingTripTrackerConfig extends Config
 	@ConfigItem(
 		keyName = "idlePauseSeconds",
 		name = "Idle pause after",
-		description = "In the lair, stop the trip and goal clocks after this long without dealing damage (the idle"
+		description = "During a trip, stop the trip and goal clocks after this long without dealing damage (the idle"
 			+ " time isn't counted). They restart on your next hit. 0 turns it off.",
 		section = tripsSection,
 		position = 4
@@ -118,8 +121,8 @@ public interface MaggotKingTripTrackerConfig extends Config
 
 	@ConfigItem(
 		keyName = "outsideGraceMinutes",
-		name = "Outside the lair grace",
-		description = "After walking out of the lair, the trip stays open (paused) while you stay just outside for"
+		name = "Outside grace period",
+		description = "After walking out (e.g. out of the Maggot King's lair), the trip stays open (paused) while you stay just outside for"
 			+ " this long. Going back in continues it. 0 ends the trip when you walk out.",
 		section = tripsSection,
 		position = 5
@@ -134,7 +137,7 @@ public interface MaggotKingTripTrackerConfig extends Config
 	@ConfigItem(
 		keyName = "autoResumeOnAttack",
 		name = "Auto-resume when I attack",
-		description = "After pressing Pause, resume as soon as you damage the Maggot King",
+		description = "After pressing Pause, resume as soon as you damage the boss",
 		section = tripsSection,
 		position = 6
 	)
@@ -158,7 +161,7 @@ public interface MaggotKingTripTrackerConfig extends Config
 	@ConfigItem(
 		keyName = "alertUniques",
 		name = "Unique drops",
-		description = "Notify when you get an Elder venator fang or Crimson kisten",
+		description = "Notify when you get a unique drop",
 		section = alertsSection,
 		position = 0
 	)
@@ -170,7 +173,7 @@ public interface MaggotKingTripTrackerConfig extends Config
 	@ConfigItem(
 		keyName = "alertPet",
 		name = "Pet",
-		description = "Notify when you get the Maggot King pet, from a kill or an egg",
+		description = "Notify when you get a boss pet (for the Maggot King, from a kill or an egg)",
 		section = alertsSection,
 		position = 1
 	)
@@ -182,7 +185,7 @@ public interface MaggotKingTripTrackerConfig extends Config
 	@ConfigItem(
 		keyName = "alertValue",
 		name = "Drops worth at least",
-		description = "Notify for any Maggot King drop (including polished tarnished items) worth at least this"
+		description = "Notify for any boss drop (including polished tarnished items) worth at least this"
 			+ " many gp. 0 turns it off.",
 		section = alertsSection,
 		position = 2
@@ -206,8 +209,8 @@ public interface MaggotKingTripTrackerConfig extends Config
 
 	@ConfigItem(
 		keyName = "openPanelOnEntry",
-		name = "Open panel in the lair",
-		description = "Open this plugin's side panel on the Trip tab when you enter the Maggot King's lair",
+		name = "Open panel on entry",
+		description = "Open this plugin's side panel on the Trip tab when you enter a tracked boss's area",
 		section = displaySection,
 		position = 0
 	)
@@ -231,7 +234,7 @@ public interface MaggotKingTripTrackerConfig extends Config
 	@ConfigItem(
 		keyName = "diagnosticMode",
 		name = "Diagnostic mode",
-		description = "Append Maggot King related game events (chat, clicks, inventory changes, loot) to diagnostic.log"
+		description = "Append boss related game events (chat, clicks, inventory changes, loot) to diagnostic.log"
 			+ " in this plugin's data folder. Leave off unless you are collecting data for development.",
 		section = developerSection,
 		position = 0
@@ -240,4 +243,23 @@ public interface MaggotKingTripTrackerConfig extends Config
 	{
 		return false;
 	}
+
+	@ConfigItem(
+		keyName = "selectedBoss",
+		name = "",
+		description = "The boss shown in the side panel",
+		hidden = true
+	)
+	default String selectedBoss()
+	{
+		return "";
+	}
+
+	@ConfigItem(
+		keyName = "selectedBoss",
+		name = "",
+		description = "",
+		hidden = true
+	)
+	void setSelectedBoss(String bossId);
 }

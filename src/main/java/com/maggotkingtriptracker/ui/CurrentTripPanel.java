@@ -18,16 +18,18 @@ class CurrentTripPanel extends JPanel
 	private final GoalCard goalCard;
 	private final JLabel status = new JLabel();
 	private final TripSummaryCard summary = new TripSummaryCard();
-	private final LuckCard luckCard = new LuckCard();
+	private final LuckCard luckCard;
 	private final DropChancesCard dropChances;
 	private final JPanel luckHolder = new JPanel(new BorderLayout());
 	private final JPanel detailsHolder = new JPanel();
 	private boolean live;
 	private TripView shownDetails;
 
-	CurrentTripPanel(ItemManager itemManager, Runnable onSetGoal, Runnable onPause, Runnable onResetGoal)
+	CurrentTripPanel(ItemManager itemManager, Runnable onSetGoal, Runnable onPause, Runnable onResetGoal,
+		Runnable onSetLastUniqueKc, Runnable onClearLastUniqueKc)
 	{
 		this.itemManager = itemManager;
+		this.luckCard = new LuckCard(onSetLastUniqueKc, onClearLastUniqueKc);
 		this.goalCard = new GoalCard(itemManager, onSetGoal, onPause, onResetGoal);
 		this.dropChances = new DropChancesCard(itemManager);
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -69,6 +71,7 @@ class CurrentTripPanel extends JPanel
 	{
 		TripView trip = state.getCurrentTrip();
 		live = state.getStatus() == PanelState.Status.IN_TRIP;
+		goalCard.setBoss(state.getBoss());
 		goalCard.setVisible(state.getLifetime() != null);
 		goalCard.setPauseState(state.isPausedInLair(), state.isCanPause());
 		goalCard.setGoal(state.getGoal(), now);
@@ -76,8 +79,8 @@ class CurrentTripPanel extends JPanel
 		luckHolder.setVisible(state.getLifetime() != null);
 		if (state.getLifetime() != null)
 		{
-			luckCard.update(state.getLifetime().getDryness());
-			dropChances.update(state.getLifetime().getDryness());
+			luckCard.update(state.getLifetime().getDryness(), state.getBoss());
+			dropChances.update(state.getLifetime().getDryness(), state.getBoss());
 		}
 		status.setText(statusText(state));
 
@@ -139,7 +142,7 @@ class CurrentTripPanel extends JPanel
 				TripView last = state.getCurrentTrip();
 				if (last == null)
 				{
-					return "No trips yet. Enter the Maggot King's lair to start one.";
+					return state.getBoss().getEmptyStateText();
 				}
 				return "Last trip · " + UiFormat.dateTime(last.getStartedAt()) + " · " + endReason(last.getEndReason());
 		}

@@ -5,6 +5,21 @@ package com.maggotkingtriptracker.ui;
  */
 public interface PanelActions
 {
+	/**
+	 * Show this boss in all three tabs.
+	 */
+	void selectBoss(String bossId);
+
+	/**
+	 * @param variant variant id, or null for All
+	 */
+	void selectVariant(String variant);
+
+	/**
+	 * @param killCount kill count of your last unique from before tracking; null clears it
+	 */
+	void setLastUniqueKc(Integer killCount);
+
 	void deleteTrip(String tripId);
 
 	void clearHistory();

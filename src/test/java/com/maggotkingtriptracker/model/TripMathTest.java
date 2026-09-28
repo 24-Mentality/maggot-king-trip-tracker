@@ -54,22 +54,25 @@ public class TripMathTest
 	{
 		AccountHistory history = new AccountHistory();
 		history.setAccountHash(42);
-		history.getTrips().add(sampleTrip());
+		history.boss("maggot_king").getTrips().add(sampleTrip());
 
 		Gson gson = new Gson();
 		AccountHistory copy = gson.fromJson(gson.toJson(history), AccountHistory.class);
 
 		assertEquals(AccountHistory.CURRENT_SCHEMA_VERSION, copy.getSchemaVersion());
-		assertEquals(1_015_000, TripMath.netProfit(copy.getTrips().get(0)));
-		assertEquals(CorpseChoice.STOMACH, copy.getTrips().get(0).getKills().get(0).getChoice());
+		Trip trip = copy.getBosses().get("maggot_king").getTrips().get(0);
+		assertEquals(1_015_000, TripMath.netProfit(trip));
+		assertEquals("STOMACH", trip.getKills().get(0).getChoice());
+		// Optional fields for other bosses aren't written for the Maggot King
+		assertEquals(false, gson.toJson(history).contains("variant"));
 	}
 
 	@Test
 	public void polishTallyAndEggPopsRoundTrip()
 	{
-		String json = "{\"schemaVersion\":1,\"trips\":[],\"eggPops\":[{\"eggItemId\":33665,\"at\":5,\"pet\":true}],"
+		String json = "{\"trips\":[],\"eggPops\":[{\"eggItemId\":33665,\"at\":5,\"pet\":true}],"
 			+ "\"polishOutcomes\":{\"33679\":{\"1245\":1,\"1243\":2}}}";
-		AccountHistory history = new Gson().fromJson(json, AccountHistory.class);
+		BossHistory history = new Gson().fromJson(json, BossHistory.class);
 
 		assertEquals(Integer.valueOf(2), history.getPolishOutcomes().get(33679).get(1243));
 		assertEquals(33665, history.getEggPops().get(0).getEggItemId());
@@ -104,7 +107,7 @@ public class TripMathTest
 	private static Trip sampleTrip()
 	{
 		Kill kill = new Kill();
-		kill.setChoice(CorpseChoice.STOMACH);
+		kill.setChoice("STOMACH");
 		kill.getLoot().add(new ItemEntry(1620, 11, 100_000));
 		kill.getLoot().add(new ItemEntry(33627, 1, 0));
 

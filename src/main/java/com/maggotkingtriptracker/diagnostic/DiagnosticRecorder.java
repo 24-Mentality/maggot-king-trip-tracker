@@ -1,8 +1,10 @@
 package com.maggotkingtriptracker.diagnostic;
 
 import com.google.common.collect.ImmutableSet;
-import com.maggotkingtriptracker.MaggotKingIds;
+import com.maggotkingtriptracker.boss.BossDefinition;
+import com.maggotkingtriptracker.boss.BossRegistry;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -45,12 +47,13 @@ import net.runelite.client.plugins.loottracker.LootReceived;
 import net.runelite.client.util.Filepath;
 
 /**
- * Records raw game events around the Maggot King to diagnostic.log so detection logic can be built
+ * Records raw game events around the tracked bosses to diagnostic.log so detection logic can be built
  * from real data. Only listens to events; it never draws anything or creates input.
  * <p>
- * Recording is active while diagnostic mode is enabled and the player is in the lair or the region just
- * outside it, or for {@link #CLICK_WINDOW_TICKS} ticks after clicking the corpse, a maggot egg, a tarnished
- * item, or the aranei scout that handles death recovery, and for {@link #DEATH_WINDOW_TICKS} ticks after dying in the lair.
+ * Recording is active while diagnostic mode is enabled and the player is in a boss's area or the region just
+ * outside it, or for {@link #CLICK_WINDOW_TICKS} ticks after clicking a loot source (e.g. the Maggot King's corpse),
+ * an egg, a tarnished item, or an NPC that handles death recovery, and for {@link #DEATH_WINDOW_TICKS} ticks after
+ * dying in a boss's area.
  */
 public class DiagnosticRecorder
 {
@@ -73,6 +76,12 @@ public class DiagnosticRecorder
 
 	private final Client client;
 	private final ItemManager itemManager;
+	private final BossRegistry registry;
+	private final Set<Integer> waitingRegions = new HashSet<>();
+	private final Set<Integer> triggerNpcs = new HashSet<>();
+	private final Set<Integer> triggerItems = new HashSet<>();
+	private final Set<Integer> encounterNpcs = new HashSet<>();
+	private final Set<Integer> bossNpcs = new HashSet<>();
 	private final DiagnosticLogWriter writer;
 
 	private boolean enabled;
@@ -82,10 +91,23 @@ public class DiagnosticRecorder
 	private int clickWindowEndTick = -1;
 	private final Map<Integer, Map<Integer, Integer>> containerSnapshots = new HashMap<>();
 
-	public DiagnosticRecorder(Client client, ItemManager itemManager, Callable<Filepath> directorySupplier)
+	public DiagnosticRecorder(Client client, ItemManager itemManager, BossRegistry registry,
+		Callable<Filepath> directorySupplier)
 	{
 		this.client = client;
 		this.itemManager = itemManager;
+		this.registry = registry;
+		for (BossDefinition boss : registry.all())
+		{
+			waitingRegions.addAll(boss.getWaitingRegions());
+			triggerNpcs.addAll(boss.getLootTriggerNpcs());
+			triggerNpcs.addAll(boss.getGraveHelperNpcs());
+			triggerItems.addAll(boss.getEggPetRates().keySet());
+			triggerItems.addAll(boss.getTarnishedItems());
+			bossNpcs.addAll(boss.getBossNpcIds());
+			encounterNpcs.addAll(boss.getBossNpcIds());
+			encounterNpcs.addAll(boss.getLootTriggerNpcs());
+		}
 		this.writer = new DiagnosticLogWriter(directorySupplier);
 	}
 
@@ -112,7 +134,7 @@ public class DiagnosticRecorder
 		this.enabled = enabled;
 		if (enabled)
 		{
-			record("SESSION", "diagnostic mode enabled; lair template region " + MaggotKingIds.LAIR_REGION_ID);
+			record("SESSION", "diagnostic mode enabled; boss template regions " + registry.allRegions());
 			if (inLair)
 			{
 				recordContainerSnapshots();
@@ -135,7 +157,7 @@ public class DiagnosticRecorder
 		{
 			int previous = templateRegionId;
 			templateRegionId = region;
-			if (isRecording() || region == MaggotKingIds.LAIR_REGION_ID)
+			if (isRecording() || registry.forRegion(region) != null)
 			{
 				record("REGION", "template region " + previous + " -> " + region
 					+ " instance=" + client.getTopLevelWorldView().isInstance()
@@ -143,14 +165,14 @@ public class DiagnosticRecorder
 			}
 		}
 
-		boolean nowNearLair = region == MaggotKingIds.LAIR_ENTRANCE_REGION_ID;
+		boolean nowNearLair = waitingRegions.contains(region);
 		if (nowNearLair != nearLair)
 		{
 			nearLair = nowNearLair;
 			record("ENTRANCE", nearLair ? "entered region outside the lair" : "left region outside the lair");
 		}
 
-		boolean nowInLair = region == MaggotKingIds.LAIR_REGION_ID;
+		boolean nowInLair = registry.forRegion(region) != null;
 		if (nowInLair != inLair)
 		{
 			inLair = nowInLair;
@@ -192,10 +214,7 @@ public class DiagnosticRecorder
 		NPC npc = entry.getNpc();
 		int itemId = event.getItemId();
 
-		boolean trigger = (npc != null && (npc.getId() == MaggotKingIds.CORPSE
-				|| MaggotKingIds.ARANEI_DEATH_HELPERS.contains(npc.getId())))
-			|| MaggotKingIds.EGGS.contains(itemId)
-			|| MaggotKingIds.TARNISHED_ITEMS.contains(itemId);
+		boolean trigger = (npc != null && triggerNpcs.contains(npc.getId())) || triggerItems.contains(itemId);
 		if (trigger)
 		{
 			clickWindowEndTick = client.getTickCount() + CLICK_WINDOW_TICKS;
@@ -328,7 +347,7 @@ public class DiagnosticRecorder
 			record("DEATH", "local player died; recording for " + DEATH_WINDOW_TICKS + " ticks");
 			clickWindowEndTick = Math.max(clickWindowEndTick, client.getTickCount() + DEATH_WINDOW_TICKS);
 		}
-		else if (actor instanceof NPC && ((NPC) actor).getId() == MaggotKingIds.BOSS)
+		else if (actor instanceof NPC && bossNpcs.contains(((NPC) actor).getId()))
 		{
 			record("DEATH", "boss died");
 		}
@@ -464,7 +483,7 @@ public class DiagnosticRecorder
 	private void recordEncounterNpc(String what, NPC npc)
 	{
 		int id = npc.getId();
-		if (isRecording() && (id == MaggotKingIds.BOSS || id == MaggotKingIds.CORPSE))
+		if (isRecording() && encounterNpcs.contains(id))
 		{
 			record("NPC", what + " id=" + id + " name=\"" + npc.getName() + "\" index=" + npc.getIndex());
 		}
