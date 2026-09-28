@@ -105,7 +105,7 @@ final class ShareCardRenderer
 
 	private static int luck()
 	{
-		return 76;
+		return 94;
 	}
 
 	private int drawLuck(Graphics2D g, ShareCard card, IntFunction<Image> icons, int y)
@@ -125,15 +125,24 @@ final class ShareCardRenderer
 		String expected = String.format(Locale.ROOT, card.getUniquesExpected() >= 10 ? "%.1f" : "%.2f", card.getUniquesExpected());
 		int half = (right - left) / 2;
 		pair(g, "Uniques", card.getUniquesReceived() + " / " + expected, left, y + 36);
-		pair(g, "Since unique", String.format(Locale.ROOT, "%,d kc", card.getDryKills()), left + half, y + 36);
+		pair(g, "Since last unique", String.format(Locale.ROOT, "%,d kc", card.getDryKills()), left + half, y + 36);
+		if (card.getDueInKills() > 0)
+		{
+			pair(g, "Next unique due in", String.format(Locale.ROOT, "%,d kc", card.getDueInKills()), left, y + 54);
+		}
+		else
+		{
+			pair(g, "Overdue", String.format(Locale.ROOT, "+%,d kc", -card.getDueInKills()), UiFormat.LOSS, left, y + 54);
+		}
+		pair(g, "Rate", "1/" + UiFormat.oneIn(card.getUniqueRate()), left + half, y + 54);
 
 		// One icon and count per unique, then the pet
 		int x = left;
 		for (ShareCard.Drop drop : card.getDrops())
 		{
-			drawIcon(g, icons.apply(drop.getItemId()), x, y + 46, 27, 24);
+			drawIcon(g, icons.apply(drop.getItemId()), x, y + 64, 27, 24);
 			String count = "x" + drop.getCount();
-			text(g, bold, drop.getCount() > 0 ? UiFormat.UNIQUE_BORDER : UiFormat.MUTED_TEXT, count, x + 29, y + 64);
+			text(g, bold, drop.getCount() > 0 ? UiFormat.UNIQUE_BORDER : UiFormat.MUTED_TEXT, count, x + 29, y + 82);
 			x += 29 + width(g, bold, count) + 12;
 		}
 		return y + h;
@@ -141,13 +150,19 @@ final class ShareCardRenderer
 
 	private static int stats()
 	{
-		return 38;
+		return 58;
 	}
 
 	private int drawStats(Graphics2D g, ShareCard card, int y)
 	{
 		int h = stats();
 		card(g, y, h);
+		// The totals only cover what the plugin has tracked, so say from where
+		text(g, bold, TEXT, "Tracked totals", PAD + INNER, y + 17);
+		String since = String.format(Locale.ROOT, "%,d kills", card.getTrackedKills())
+			+ (card.getTrackedFromKc() != null ? String.format(Locale.ROOT, " since KC %,d", card.getTrackedFromKc()) : "");
+		textRight(g, small, UiFormat.MUTED_TEXT, since, WIDTH - PAD - INNER, y + 16);
+		int row = y + 20;
 		String[] captions = {"Loot", "Costs", "Net profit", "Net GP/hr"};
 		long[] values = {card.getLoot(), card.getCosts(), card.getNet(), card.getGpPerHour()};
 		int cell = (WIDTH - 2 * PAD - 2 * INNER) / captions.length;
@@ -155,8 +170,8 @@ final class ShareCardRenderer
 		{
 			int x = PAD + INNER + i * cell;
 			Color color = i >= 2 ? UiFormat.profitColor(values[i]) : TEXT;
-			text(g, small, UiFormat.MUTED_TEXT, captions[i], x, y + 15);
-			text(g, bold, color, UiFormat.gp(values[i]), x, y + 31);
+			text(g, small, UiFormat.MUTED_TEXT, captions[i], x, row + 15);
+			text(g, bold, color, UiFormat.gp(values[i]), x, row + 31);
 		}
 		return y + h;
 	}
@@ -213,8 +228,13 @@ final class ShareCardRenderer
 
 	private void pair(Graphics2D g, String label, String value, int x, int baseline)
 	{
+		pair(g, label, value, Color.WHITE, x, baseline);
+	}
+
+	private void pair(Graphics2D g, String label, String value, Color color, int x, int baseline)
+	{
 		text(g, regular, UiFormat.MUTED_TEXT, label + ":", x, baseline);
-		text(g, bold, Color.WHITE, value, x + width(g, regular, label + ":") + 4, baseline);
+		text(g, bold, color, value, x + width(g, regular, label + ":") + 4, baseline);
 	}
 
 	private static void drawIcon(Graphics2D g, Image icon, int x, int y, int w, int h)

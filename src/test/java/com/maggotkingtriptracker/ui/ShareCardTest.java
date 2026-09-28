@@ -44,6 +44,10 @@ public class ShareCardTest
 		assertEquals(LuckTier.of(com.maggotkingtriptracker.model.DropOdds.luckPercentile(11, 2630 / 205.6)), card.getTier());
 		assertTrue(card.isAllTime());
 		assertEquals(832, card.getDryKills());
+		// 206 kills on average between uniques, so 626 past it
+		assertEquals(-626, card.getDueInKills());
+		assertEquals(172, card.getTrackedKills());
+		assertEquals(Integer.valueOf(2_565), card.getTrackedFromKc());
 		// Fang, kisten, then the pet
 		assertEquals(3, card.getDrops().size());
 		assertEquals(6, card.getDrops().get(0).getCount());
@@ -124,6 +128,7 @@ public class ShareCardTest
 			.pet(pet)
 			.eggTiers(Collections.<DrynessView.EggTier>emptyList())
 			.currentKc(2_752)
+			.firstTrackedKc(2_565)
 			.allTime(DrynessView.AllTime.builder()
 				.lootKills(2630)
 				.killCount(2_752)

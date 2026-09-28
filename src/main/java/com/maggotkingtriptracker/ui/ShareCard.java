@@ -64,6 +64,14 @@ class ShareCard
 	boolean allTime;
 	int dryKills;
 	/**
+	 * Kills until the average kills between uniques is reached; negative when overdue by that many.
+	 */
+	int dueInKills;
+	/**
+	 * Average chance of any unique per kill.
+	 */
+	double uniqueRate;
+	/**
 	 * Each unique, then the pet.
 	 */
 	List<Drop> drops;
@@ -72,6 +80,14 @@ class ShareCard
 	long net;
 	long gpPerHour;
 	int trips;
+	/**
+	 * Kills this plugin has tracked, which the loot, costs and profit are based on.
+	 */
+	int trackedKills;
+	/**
+	 * Kill count of the first tracked kill, where tracking began; null if unknown.
+	 */
+	Integer trackedFromKc;
 	List<TripLine> recentTrips;
 	long createdAt;
 
@@ -133,12 +149,17 @@ class ShareCard
 			.tier(luck.getTier())
 			.allTime(luck.isAllTime())
 			.dryKills(dryness.getKillsSinceUnique())
+			// Same "next unique" arithmetic as the Luck card
+			.dueInKills((int) Math.ceil(1 / dryness.getAnyUniqueRate()) - dryness.getKillsSinceUnique())
+			.uniqueRate(dryness.getAnyUniqueRate())
 			.drops(drops)
 			.loot(lifetime.getLootValue())
 			.costs(costs)
 			.net(lifetime.getNetProfit())
 			.gpPerHour(TripMath.gpPerHour(lifetime.getNetProfit(), lifetime.getActiveMs()))
 			.trips(lifetime.getTrips())
+			.trackedKills(lifetime.getKills())
+			.trackedFromKc(dryness.getFirstTrackedKc())
 			.recentTrips(recent)
 			.createdAt(now)
 			.build();

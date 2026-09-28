@@ -693,6 +693,15 @@ public class TripTracker
 		int tick = client.getTickCount();
 		long now = System.currentTimeMillis();
 
+		// The player's name isn't available yet when the history loads at login
+		String name = player.getName();
+		if (history != null && name != null && !name.equals(history.getLastDisplayName()))
+		{
+			history.setLastDisplayName(name);
+			viewDirty = true;
+			requestSave();
+		}
+
 		if (!runeIdsLoaded)
 		{
 			loadRuneIds();

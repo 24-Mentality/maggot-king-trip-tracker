@@ -19,8 +19,10 @@ history in a side panel. Formerly **Maggot King Trip Tracker**.
 ## Side panel
 
 - **Share card** (camera button next to the boss dropdown): makes an image of the shown
-  boss's stats (kill count, uniques received vs expected with the luck tier, dry streak,
-  each unique, lifetime loot, costs, net profit and GP/hr, and your last 5 trips), copies it
+  boss's stats (kill count, uniques received vs expected with the luck tier, kills since
+  your last unique and how far past the drop rate you are, each unique, the loot, costs, net
+  profit and GP/hr of the kills tracked since the plugin was installed (with the kill count
+  tracking began at), and your last 5 trips), copies it
   to the clipboard ready to paste into Discord, and saves it to your RuneLite screenshots
   folder under "Boss Trip Tracker". Nothing is uploaded. Your name is on the card unless you
   turn off **Show my name on share cards** (Configuration → Display).
