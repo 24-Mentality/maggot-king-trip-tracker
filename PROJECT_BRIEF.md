@@ -272,3 +272,15 @@ These come from diagnostic.log and take precedence over the assumptions above.
   the right-click "KC of my last unique" (set and clear) and timestamped
   CSV / JSON exports and re-import all passed. The last unique before
   tracking was at KC 1,920, entered through the Luck card.
+- The game's "Fight duration" is exactly the ticks from the boss spawning
+  (NpcSpawned) to the kill-count message, on every kill in the diagnostic
+  logs; the live kill timer counts from the spawn.
+- The player's name is not available when the history loads at LOGGED_IN;
+  it is picked up on the first game tick where the local player has one.
+- Milestone C confirmed in game (2026-09-28): the share card copies to the
+  clipboard, saves to screenshots/<name>/Boss Trip Tracker/ via ImageCapture,
+  confirms in chat, pastes readably into Discord, and shows or hides the name
+  per the setting. The luck tier on the card uses the all-time Loot Tracker
+  record (uniques received vs expected), separate from the dry streak. The
+  trip row's live kill timer (Current / Last) and PB (this trip's fastest)
+  passed.
