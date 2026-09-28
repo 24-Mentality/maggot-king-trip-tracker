@@ -149,8 +149,7 @@ class ShareCard
 			.tier(luck.getTier())
 			.allTime(luck.isAllTime())
 			.dryKills(dryness.getKillsSinceUnique())
-			// Same "next unique" arithmetic as the Luck card
-			.dueInKills((int) Math.ceil(1 / dryness.getAnyUniqueRate()) - dryness.getKillsSinceUnique())
+			.dueInKills(LuckSummary.dueInKills(dryness))
 			.uniqueRate(dryness.getAnyUniqueRate())
 			.drops(drops)
 			.loot(lifetime.getLootValue())

@@ -127,7 +127,7 @@ class LuckCard extends JPanel
 	/**
 	 * Children with tooltips would otherwise swallow the right-click.
 	 */
-	private static void inheritPopupMenu(Container container)
+	static void inheritPopupMenu(Container container)
 	{
 		for (Component child : container.getComponents())
 		{

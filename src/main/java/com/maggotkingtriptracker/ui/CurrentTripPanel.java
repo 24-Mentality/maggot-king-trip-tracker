@@ -1,5 +1,6 @@
 package com.maggotkingtriptracker.ui;
 
+import com.maggotkingtriptracker.LuckCardStyle;
 import com.maggotkingtriptracker.model.TripEndReason;
 import com.maggotkingtriptracker.view.PanelState;
 import com.maggotkingtriptracker.view.TripView;
@@ -20,6 +21,10 @@ class CurrentTripPanel extends JPanel
 	private final TripSummaryCard summary = new TripSummaryCard();
 	private final LuckCard luckCard;
 	private final DropChancesCard dropChances;
+	/**
+	 * The share card's luck section as a panel card; shown instead of the classic Luck card by default.
+	 */
+	private final LuckOverviewCard luckOverview;
 	private final JPanel luckHolder = new JPanel(new BorderLayout());
 	private final JPanel detailsHolder = new JPanel();
 	private TripView shownDetails;
@@ -31,6 +36,7 @@ class CurrentTripPanel extends JPanel
 		this.luckCard = new LuckCard(onSetLastUniqueKc, onClearLastUniqueKc);
 		this.goalCard = new GoalCard(itemManager, onSetGoal, onPause, onResetGoal);
 		this.dropChances = new DropChancesCard(itemManager);
+		this.luckOverview = new LuckOverviewCard(itemManager, onSetLastUniqueKc, onClearLastUniqueKc);
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		setBackground(ColorScheme.DARK_GRAY_COLOR);
 
@@ -56,11 +62,19 @@ class CurrentTripPanel extends JPanel
 		luckHolder.setOpaque(false);
 		luckHolder.setAlignmentX(LEFT_ALIGNMENT);
 		luckHolder.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
-		luckHolder.add(luckCard, BorderLayout.CENTER);
 		JPanel dropHolder = new JPanel(new BorderLayout());
 		dropHolder.setOpaque(false);
 		dropHolder.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
 		dropHolder.add(dropChances, BorderLayout.CENTER);
+		// One of the two Luck cards is visible, per the "Luck card" setting
+		JPanel cards = new JPanel();
+		cards.setLayout(new BoxLayout(cards, BoxLayout.Y_AXIS));
+		cards.setOpaque(false);
+		luckCard.setAlignmentX(LEFT_ALIGNMENT);
+		luckOverview.setAlignmentX(LEFT_ALIGNMENT);
+		cards.add(luckOverview);
+		cards.add(luckCard);
+		luckHolder.add(cards, BorderLayout.CENTER);
 		luckHolder.add(dropHolder, BorderLayout.SOUTH);
 		add(luckHolder);
 		add(detailsHolder);
@@ -80,6 +94,10 @@ class CurrentTripPanel extends JPanel
 		{
 			luckCard.update(state.getLifetime().getDryness(), state.getBoss());
 			dropChances.update(state.getLifetime().getDryness(), state.getBoss());
+			luckOverview.update(state.getLifetime().getDryness(), state.getBoss());
+			boolean classic = state.getLuckCardStyle() == LuckCardStyle.CLASSIC;
+			luckCard.setVisible(classic);
+			luckOverview.setVisible(!classic);
 		}
 		status.setText(statusText(state));
 

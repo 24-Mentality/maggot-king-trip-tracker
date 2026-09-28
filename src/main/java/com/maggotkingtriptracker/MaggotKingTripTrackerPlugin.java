@@ -170,7 +170,7 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 			DiagnosticRecorder recorder = diagnosticRecorder;
 			clientThread.invokeLater(() -> recorder.setEnabled(diagnosticMode));
 		}
-		else if ("showCurrentValue".equals(event.getKey()))
+		else if ("showCurrentValue".equals(event.getKey()) || "luckCardStyle".equals(event.getKey()))
 		{
 			TripTracker tracker = tripTracker;
 			clientThread.invokeLater(tracker::refreshView);

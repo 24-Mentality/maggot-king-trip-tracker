@@ -1,12 +1,13 @@
 package com.maggotkingtriptracker.view;
 
+import com.maggotkingtriptracker.LuckCardStyle;
 import com.maggotkingtriptracker.boss.BossDefinition;
 import java.util.List;
 import lombok.Builder;
 import lombok.Value;
 
 @Value
-@Builder
+@Builder(toBuilder = true)
 public class PanelState
 {
 	public enum Status
@@ -76,4 +77,8 @@ public class PanelState
 	 * Your display name, for share cards; null if unknown.
 	 */
 	String playerName;
+	/**
+	 * Which Luck card the Trip tab shows; null means the default (Overview).
+	 */
+	LuckCardStyle luckCardStyle;
 }

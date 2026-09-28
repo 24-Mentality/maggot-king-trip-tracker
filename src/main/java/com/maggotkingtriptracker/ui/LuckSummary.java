@@ -43,6 +43,14 @@ class LuckSummary
 	}
 
 	/**
+	 * Kills until the average number of kills between uniques; negative when past it by that many.
+	 */
+	static int dueInKills(DrynessView dryness)
+	{
+		return (int) Math.ceil(1 / dryness.getAnyUniqueRate()) - dryness.getKillsSinceUnique();
+	}
+
+	/**
 	 * Pets from kills (and eggs, for the Maggot King), from the same source; null if the boss has no pet.
 	 */
 	static DrynessView.Drop pet(DrynessView dryness)

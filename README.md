@@ -37,7 +37,11 @@ history in a side panel. Formerly **Maggot King Trip Tracker**.
   hit. **Pause** stops them straight away; it resumes when you press it again or, with
   **Auto-resume when I attack** on, when you next damage the boss.
 - **Luck** (Trip tab): uniques received vs expected with a luck tier (LUCKY AS RUCK, Lucky,
-  On Rate, Dry, DRY AS RUCK), your dry streak and when the next unique is due. Right-click
+  On Rate, Dry, DRY AS RUCK), kills since your last unique, how far past the drop rate you
+  are, the rate and a count of each unique and the pet, laid out like the share card. The eye
+  icon collapses it to the title row, which keeps the tier. **Luck card** (Configuration →
+  Display) switches to the Classic card, which adds the chance by now, the next unique's kill
+  count and a progress bar. On either card, right-click
   the card to enter the kill count of your last unique from before you installed the plugin;
   the dry streak then counts from there (kills before tracking began are counted from your
   kill count) until the plugin tracks a newer unique.

@@ -1,6 +1,7 @@
 package com.maggotkingtriptracker.ui;
 
 import static org.junit.Assert.assertTrue;
+import com.maggotkingtriptracker.LuckCardStyle;
 import com.maggotkingtriptracker.boss.BossDefinition;
 import com.maggotkingtriptracker.boss.MaggotKingBoss;
 import com.maggotkingtriptracker.model.TripEndReason;
@@ -65,6 +66,13 @@ public class PanelFitTest
 			panel.update(worstCaseState(PanelState.Status.AFK_PAUSED, true));
 			panel.selectTab(0);
 			check(panel, "paused", problems);
+
+			// The classic Luck card, hidden by default
+			PanelState classic = worstCaseState(PanelState.Status.IN_TRIP, false).toBuilder()
+				.luckCardStyle(LuckCardStyle.CLASSIC)
+				.build();
+			panel.update(classic);
+			check(panel, "classic luck card", problems);
 			panel.shutDown();
 		});
 		assertTrue("Labels that don't fit:\n" + String.join("\n", problems), problems.isEmpty());
