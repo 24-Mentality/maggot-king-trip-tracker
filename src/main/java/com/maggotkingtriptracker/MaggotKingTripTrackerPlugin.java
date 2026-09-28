@@ -8,6 +8,7 @@ import com.maggotkingtriptracker.persistence.HistoryStore;
 import com.maggotkingtriptracker.pricing.PriceService;
 import com.maggotkingtriptracker.tracking.TripTracker;
 import com.maggotkingtriptracker.ui.PanelActions;
+import com.maggotkingtriptracker.ui.ShareCardExporter;
 import com.maggotkingtriptracker.ui.TrackerPanel;
 import java.awt.image.BufferedImage;
 import java.time.LocalDateTime;
@@ -22,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.client.Notifier;
 import net.runelite.client.callback.ClientThread;
+import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
@@ -32,6 +34,7 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.Filepath;
+import net.runelite.client.util.ImageCapture;
 import net.runelite.client.util.ImageUtil;
 
 @Slf4j
@@ -73,12 +76,19 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 	@Inject
 	private ConfigManager configManager;
 
+	@Inject
+	private ImageCapture imageCapture;
+
+	@Inject
+	private ChatMessageManager chatMessageManager;
+
 	private DiagnosticRecorder diagnosticRecorder;
 	private ScheduledExecutorService executor;
 	private HistoryStore store;
 	private TripTracker tripTracker;
 	private TrackerPanel panel;
 	private NavigationButton navigationButton;
+	private ShareCardExporter shareCardExporter;
 
 	@Override
 	protected void startUp() throws Exception
@@ -101,6 +111,7 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 		panel = trackerPanel;
 
 		store = new HistoryStore(gson, this::getPluginDirectory, executor);
+		shareCardExporter = new ShareCardExporter(client, itemManager, imageCapture, chatMessageManager, executor);
 		TripTracker tracker = new TripTracker(client, clientThread, config, new PriceService(itemManager), store,
 			gson, executor, state -> SwingUtilities.invokeLater(() -> trackerPanel.update(state)),
 			message -> notifier.notify(config.alertNotification(), message),
@@ -135,6 +146,7 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 		executor.shutdownNow();
 		executor = null;
 		store = null;
+		shareCardExporter = null;
 
 		clientToolbar.removeNavigation(navigationButton);
 		navigationButton = null;
@@ -246,6 +258,14 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 		{
 			TripTracker tracker = tripTracker;
 			clientThread.invokeLater(() -> tracker.setLastUniqueKc(killCount));
+		}
+
+		@Override
+		public void shareCard()
+		{
+			TrackerPanel trackerPanel = panel;
+			shareCardExporter.share(trackerPanel.getState(), config.shareShowName(),
+				message -> trackerPanel.showMessage("Share card", message, false));
 		}
 
 		@Override

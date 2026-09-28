@@ -1,5 +1,6 @@
 package com.maggotkingtriptracker.ui;
 
+import com.maggotkingtriptracker.model.LuckTier;
 import java.awt.Color;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -39,6 +40,23 @@ final class UiFormat
 		double n = 1 / rate;
 		return Math.abs(n - Math.round(n)) < 0.05 ? String.format(Locale.ROOT, "%,d", Math.round(n))
 			: String.format(Locale.ROOT, "%,.1f", n);
+	}
+
+	static Color tierColor(LuckTier tier)
+	{
+		switch (tier)
+		{
+			case LUCKY_AS_RUCK:
+				return UiFormat.UNIQUE_BORDER;
+			case LUCKY:
+				return UiFormat.PROFIT;
+			case DRY:
+				return ColorScheme.BRAND_ORANGE;
+			case DRY_AS_RUCK:
+				return UiFormat.LOSS;
+			default:
+				return ColorScheme.LIGHT_GRAY_COLOR;
+		}
 	}
 
 	static String fullGp(long value)

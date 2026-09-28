@@ -22,7 +22,6 @@ class CurrentTripPanel extends JPanel
 	private final DropChancesCard dropChances;
 	private final JPanel luckHolder = new JPanel(new BorderLayout());
 	private final JPanel detailsHolder = new JPanel();
-	private boolean live;
 	private TripView shownDetails;
 
 	CurrentTripPanel(ItemManager itemManager, Runnable onSetGoal, Runnable onPause, Runnable onResetGoal,
@@ -70,12 +69,12 @@ class CurrentTripPanel extends JPanel
 	void update(PanelState state, long now)
 	{
 		TripView trip = state.getCurrentTrip();
-		live = state.getStatus() == PanelState.Status.IN_TRIP;
 		goalCard.setBoss(state.getBoss());
 		goalCard.setVisible(state.getLifetime() != null);
 		goalCard.setPauseState(state.isPausedInLair(), state.isCanPause());
 		goalCard.setGoal(state.getGoal(), now);
 		summary.setPaused(state.getPauseText() != null);
+		summary.setKillStartedAt(state.getKillStartedAt());
 		luckHolder.setVisible(state.getLifetime() != null);
 		if (state.getLifetime() != null)
 		{
@@ -107,10 +106,8 @@ class CurrentTripPanel extends JPanel
 	void tick(long now)
 	{
 		goalCard.tick(now);
-		if (live)
-		{
-			summary.tick(now);
-		}
+		// The kill timer runs even while the trip clock is paused (e.g. idle before the boss is attacked)
+		summary.tick(now);
 	}
 
 	private static boolean sameItems(TripView a, TripView b)

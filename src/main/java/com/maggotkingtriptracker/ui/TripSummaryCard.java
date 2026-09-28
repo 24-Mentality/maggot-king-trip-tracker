@@ -3,6 +3,7 @@ package com.maggotkingtriptracker.ui;
 import com.maggotkingtriptracker.model.TripMath;
 import com.maggotkingtriptracker.view.TripView;
 import java.awt.GridLayout;
+import java.awt.LayoutManager;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JPanel;
@@ -22,8 +23,12 @@ class TripSummaryCard extends JPanel
 		.help("Kills this trip, from the game's kill-count message.");
 	private final StatCell averageKill = new StatCell("Avg kill", false)
 		.help("Average of the game's \"Fight duration\" for this trip's kills.");
-	private final StatCell fastestKill = new StatCell("Fastest", false)
-		.help("Shortest \"Fight duration\" this trip.");
+	private final StatCell fastestKill = new StatCell("PB", false)
+		.help("This trip's fastest kill (shortest \"Fight duration\"), not your all-time personal best.");
+	/**
+	 * Live timer for the kill in progress, or the last kill's time between kills.
+	 */
+	private final StatCell currentKill = new StatCell("Current", false);
 
 	private final StatCell net = new StatCell("Net profit", true)
 		.help("Loot minus costs (supplies, dropped items and death costs), at the GE prices recorded at the time.");
@@ -44,13 +49,14 @@ class TripSummaryCard extends JPanel
 
 	private TripView trip;
 	private boolean paused;
+	private Long killStartedAt;
 
 	TripSummaryCard()
 	{
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		setOpaque(false);
 
-		JPanel timeCard = card(new GridLayout(1, 4, 4, 0), time, kills, averageKill, fastestKill);
+		JPanel timeCard = card(new FitRowLayout(4), time, kills, averageKill, fastestKill, currentKill);
 		JPanel profitCard = card(new GridLayout(2, 3, 4, 3), net, gpPerHour, bossStat, loot, costs, deaths);
 
 		JPanel gap = new JPanel();
@@ -63,7 +69,7 @@ class TripSummaryCard extends JPanel
 		add(profitCard);
 	}
 
-	private static JPanel card(GridLayout layout, StatCell... cells)
+	private static JPanel card(LayoutManager layout, StatCell... cells)
 	{
 		JPanel card = new JPanel(layout);
 		card.setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -97,6 +103,14 @@ class TripSummaryCard extends JPanel
 	}
 
 	/**
+	 * @param killStartedAt when the boss you're fighting spawned; null between kills
+	 */
+	void setKillStartedAt(Long killStartedAt)
+	{
+		this.killStartedAt = killStartedAt;
+	}
+
+	/**
 	 * Greys the timer while the trip is paused with the Pause button.
 	 */
 	void setPaused(boolean paused)
@@ -115,5 +129,19 @@ class TripSummaryCard extends JPanel
 			paused ? "Paused: the clock resumes when you press Resume" + " or attack the boss (if auto-resume is on)." : null);
 		long rate = TripMath.gpPerHour(trip.getNetProfit(), activeMs);
 		gpPerHour.setValue(UiFormat.gp(rate), UiFormat.profitColor(rate), UiFormat.fullGp(rate) + " net per hour in the lair");
+
+		if (killStartedAt != null)
+		{
+			// Counts from the boss spawning, like the game's Fight duration
+			currentKill.setCaption("Current");
+			currentKill.help("Time since the boss spawned, like the game's \"Fight duration\". It stops at the kill.");
+			currentKill.setValue(UiFormat.duration(now - killStartedAt), ColorScheme.LIGHT_GRAY_COLOR, null);
+		}
+		else
+		{
+			currentKill.setCaption("Last");
+			currentKill.help("The \"Fight duration\" of this trip's last kill. During a kill this shows a live timer.");
+			currentKill.setValue(UiFormat.killTime(trip.getLastKillMs()), UiFormat.MUTED_TEXT, null);
+		}
 	}
 }

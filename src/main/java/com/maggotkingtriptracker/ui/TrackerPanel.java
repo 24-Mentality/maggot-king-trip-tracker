@@ -4,9 +4,12 @@ import com.maggotkingtriptracker.boss.BossDefinition;
 import com.maggotkingtriptracker.view.PanelState;
 import com.maggotkingtriptracker.view.TripView;
 import java.awt.BorderLayout;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.Rectangle;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.function.Consumer;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
@@ -38,6 +41,8 @@ public class TrackerPanel extends PluginPanel
 	private final BossSelector bossSelector;
 	private final VariantChips variantChips;
 	private BossDefinition boss;
+	private final JLabel shareButton = new JLabel(new CameraIcon(ColorScheme.LIGHT_GRAY_COLOR));
+	private PanelState state;
 	private final Timer timer;
 	private MaterialTabGroup tabGroup;
 	private MaterialTab tripTab;
@@ -86,7 +91,25 @@ public class TrackerPanel extends PluginPanel
 		JPanel header = new JPanel(new BorderLayout());
 		header.setOpaque(false);
 		header.setBorder(BorderFactory.createEmptyBorder(6, 5, 0, 5));
+		shareButton.setDisabledIcon(new CameraIcon(UiFormat.MUTED_TEXT.darker()));
+		shareButton.setToolTipText("Share card: copies an image of this boss's stats to your clipboard, ready to paste"
+			+ " into Discord, and saves it to your screenshots folder");
+		shareButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		shareButton.setBorder(BorderFactory.createEmptyBorder(0, 6, 0, 2));
+		shareButton.setEnabled(false);
+		shareButton.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mousePressed(MouseEvent e)
+			{
+				if (shareButton.isEnabled() && e.getButton() == MouseEvent.BUTTON1)
+				{
+					actions.shareCard();
+				}
+			}
+		});
 		header.add(bossSelector, BorderLayout.CENTER);
+		header.add(shareButton, BorderLayout.EAST);
 		header.add(variantChips, BorderLayout.SOUTH);
 
 		JPanel north = new JPanel(new BorderLayout());
@@ -110,13 +133,23 @@ public class TrackerPanel extends PluginPanel
 
 	public void update(PanelState state)
 	{
+		this.state = state;
 		boss = state.getBoss();
+		shareButton.setEnabled(state.getLifetime() != null);
 		bossSelector.update(state.getBosses(), boss.getId());
 		variantChips.update(boss, state.getVariant());
 		readOnlyWarning.setVisible(state.isReadOnly());
 		currentTab.update(state, System.currentTimeMillis());
 		historyTab.update(state.getHistory());
 		lifetimeTab.update(state.getLifetime(), state.isReadOnly(), boss);
+	}
+
+	/**
+	 * The latest state shown, for the share card; null before the first update.
+	 */
+	public PanelState getState()
+	{
+		return state;
 	}
 
 	/**

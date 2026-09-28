@@ -232,6 +232,18 @@ public interface MaggotKingTripTrackerConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "shareShowName",
+		name = "Show my name on share cards",
+		description = "Put your display name on share cards made with the camera button",
+		section = displaySection,
+		position = 2
+	)
+	default boolean shareShowName()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = "diagnosticMode",
 		name = "Diagnostic mode",
 		description = "Append boss related game events (chat, clicks, inventory changes, loot) to diagnostic.log"

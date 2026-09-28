@@ -15,6 +15,12 @@ import com.maggotkingtriptracker.view.StatView;
 import com.maggotkingtriptracker.view.SupplyCategory;
 import com.maggotkingtriptracker.view.TripView;
 import java.awt.Component;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import javax.imageio.ImageIO;
 import java.awt.Container;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,6 +55,10 @@ public class PanelFitTest
 			{
 				panel.selectTab(tab);
 				check(panel, "tab " + tab, problems);
+				if (tab == 0)
+				{
+					preview(panel);
+				}
 			}
 
 			// Paused states change button and status text
@@ -67,6 +77,27 @@ public class PanelFitTest
 		layout(panel);
 		layout(panel);
 		findLabels(panel, where, problems);
+	}
+
+	/**
+	 * For looking at the layout: build/panel-preview.png (top of the Trip tab).
+	 */
+	private static void preview(TrackerPanel panel)
+	{
+		BufferedImage image = new BufferedImage(WIDTH, 420, BufferedImage.TYPE_INT_RGB);
+		Graphics2D g = image.createGraphics();
+		panel.printAll(g);
+		g.dispose();
+		try
+		{
+			File out = new File("build/panel-preview.png");
+			out.getParentFile().mkdirs();
+			ImageIO.write(image, "PNG", out);
+		}
+		catch (IOException e)
+		{
+			throw new UncheckedIOException(e);
+		}
 	}
 
 	private static void layout(Component component)
@@ -127,6 +158,7 @@ public class PanelFitTest
 			.netProfit(-12_400_000_000L)
 			.averageKillMs(599_900L)
 			.fastestKillMs(599_900L)
+			.lastKillMs(599_900L)
 			.loot(Collections.<ItemView>emptyList())
 			.supplies(Collections.<ItemView>emptyList())
 			.dropped(Collections.<ItemView>emptyList())
@@ -204,8 +236,21 @@ public class PanelFitTest
 		GoalView goal = new GoalView(99_999, 12_345, 12_345L * 3600 * 1000, System.currentTimeMillis(), !paused);
 		List<BossOption> bosses = Collections.singletonList(
 			new BossOption(BOSS.getId(), BOSS.getDisplayName(), BOSS.getIconItemId(), true));
-		return new PanelState(BOSS, bosses, null, status, trip, Collections.singletonList(trip), lifetime, goal,
-			paused ? "Trip paused (outside the lair)" : null, paused, true, false);
+		return PanelState.builder()
+			.boss(BOSS)
+			.bosses(bosses)
+			.status(status)
+			.currentTrip(trip)
+			.history(Collections.singletonList(trip))
+			.lifetime(lifetime)
+			.goal(goal)
+			.pauseText(paused ? "Trip paused (outside the lair)" : null)
+			.pausedInLair(paused)
+			.canPause(true)
+			// A 9:59 kill in progress while not paused; the last kill's time while paused
+			.killStartedAt(paused ? null : System.currentTimeMillis() - 599_000L)
+			.playerName("Twelve Chars")
+			.build();
 	}
 
 	private static class NoActions implements PanelActions
@@ -237,6 +282,11 @@ public class PanelFitTest
 
 		@Override
 		public void exportCsv()
+		{
+		}
+
+		@Override
+		public void shareCard()
 		{
 		}
 

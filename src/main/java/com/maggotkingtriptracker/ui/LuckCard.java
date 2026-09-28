@@ -13,7 +13,6 @@ import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.List;
 import java.util.Locale;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
@@ -169,31 +168,30 @@ class LuckCard extends JPanel
 			+ " RuneLite's Loot Tracker when it has a record. The in-game collection log can't be read unless it's"
 			+ " open. Right-click to enter the kill count of your last unique from before tracking began."));
 
-		DrynessView.AllTime allTime = dryness.getAllTime();
-		int received = allTime != null ? allTime.getUniquesReceived() : dryness.getUniquesReceived();
-		double expected = allTime != null ? allTime.getExpectedUniques() : dryness.getExpectedUniques();
-		int basisKills = allTime != null ? allTime.getLootKills() : dryness.getLuckKills();
+		LuckSummary luck = LuckSummary.of(dryness);
+		int received = luck.getReceived();
+		double expected = luck.getExpected();
+		int basisKills = luck.getBasisKills();
 		int since = dryness.getKillsSinceUnique();
 		Integer currentKc = dryness.getCurrentKc();
 		Integer lastKc = dryness.getLastUniqueKc();
 
 		StringBuilder breakdown = new StringBuilder();
-		List<DrynessView.Drop> drops = allTime != null ? allTime.getUniques() : dryness.getUniques();
-		for (DrynessView.Drop unique : drops)
+		for (DrynessView.Drop unique : luck.getUniques())
 		{
 			breakdown.append('\n').append(unique.getName()).append(": ").append(unique.getReceived())
 				.append(" (").append(String.format(Locale.ROOT, "%.2f", unique.getExpected())).append(" expected, 1/")
 				.append(UiFormat.oneIn(unique.getRate())).append(')');
 		}
-		String basis = allTime != null
+		String basis = luck.isAllTime()
 			? String.format(Locale.ROOT, "%,d kills recorded by RuneLite's Loot Tracker (all-time)", basisKills)
 			: basisKills + " " + luckKills + " tracked by this plugin";
 		// One decimal once expected reaches 10, so large counts still fit half the card
 		set(uniques, "Uniques", received + " / " + String.format(Locale.ROOT, expected >= 10 ? "%.1f" : "%.2f", expected), null,
 			"Uniques received vs expected from " + basis + " at 1/" + oneIn + "." + breakdown);
 
-		double percentile = DropOdds.luckPercentile(received, expected);
-		if (basisKills == 0)
+		double percentile = luck.getPercentile();
+		if (luck.getTier() == null)
 		{
 			// No tier without kills
 			tier.setText("");
@@ -201,9 +199,9 @@ class LuckCard extends JPanel
 		}
 		else
 		{
-			LuckTier luckTier = LuckTier.of(percentile);
+			LuckTier luckTier = luck.getTier();
 			tier.setText(luckTier.getLabel());
-			tier.setForeground(tierColor(luckTier));
+			tier.setForeground(UiFormat.tierColor(luckTier));
 			tier.setToolTipText(UiFormat.tooltip("You've had more uniques than about " + Math.round(percentile * 100)
 				+ "% of players with the same kills (50% is exactly average).\n\n"
 				+ "LUCKY AS RUCK: 90% and up\nLucky: 65% to 90%\nOn Rate: 35% to 65%\nDry: 10% to 35%\n"
@@ -267,23 +265,6 @@ class LuckCard extends JPanel
 	private static String upperFirst(String text)
 	{
 		return text.isEmpty() ? text : Character.toUpperCase(text.charAt(0)) + text.substring(1);
-	}
-
-	private static Color tierColor(LuckTier tier)
-	{
-		switch (tier)
-		{
-			case LUCKY_AS_RUCK:
-				return UiFormat.UNIQUE_BORDER;
-			case LUCKY:
-				return UiFormat.PROFIT;
-			case DRY:
-				return ColorScheme.BRAND_ORANGE;
-			case DRY_AS_RUCK:
-				return UiFormat.LOSS;
-			default:
-				return ColorScheme.LIGHT_GRAY_COLOR;
-		}
 	}
 
 	private static void set(JLabel label, String name, String value, Color color, String help)

@@ -2,9 +2,11 @@ package com.maggotkingtriptracker.view;
 
 import com.maggotkingtriptracker.boss.BossDefinition;
 import java.util.List;
+import lombok.Builder;
 import lombok.Value;
 
 @Value
+@Builder
 public class PanelState
 {
 	public enum Status
@@ -65,4 +67,13 @@ public class PanelState
 	 */
 	boolean canPause;
 	boolean readOnly;
+	/**
+	 * When the boss you're fighting spawned, for the live kill timer (the game's Fight duration counts from the
+	 * spawn); null between kills or when the shown boss has no trip running.
+	 */
+	Long killStartedAt;
+	/**
+	 * Your display name, for share cards; null if unknown.
+	 */
+	String playerName;
 }

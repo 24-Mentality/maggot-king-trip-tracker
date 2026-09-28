@@ -18,6 +18,12 @@ history in a side panel. Formerly **Maggot King Trip Tracker**.
 
 ## Side panel
 
+- **Share card** (camera button next to the boss dropdown): makes an image of the shown
+  boss's stats (kill count, uniques received vs expected with the luck tier, dry streak,
+  each unique, lifetime loot, costs, net profit and GP/hr, and your last 5 trips), copies it
+  to the clipboard ready to paste into Discord, and saves it to your RuneLite screenshots
+  folder under "Boss Trip Tracker". Nothing is uploaded. Your name is on the card unless you
+  turn off **Show my name on share cards** (Configuration → Display).
 - **Boss dropdown** (top of the panel): picks the boss shown in all three tabs. Entering a
   tracked boss's area selects it; otherwise your last choice is kept, so you can browse any
   boss's trips while a trip keeps tracking in the background. A green dot marks the boss with
@@ -33,8 +39,10 @@ history in a side panel. Formerly **Maggot King Trip Tracker**.
   the card to enter the kill count of your last unique from before you installed the plugin;
   the dry streak then counts from there (kills before tracking began are counted from your
   kill count) until the plugin tracks a newer unique.
-- **Trip:** the current (or last) trip's time, kills, loot value, costs, net profit, GP/hr and average kill
-  time, plus item grids for loot, supplies and anything you dropped and left behind.
+- **Trip:** the current (or last) trip's time, kills, average kill time, fastest kill (PB)
+  and a live timer for the kill in progress (it counts from the boss spawning, like the
+  game's "Fight duration", and shows the last kill's time between kills), plus loot value,
+  costs, net profit and GP/hr, plus item grids for loot, supplies and anything you dropped and left behind.
   Uniques have a gold border; tarnished drops waiting to be polished have a dashed border.
   Loot shows kills, loot per kill, loot per hour and net profit; Supplies shows the cost of
   charges, runes, potions, food and anything else.

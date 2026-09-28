@@ -26,6 +26,11 @@ public interface PanelActions
 
 	void exportCsv();
 
+	/**
+	 * Make a share card for the shown boss: copy it to the clipboard and save it as a screenshot.
+	 */
+	void shareCard();
+
 	void exportJson();
 
 	void importJson();

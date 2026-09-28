@@ -196,6 +196,11 @@ public class TripTracker
 	private final Map<Integer, Long> fallbackGains = new HashMap<>();
 	private Long bossSpawnedAt;
 	private Long bossDiedAt;
+	/**
+	 * When the boss you're fighting spawned, for the live kill timer; null between kills. The game's Fight
+	 * duration is the time from the spawn to the kill-count message (checked against the diagnostic logs).
+	 */
+	private Long fightStartedAt;
 
 	private int lastBankTick = -100;
 	private final List<GroundEntry> groundItems = new ArrayList<>();
@@ -1033,6 +1038,8 @@ public class TripTracker
 		{
 			bossSpawnedAt = System.currentTimeMillis();
 			bossDiedAt = null;
+			fightStartedAt = bossSpawnedAt;
+			viewDirty = true;
 		}
 	}
 
@@ -1170,6 +1177,7 @@ public class TripTracker
 
 	private void leaveLair(int region, int tick, long now)
 	{
+		fightStartedAt = null;
 		TripEndReason reason = dead ? TripEndReason.DEATH
 			: tripBoss != null && tripBoss.getWaitingRegions().contains(region) ? TripEndReason.WALKED_OUT
 			: TripEndReason.TELEPORT;
@@ -1203,6 +1211,7 @@ public class TripTracker
 
 	private void suspendTrip(long now)
 	{
+		fightStartedAt = null;
 		inArea = false;
 		areaBoss = null;
 		if (currentTrip == null)
@@ -1260,6 +1269,7 @@ public class TripTracker
 			return;
 		}
 		dead = true;
+		fightStartedAt = null;
 		ignoreDeltasUntilTick = Integer.MAX_VALUE;
 		if (currentTrip != null)
 		{
@@ -1288,6 +1298,7 @@ public class TripTracker
 		currentTrip.getKills().add(kill);
 		lootKill = kill;
 		lastKillTick = tick;
+		fightStartedAt = null;
 		lootReceived = false;
 		fallbackEndTick = -1;
 		fallbackGains.clear();
@@ -1886,20 +1897,24 @@ public class TripTracker
 		}
 
 		long now = System.currentTimeMillis();
-		PanelState state = new PanelState(
-			boss,
-			options,
-			selectedVariant,
-			status,
-			shown,
-			historyViews,
-			bossHistory == null ? null : viewBuilder.lifetime(boss, bossHistory, selectedVariant, allTime(boss),
-				config.showCurrentValue(), now),
-			bossHistory == null ? null : viewBuilder.goal(bossHistory, live ? currentTrip : null, now),
-			live ? pauseText() : null,
-			live && inLairPause != null,
-			live && inArea && suspendedAt == null,
-			readOnly);
+		boolean fighting = live && inArea && suspendedAt == null;
+		PanelState state = PanelState.builder()
+			.boss(boss)
+			.bosses(options)
+			.variant(selectedVariant)
+			.status(status)
+			.currentTrip(shown)
+			.history(historyViews)
+			.lifetime(bossHistory == null ? null : viewBuilder.lifetime(boss, bossHistory, selectedVariant, allTime(boss),
+				config.showCurrentValue(), now))
+			.goal(bossHistory == null ? null : viewBuilder.goal(bossHistory, live ? currentTrip : null, now))
+			.pauseText(live ? pauseText() : null)
+			.pausedInLair(live && inLairPause != null)
+			.canPause(fighting)
+			.readOnly(readOnly)
+			.killStartedAt(fighting ? fightStartedAt : null)
+			.playerName(history == null ? null : history.getLastDisplayName())
+			.build();
 		stateListener.accept(state);
 	}
 

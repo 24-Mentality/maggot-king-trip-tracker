@@ -110,11 +110,25 @@ public class ViewBuilder
 			.netProfit(TripMath.netProfit(trip))
 			.averageKillMs(TripMath.averageKillMs(Collections.singletonList(trip)))
 			.fastestKillMs(TripMath.fastestKillMs(Collections.singletonList(trip)))
+			.lastKillMs(lastKillMs(trip))
 			.loot(items(boss, loot))
 			.supplies(items(boss, trip.getSupplies()))
 			.dropped(items(boss, trip.getDropped()))
 			.supplyCategories(supplyCategories(trip.getSupplies()))
 			.build();
+	}
+
+	private static Long lastKillMs(Trip trip)
+	{
+		for (int i = trip.getKills().size() - 1; i >= 0; i--)
+		{
+			Long duration = trip.getKills().get(i).getDurationMs();
+			if (duration != null)
+			{
+				return duration;
+			}
+		}
+		return null;
 	}
 
 	/**

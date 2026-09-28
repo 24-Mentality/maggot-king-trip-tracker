@@ -32,6 +32,10 @@ public class TripView
 	long netProfit;
 	Long averageKillMs;
 	Long fastestKillMs;
+	/**
+	 * Fight duration of the trip's most recent kill; null if unknown.
+	 */
+	Long lastKillMs;
 	List<ItemView> loot;
 	List<ItemView> supplies;
 	List<ItemView> dropped;
