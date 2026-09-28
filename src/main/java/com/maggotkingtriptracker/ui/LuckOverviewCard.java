@@ -38,6 +38,7 @@ class LuckOverviewCard extends JPanel
 	private static final int ICON_HEIGHT = 24;
 
 	private final ItemManager itemManager;
+	private final JLabel title = new JLabel("Luck Status:");
 	private final JLabel tier = new JLabel();
 	private final JLabel source = new JLabel();
 	private final JLabel uniques = statLabel();
@@ -67,7 +68,6 @@ class LuckOverviewCard extends JPanel
 			BorderFactory.createLineBorder(HEADER_BORDER, 1),
 			BorderFactory.createEmptyBorder(3, 6, 5, 6)));
 
-		JLabel title = new JLabel("Luck Status:");
 		title.setFont(FontManager.getRunescapeBoldFont());
 		title.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 		tier.setFont(FontManager.getRunescapeBoldFont());
@@ -182,8 +182,10 @@ class LuckOverviewCard extends JPanel
 			tier.setText(luck.getTier().getLabel());
 			tier.setForeground(UiFormat.tierColor(luck.getTier()));
 		}
-		tier.setToolTipText(UiFormat.tooltip("You've had more uniques than about " + Math.round(luck.getPercentile() * 100)
-			+ "% of players with the same kills (50% is exactly average)."));
+		// On the title too, so hovering "Luck Status:" explains the tiers
+		String help = luck.getTier() == null ? UiFormat.tooltip("No tier until there are kills to compare.") : luck.tierHelp();
+		tier.setToolTipText(help);
+		title.setToolTipText(help);
 		source.setText(luck.isAllTime() ? "All-time" : "Tracked");
 		source.setToolTipText(UiFormat.tooltip(luck.isAllTime()
 			? String.format(Locale.ROOT, "From RuneLite's Loot Tracker record: %,d kills.", luck.getBasisKills())

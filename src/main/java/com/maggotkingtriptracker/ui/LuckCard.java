@@ -190,7 +190,6 @@ class LuckCard extends JPanel
 		set(uniques, "Uniques", received + " / " + String.format(Locale.ROOT, expected >= 10 ? "%.1f" : "%.2f", expected), null,
 			"Uniques received vs expected from " + basis + " at 1/" + oneIn + "." + breakdown);
 
-		double percentile = luck.getPercentile();
 		if (luck.getTier() == null)
 		{
 			// No tier without kills
@@ -202,10 +201,7 @@ class LuckCard extends JPanel
 			LuckTier luckTier = luck.getTier();
 			tier.setText(luckTier.getLabel());
 			tier.setForeground(UiFormat.tierColor(luckTier));
-			tier.setToolTipText(UiFormat.tooltip("You've had more uniques than about " + Math.round(percentile * 100)
-				+ "% of players with the same kills (50% is exactly average).\n\n"
-				+ "LUCKY AS RUCK: 90% and up\nLucky: 65% to 90%\nOn Rate: 35% to 65%\nDry: 10% to 35%\n"
-				+ "DRY AS RUCK: 10% and down"));
+			tier.setToolTipText(luck.tierHelp());
 		}
 
 		String sinceWhat;

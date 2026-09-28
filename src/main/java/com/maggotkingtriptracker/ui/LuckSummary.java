@@ -43,6 +43,17 @@ class LuckSummary
 	}
 
 	/**
+	 * Hover text for the tier: where you stand and what each tier means.
+	 */
+	String tierHelp()
+	{
+		return UiFormat.tooltip("You've had more uniques than about " + Math.round(percentile * 100)
+			+ "% of players with the same kills (50% is exactly average).\n\n"
+			+ "LUCKY AS RUCK: 90% and up\nLucky: 65% to 90%\nOn Rate: 35% to 65%\nDry: 10% to 35%\n"
+			+ "DRY AS RUCK: 10% and down");
+	}
+
+	/**
 	 * Kills until the average number of kills between uniques; negative when past it by that many.
 	 */
 	static int dueInKills(DrynessView dryness)
