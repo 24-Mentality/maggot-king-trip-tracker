@@ -186,6 +186,18 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
+		if (TripTracker.isAllTimeRecordGroup(event.getGroup()) && event.getKey() != null)
+		{
+			// The core plugins save from their own threads; the tracker lives on the client thread
+			TripTracker tracker = tripTracker;
+			String group = event.getGroup();
+			String key = event.getKey();
+			if (tracker != null)
+			{
+				clientThread.invokeLater(() -> tracker.allTimeRecordsChanged(group, key));
+			}
+			return;
+		}
 		if (!MaggotKingTripTrackerConfig.GROUP.equals(event.getGroup()))
 		{
 			return;

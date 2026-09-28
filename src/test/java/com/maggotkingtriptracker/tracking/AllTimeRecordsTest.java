@@ -24,6 +24,7 @@ public class AllTimeRecordsTest
 		assertEquals(6, snapshot.dropped(ItemID.ELDER_VENATOR_FANG));
 		assertEquals(5, snapshot.dropped(ItemID.CRIMSON_KISTEN));
 		assertEquals(0, snapshot.dropped(ItemID.MAGGOTKINGPET));
+		assertEquals(1790544734203L, snapshot.getLastRecordedAt());
 	}
 
 	@Test
@@ -35,13 +36,15 @@ public class AllTimeRecordsTest
 	@Test
 	public void combinesRecordsOfSeveralSources()
 	{
-		AllTimeCounts a = new AllTimeCounts(100, 110, 5, Collections.singletonMap(ItemID.ELDER_VENATOR_FANG, 1));
-		AllTimeCounts b = new AllTimeCounts(50, null, 3, Collections.singletonMap(ItemID.ELDER_VENATOR_FANG, 2));
+		AllTimeCounts a = new AllTimeCounts(100, 110, 5, 50, Collections.singletonMap(ItemID.ELDER_VENATOR_FANG, 1));
+		AllTimeCounts b = new AllTimeCounts(50, null, 3, 40, Collections.singletonMap(ItemID.ELDER_VENATOR_FANG, 2));
 		AllTimeCounts both = AllTimeRecords.combine(a, b);
 
 		assertEquals(150, both.getLootKills());
 		assertEquals(Integer.valueOf(110), both.getKillCount());
 		assertEquals(3, both.getFirstRecordedAt());
+		// Saved no later than the older of the two
+		assertEquals(40, both.getLastRecordedAt());
 		assertEquals(3, both.dropped(ItemID.ELDER_VENATOR_FANG));
 		assertEquals(a, AllTimeRecords.combine(a, null));
 		assertEquals(b, AllTimeRecords.combine(null, b));

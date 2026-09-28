@@ -363,7 +363,7 @@ public class ViewBuilder
 			.lastUniqueKc(streak.getLastUniqueKc())
 			.firstTrackedKc(firstTrackedKc)
 			.enteredLastUniqueKc(history.getLastUniqueKc())
-			.allTime(allTime(boss, uniqueDrops, allTime, petsFromKills + petsFromEggs, eggPetExpected))
+			.allTime(allTime(boss, uniqueDrops, allTime, kills, currentKc, petsFromKills + petsFromEggs, eggPetExpected))
 			.build();
 	}
 
@@ -371,20 +371,38 @@ public class ViewBuilder
 	 * All-time figures at the default rates: the Loot Tracker doesn't record the variant or party size of a kill.
 	 */
 	private DrynessView.AllTime allTime(BossDefinition boss, List<ExpectedDrop> uniqueDrops, AllTimeCounts counts,
-		int trackedPets, double eggPetExpected)
+		List<Kill> trackedKills, Integer trackedKc, int trackedPets, double eggPetExpected)
 	{
 		if (counts == null)
 		{
 			return null;
 		}
 
+		// The Loot Tracker saves its record some seconds after a drop. Tracked loot kills since its last save aren't
+		// in it yet, so add them, or a unique would only show up after the save
 		int kills = counts.getLootKills();
+		Map<Integer, Integer> unsaved = new LinkedHashMap<>();
+		if (counts.getLastRecordedAt() > 0)
+		{
+			for (Kill kill : trackedKills)
+			{
+				if (kill.getEndedAt() > counts.getLastRecordedAt() && boss.countsForLuck(kill))
+				{
+					kills++;
+					for (ItemEntry entry : kill.getLoot())
+					{
+						unsaved.merge(entry.getItemId(), (int) entry.getQuantity(), Integer::sum);
+					}
+				}
+			}
+		}
+
 		int received = 0;
 		List<DrynessView.Drop> uniques = new ArrayList<>();
 		for (ExpectedDrop drop : uniqueDrops)
 		{
 			double rate = drop.chance(KillContext.DEFAULT);
-			int got = counts.dropped(drop.getItemId());
+			int got = counts.dropped(drop.getItemId()) + unsaved.getOrDefault(drop.getItemId(), 0);
 			received += got;
 			uniques.add(new DrynessView.Drop(drop.getItemId(), prices.name(drop.getItemId()), rate, kills * rate, got,
 				Collections.emptyList()));
@@ -403,7 +421,9 @@ public class ViewBuilder
 
 		return DrynessView.AllTime.builder()
 			.lootKills(kills)
-			.killCount(counts.getKillCount())
+			// Chat Commands may also be a kill behind
+			.killCount(counts.getKillCount() == null ? trackedKc
+				: trackedKc == null ? counts.getKillCount() : Integer.valueOf(Math.max(counts.getKillCount(), trackedKc)))
 			.firstRecordedAt(counts.getFirstRecordedAt())
 			.uniquesReceived(received)
 			.expectedUniques(kills * boss.anyUniqueChance(KillContext.DEFAULT))

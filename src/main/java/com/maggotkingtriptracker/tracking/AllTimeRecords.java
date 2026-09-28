@@ -18,8 +18,8 @@ import net.runelite.client.config.ConfigManager;
 @Slf4j
 class AllTimeRecords
 {
-	private static final String LOOT_TRACKER_GROUP = "loottracker";
-	private static final String KILL_COUNT_GROUP = "killcount";
+	static final String LOOT_TRACKER_GROUP = "loottracker";
+	static final String KILL_COUNT_GROUP = "killcount";
 
 	private final ConfigManager configManager;
 	private final Gson gson;
@@ -68,7 +68,8 @@ class AllTimeRecords
 		Integer killCount = a.getKillCount() == null ? b.getKillCount()
 			: b.getKillCount() == null ? a.getKillCount() : Integer.valueOf(a.getKillCount() + b.getKillCount());
 		return new AllTimeCounts(a.getLootKills() + b.getLootKills(), killCount,
-			Math.min(a.getFirstRecordedAt(), b.getFirstRecordedAt()), drops);
+			Math.min(a.getFirstRecordedAt(), b.getFirstRecordedAt()),
+			Math.min(a.getLastRecordedAt(), b.getLastRecordedAt()), drops);
 	}
 
 	static AllTimeCounts snapshot(LootTrackerRecord record, Integer killCount)
@@ -86,7 +87,7 @@ class AllTimeRecords
 				drops.merge(record.drops[i], record.drops[i + 1], Integer::sum);
 			}
 		}
-		return new AllTimeCounts(record.kills, killCount, record.first, drops);
+		return new AllTimeCounts(record.kills, killCount, record.first, record.last, drops);
 	}
 
 	private LootTrackerRecord parse(String key, String json)
@@ -128,6 +129,7 @@ class AllTimeRecords
 	{
 		int kills;
 		long first;
+		long last;
 		/**
 		 * Item id and quantity pairs.
 		 */

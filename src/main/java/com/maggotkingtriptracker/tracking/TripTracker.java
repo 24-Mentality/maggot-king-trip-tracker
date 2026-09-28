@@ -3,6 +3,7 @@ package com.maggotkingtriptracker.tracking;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
 import com.maggotkingtriptracker.MaggotKingTripTrackerConfig;
+import com.maggotkingtriptracker.boss.AllTimeSource;
 import com.maggotkingtriptracker.boss.BossDefinition;
 import com.maggotkingtriptracker.boss.BossRegistry;
 import com.maggotkingtriptracker.boss.LootChoice;
@@ -652,6 +653,36 @@ public class TripTracker
 	{
 		historyChanged();
 		pushState();
+	}
+
+	/**
+	 * RuneLite's Loot Tracker or Chat Commands saved a record, which it does some seconds after a drop or kill.
+	 * The luck numbers read those records, so show the new values.
+	 */
+	public void allTimeRecordsChanged(String group, String key)
+	{
+		for (BossDefinition boss : registry.all())
+		{
+			for (AllTimeSource source : boss.getAllTimeSources())
+			{
+				boolean match = AllTimeRecords.LOOT_TRACKER_GROUP.equals(group) ? source.getLootTrackerKey().equals(key)
+					: key.equals(source.getKillCountKey());
+				if (match && boss == selectedBoss)
+				{
+					viewDirty = true;
+					pushState();
+					return;
+				}
+			}
+		}
+	}
+
+	/**
+	 * @return whether a config change in this group can be one of the records the luck numbers read
+	 */
+	public static boolean isAllTimeRecordGroup(String group)
+	{
+		return AllTimeRecords.LOOT_TRACKER_GROUP.equals(group) || AllTimeRecords.KILL_COUNT_GROUP.equals(group);
 	}
 
 	// ---- Events ----

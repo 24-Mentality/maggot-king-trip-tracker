@@ -117,7 +117,7 @@ public class ViewBuilderTest
 	@Test
 	public void allTimeUsesTheLootTrackerRecord()
 	{
-		AllTimeCounts counts = new AllTimeCounts(2630, 2636, 1_785_447_588_633L,
+		AllTimeCounts counts = new AllTimeCounts(2630, 2636, 1_785_447_588_633L, 0,
 			ImmutableMap.of(ItemID.ELDER_VENATOR_FANG, 6, ItemID.CRIMSON_KISTEN, 5));
 		DrynessView.AllTime allTime = builder.lifetime(boss, history, null, counts, false, 0).getDryness().getAllTime();
 
@@ -131,6 +131,28 @@ public class ViewBuilderTest
 		// No pet in the Loot Tracker record, one tracked from an egg
 		assertEquals(1, allTime.getPet().getReceived());
 		assertEquals(2630 / 3500.0 + 1 / 3000.0 + 1 / 1250.0, allTime.getPet().getExpected(), DELTA);
+	}
+
+	@Test
+	public void tracksDropsTheLootTrackerHasNotSavedYet()
+	{
+		// Saved before the fixture's first kill: the fang at 2601 and all four Open-stomach kills are newer
+		AllTimeCounts before = new AllTimeCounts(2630, 2600, 1_785_447_588_633L, 1_790_000_000_000L,
+			ImmutableMap.of(ItemID.ELDER_VENATOR_FANG, 6, ItemID.CRIMSON_KISTEN, 5));
+		DrynessView.AllTime allTime = builder.lifetime(boss, history, null, before, false, 0).getDryness().getAllTime();
+		assertEquals(2630 + 4, allTime.getLootKills());
+		assertEquals(7, allTime.getUniques().get(0).getReceived());
+		assertEquals(12, allTime.getUniquesReceived());
+		assertEquals((2630 + 4) / 205.6, allTime.getExpectedUniques(), DELTA);
+		// Chat Commands was behind too: the tracked kill count is newer
+		assertEquals(Integer.valueOf(2605), allTime.getKillCount());
+
+		// Saved after the fang: only the Open-stomach kills at 2604 and 2605 are newer, no uniques among them
+		AllTimeCounts after = new AllTimeCounts(2634, 2605, 1_785_447_588_633L, 1_790_002_000_000L,
+			ImmutableMap.of(ItemID.ELDER_VENATOR_FANG, 7, ItemID.CRIMSON_KISTEN, 5));
+		allTime = builder.lifetime(boss, history, null, after, false, 0).getDryness().getAllTime();
+		assertEquals(2634 + 2, allTime.getLootKills());
+		assertEquals(7, allTime.getUniques().get(0).getReceived());
 	}
 
 	@Test

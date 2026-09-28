@@ -19,6 +19,11 @@ public class AllTimeCounts
 	 */
 	Integer killCount;
 	long firstRecordedAt;
+	/**
+	 * When the Loot Tracker last saved the record; 0 if unknown. It saves some seconds after a drop, so kills
+	 * after this aren't in it yet.
+	 */
+	long lastRecordedAt;
 	Map<Integer, Integer> drops;
 
 	public int dropped(int itemId)
