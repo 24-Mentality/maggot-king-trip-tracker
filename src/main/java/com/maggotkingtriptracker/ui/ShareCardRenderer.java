@@ -23,9 +23,9 @@ final class ShareCardRenderer
 	static final int SCALE = 2;
 	static final int WIDTH = 380;
 
-	private static final int PAD = 8;
+	static final int PAD = 8;
 	private static final int GAP = 6;
-	private static final int INNER = 8;
+	static final int INNER = 8;
 	private static final Color BACKGROUND = ColorScheme.DARK_GRAY_COLOR;
 	private static final Color CARD = ColorScheme.DARKER_GRAY_COLOR;
 	private static final Color TEXT = ColorScheme.LIGHT_GRAY_COLOR;
@@ -115,10 +115,10 @@ final class ShareCardRenderer
 		int left = PAD + INNER;
 		int right = WIDTH - PAD - INNER;
 
-		text(g, bold, TEXT, "Luck:", left, y + 17);
+		text(g, bold, TEXT, "Luck Status:", left, y + 17);
 		if (card.getTier() != null)
 		{
-			text(g, bold, UiFormat.tierColor(card.getTier()), card.getTier().getLabel(), left + width(g, bold, "Luck:") + 6, y + 17);
+			text(g, bold, UiFormat.tierColor(card.getTier()), card.getTier().getLabel(), left + width(g, bold, "Luck Status:") + 6, y + 17);
 		}
 		textRight(g, small, UiFormat.MUTED_TEXT, card.isAllTime() ? "All-time (Loot Tracker)" : "Tracked kills", right, y + 16);
 

@@ -13,6 +13,7 @@ import com.maggotkingtriptracker.view.PolishView;
 import com.maggotkingtriptracker.view.StatView;
 import com.maggotkingtriptracker.view.TripView;
 import java.awt.Color;
+import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
@@ -24,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import javax.imageio.ImageIO;
 import net.runelite.api.gameval.ItemID;
+import net.runelite.client.ui.FontManager;
 import org.junit.Test;
 
 public class ShareCardTest
@@ -80,6 +82,25 @@ public class ShareCardTest
 		File out = new File("build/share-card-preview.png");
 		out.getParentFile().mkdirs();
 		ImageIO.write(image, "PNG", out);
+	}
+
+	@Test
+	public void luckTitleRowFitsEveryTier()
+	{
+		Graphics2D g = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB).createGraphics();
+		FontMetrics bold = g.getFontMetrics(FontManager.getRunescapeBoldFont());
+		FontMetrics small = g.getFontMetrics(FontManager.getRunescapeSmallFont());
+		int left = ShareCardRenderer.PAD + ShareCardRenderer.INNER;
+		int right = ShareCardRenderer.WIDTH - ShareCardRenderer.PAD - ShareCardRenderer.INNER;
+		// Same positions as drawLuck: label, 6 px, tier ... source note right-aligned
+		int sourceLeft = right - small.stringWidth("All-time (Loot Tracker)");
+		for (LuckTier tier : LuckTier.values())
+		{
+			int tierRight = left + bold.stringWidth("Luck Status:") + 6 + bold.stringWidth(tier.getLabel());
+			assertTrue(tier.getLabel() + " ends at " + tierRight + ", source note starts at " + sourceLeft,
+				tierRight + 6 <= sourceLeft);
+		}
+		g.dispose();
 	}
 
 	private static Image placeholderIcon(int itemId)
