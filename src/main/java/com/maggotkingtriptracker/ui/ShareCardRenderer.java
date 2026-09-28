@@ -105,7 +105,7 @@ final class ShareCardRenderer
 
 	private static int luck()
 	{
-		return 94;
+		return 112;
 	}
 
 	private int drawLuck(Graphics2D g, ShareCard card, IntFunction<Image> icons, int y)
@@ -125,7 +125,7 @@ final class ShareCardRenderer
 		String expected = String.format(Locale.ROOT, card.getUniquesExpected() >= 10 ? "%.1f" : "%.2f", card.getUniquesExpected());
 		int half = (right - left) / 2;
 		pair(g, "Uniques", card.getUniquesReceived() + " / " + expected, left, y + 36);
-		pair(g, "Since last unique", String.format(Locale.ROOT, "%,d kc", card.getDryKills()), left + half, y + 36);
+		pair(g, "Dry streak", String.format(Locale.ROOT, "%,d kc", card.getDryKills()), left + half, y + 36);
 		if (card.getDueInKills() > 0)
 		{
 			pair(g, "Next unique due in", String.format(Locale.ROOT, "%,d kc", card.getDueInKills()), left, y + 54);
@@ -135,14 +135,15 @@ final class ShareCardRenderer
 			pair(g, "Overdue", String.format(Locale.ROOT, "+%,d kc", -card.getDueInKills()), UiFormat.LOSS, left, y + 54);
 		}
 		pair(g, "Rate", "1/" + UiFormat.oneIn(card.getUniqueRate()), left + half, y + 54);
+		pair(g, "Longest dry streak", String.format(Locale.ROOT, "%,d kc", card.getLongestDryStreak()), left, y + 72);
 
 		// One icon and count per unique, then the pet
 		int x = left;
 		for (ShareCard.Drop drop : card.getDrops())
 		{
-			drawIcon(g, icons.apply(drop.getItemId()), x, y + 64, 27, 24);
+			drawIcon(g, icons.apply(drop.getItemId()), x, y + 82, 27, 24);
 			String count = "x" + drop.getCount();
-			text(g, bold, drop.getCount() > 0 ? UiFormat.UNIQUE_BORDER : UiFormat.MUTED_TEXT, count, x + 29, y + 82);
+			text(g, bold, drop.getCount() > 0 ? UiFormat.UNIQUE_BORDER : UiFormat.MUTED_TEXT, count, x + 29, y + 100);
 			x += 29 + width(g, bold, count) + 12;
 		}
 		return y + h;

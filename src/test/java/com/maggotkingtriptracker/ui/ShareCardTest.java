@@ -46,6 +46,7 @@ public class ShareCardTest
 		assertEquals(LuckTier.of(com.maggotkingtriptracker.model.DropOdds.luckPercentile(11, 2630 / 205.6)), card.getTier());
 		assertTrue(card.isAllTime());
 		assertEquals(832, card.getDryKills());
+		assertEquals(847, card.getLongestDryStreak());
 		// 206 kills on average between uniques, so 626 past it
 		assertEquals(-626, card.getDueInKills());
 		assertEquals(172, card.getTrackedKills());
@@ -143,6 +144,7 @@ public class ShareCardTest
 		DrynessView dryness = DrynessView.builder()
 			.luckKills(171)
 			.killsSinceUnique(832)
+			.longestDryStreak(847)
 			.anyUniqueRate(1 / 205.6)
 			.expectedUniques(171 / 205.6)
 			.uniques(tracked)

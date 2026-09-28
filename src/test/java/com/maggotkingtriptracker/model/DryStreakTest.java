@@ -5,6 +5,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
 import org.junit.Test;
@@ -90,6 +92,18 @@ public class DryStreakTest
 	{
 		assertEquals(50, DryStreak.compute(new ArrayList<>(), LUCK, UNIQUE, 200, 250).getSince());
 		assertEquals(0, DryStreak.compute(new ArrayList<>(), LUCK, UNIQUE, 200, null).getSince());
+	}
+
+	@Test
+	public void longestIsTheBiggestGapBetweenKnownUniquesOrTheCurrentStreak()
+	{
+		// Entered unique at 1,920, tracked kisten at 2,767: the 847 kc dry spell from the diagnostic logs
+		assertEquals(847, DryStreak.longest(Collections.singletonList(2767), 1920, 4));
+		// A current streak longer than any past gap
+		assertEquals(900, DryStreak.longest(Arrays.asList(2767, 2800), 1920, 900));
+		// Order doesn't matter, and without known uniques it's the current streak
+		assertEquals(200, DryStreak.longest(Arrays.asList(2500, 2200, 2400), null, 50));
+		assertEquals(12, DryStreak.longest(new ArrayList<>(), null, 12));
 	}
 
 	private static List<Kill> kills(int fromKc, int toKc)

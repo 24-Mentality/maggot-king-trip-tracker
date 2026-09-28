@@ -193,6 +193,7 @@ public class PanelFitTest
 		DrynessView dryness = DrynessView.builder()
 			.luckKills(12_345)
 			.killsSinceUnique(1_234)
+			.longestDryStreak(12_345)
 			.chanceThisDry(0.0024)
 			.anyUniqueRate(1 / 205.6)
 			.uniquesReceived(99)

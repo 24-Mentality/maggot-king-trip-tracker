@@ -67,7 +67,8 @@ public class LuckOverviewPreviewTest
 			Collections.<Integer>emptyList());
 		return DrynessView.builder()
 			.luckKills(171)
-			.killsSinceUnique(832)
+			.killsSinceUnique(4)
+			.longestDryStreak(847)
 			.anyUniqueRate(1 / 205.6)
 			.uniques(Collections.<DrynessView.Drop>emptyList())
 			.pet(pet)

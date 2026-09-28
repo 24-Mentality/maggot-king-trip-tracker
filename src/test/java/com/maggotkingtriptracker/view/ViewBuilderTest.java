@@ -83,6 +83,8 @@ public class ViewBuilderTest
 		assertEquals(Integer.valueOf(2601), dryness.getFirstTrackedKc());
 		assertEquals(Integer.valueOf(2605), dryness.getCurrentKc());
 		assertEquals(Math.pow(1 - 1 / 205.6, 3), dryness.getChanceThisDry(), DELTA);
+		// Only one known unique, so the current streak
+		assertEquals(3, dryness.getLongestDryStreak());
 
 		assertEquals(2, dryness.getUniques().size());
 		assertEquals(1, dryness.getUniques().get(0).getReceived());
@@ -110,6 +112,10 @@ public class ViewBuilderTest
 		DrynessView newer = builder.lifetime(boss, history, null, null, false, 0).getDryness();
 		// 2604 and 2605
 		assertEquals(2, newer.getKillsSinceUnique());
+		// Tracked fang at 2601, entered unique at 2603
+		assertEquals(2, newer.getLongestDryStreak());
+		history.setLastUniqueKc(2500);
+		assertEquals(101, builder.lifetime(boss, history, null, null, false, 0).getDryness().getLongestDryStreak());
 		assertTrue(newer.isSinceFromEnteredKc());
 		assertEquals(Integer.valueOf(2603), newer.getLastUniqueKc());
 	}

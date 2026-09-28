@@ -53,6 +53,11 @@ public class DrynessView
 	 */
 	boolean sinceFromEnteredKc;
 	/**
+	 * Longest gap between uniques whose kill count is known (tracked, or entered by you), by kill count, or the
+	 * current streak if that is longer.
+	 */
+	int longestDryStreak;
+	/**
 	 * Chance of going this many kills without a unique.
 	 */
 	double chanceThisDry;

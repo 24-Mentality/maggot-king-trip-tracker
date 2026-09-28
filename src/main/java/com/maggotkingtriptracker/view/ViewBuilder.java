@@ -340,6 +340,18 @@ public class ViewBuilder
 			petsFromEggs += e.getValue()[1];
 		}
 
+		List<Integer> uniqueKcs = new ArrayList<>();
+		for (List<Integer> kcs : received.values())
+		{
+			for (Integer kc : kcs)
+			{
+				if (kc != null)
+				{
+					uniqueKcs.add(kc);
+				}
+			}
+		}
+
 		double anyRate = averageRate(expectedAny, luckKills, boss.anyUniqueChance(KillContext.DEFAULT));
 		DryStreak.Result streak = DryStreak.compute(kills, boss::countsForLuck,
 			kill -> kill.getLoot().stream().anyMatch(e -> boss.isUnique(e.getItemId())),
@@ -349,6 +361,7 @@ public class ViewBuilder
 			.luckKills(luckKills)
 			.killsSinceUnique(streak.getSince())
 			.sinceFromEnteredKc(streak.isFromEnteredKc())
+			.longestDryStreak(DryStreak.longest(uniqueKcs, history.getLastUniqueKc(), streak.getSince()))
 			.chanceThisDry(Math.pow(1 - anyRate, streak.getSince()))
 			.anyUniqueRate(anyRate)
 			.uniquesReceived(uniquesReceived)

@@ -45,6 +45,7 @@ class LuckOverviewCard extends JPanel
 	private final JLabel since = statLabel();
 	private final JLabel due = statLabel();
 	private final JLabel rate = statLabel();
+	private final JLabel longest = statLabel();
 	private final JPanel drops = new JPanel();
 	private final List<JLabel> counts = new ArrayList<>();
 	private final JPanel body = new JPanel(new BorderLayout(0, 4));
@@ -80,10 +81,11 @@ class LuckOverviewCard extends JPanel
 		titleLeft.add(tier, BorderLayout.CENTER);
 		// Two rows of two as on the share card. The sidebar is too narrow for its columns ("Since last unique" alone
 		// takes over half the width), so each row sizes its cells to their contents
-		JPanel stats = new JPanel(new GridLayout(2, 1, 0, 0));
+		JPanel stats = new JPanel(new GridLayout(3, 1, 0, 0));
 		stats.setOpaque(false);
 		stats.add(row(uniques, due));
 		stats.add(row(since, rate));
+		stats.add(longest);
 
 		// A box, not a flow: a flow would silently wrap a count that doesn't fit out of sight
 		drops.setLayout(new BoxLayout(drops, BoxLayout.X_AXIS));
@@ -193,10 +195,14 @@ class LuckOverviewCard extends JPanel
 
 		String expected = String.format(Locale.ROOT, luck.getExpected() >= 10 ? "%.1f" : "%.2f", luck.getExpected());
 		set(uniques, "Uniques", luck.getReceived() + " / " + expected, null, "Uniques received vs expected.");
-		set(since, "Since last unique", String.format(Locale.ROOT, "%,d kc", dryness.getKillsSinceUnique()), null,
+		set(since, "Dry streak", String.format(Locale.ROOT, "%,d kc", dryness.getKillsSinceUnique()), null,
 			"Kills since your last unique" + (dryness.isSinceFromEnteredKc() && dryness.getLastUniqueKc() != null
 				? String.format(Locale.ROOT, " (KC %,d, as you entered it)", dryness.getLastUniqueKc()) : "")
 				+ ". Right-click to set the kill count of your last unique.");
+		set(longest, "Longest dry streak", String.format(Locale.ROOT, "%,d kc", dryness.getLongestDryStreak()), null,
+			"The longest gap between two of your uniques, by kill count, counting the uniques this plugin tracked and"
+				+ " the kill count you entered for your last unique from before tracking (or the current streak, if"
+				+ " that is longer). Earlier uniques aren't known.");
 		int dueIn = LuckSummary.dueInKills(dryness);
 		if (dueIn > 0)
 		{

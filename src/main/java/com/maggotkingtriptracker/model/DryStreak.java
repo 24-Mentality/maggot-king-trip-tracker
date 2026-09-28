@@ -1,5 +1,7 @@
 package com.maggotkingtriptracker.model;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
 import lombok.Value;
@@ -23,6 +25,30 @@ public final class DryStreak
 		 */
 		Integer lastUniqueKc;
 		boolean fromEnteredKc;
+	}
+
+	/**
+	 * The longest gap between uniques, by kill count, among the uniques whose kill count is known (tracked ones and
+	 * the one you entered), or the current streak if that is longer.
+	 *
+	 * @param uniqueKcs kill counts of tracked uniques, in any order
+	 * @param enteredKc kill count of your last unique as you entered it; null if none
+	 * @param current the current dry streak
+	 */
+	public static int longest(List<Integer> uniqueKcs, Integer enteredKc, int current)
+	{
+		List<Integer> kcs = new ArrayList<>(uniqueKcs);
+		if (enteredKc != null)
+		{
+			kcs.add(enteredKc);
+		}
+		Collections.sort(kcs);
+		int longest = current;
+		for (int i = 1; i < kcs.size(); i++)
+		{
+			longest = Math.max(longest, kcs.get(i) - kcs.get(i - 1));
+		}
+		return longest;
 	}
 
 	/**

@@ -63,6 +63,7 @@ class ShareCard
 	 */
 	boolean allTime;
 	int dryKills;
+	int longestDryStreak;
 	/**
 	 * Kills until the average kills between uniques is reached; negative when overdue by that many.
 	 */
@@ -149,6 +150,7 @@ class ShareCard
 			.tier(luck.getTier())
 			.allTime(luck.isAllTime())
 			.dryKills(dryness.getKillsSinceUnique())
+			.longestDryStreak(dryness.getLongestDryStreak())
 			.dueInKills(LuckSummary.dueInKills(dryness))
 			.uniqueRate(dryness.getAnyUniqueRate())
 			.drops(drops)
