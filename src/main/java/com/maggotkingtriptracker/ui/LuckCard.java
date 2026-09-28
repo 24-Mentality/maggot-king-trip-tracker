@@ -3,6 +3,7 @@ package com.maggotkingtriptracker.ui;
 import com.maggotkingtriptracker.MaggotKingIds;
 import com.maggotkingtriptracker.MaggotKingRates;
 import com.maggotkingtriptracker.model.DropOdds;
+import com.maggotkingtriptracker.model.LuckTier;
 import com.maggotkingtriptracker.view.DrynessView;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -31,7 +32,7 @@ class LuckCard extends JPanel
 	private static final double RATE = MaggotKingRates.ANY_UNIQUE;
 
 	private final JLabel uniques = statLabel();
-	private final JLabel luck = statLabel();
+	private final JLabel tier = new JLabel();
 	private final JLabel dry = statLabel();
 	private final JLabel byNow = statLabel();
 	private final JLabel next = statLabel();
@@ -68,17 +69,29 @@ class LuckCard extends JPanel
 			}
 		});
 
+		// The tier sits beside the title so it stays visible when the card is collapsed
+		tier.setFont(FontManager.getRunescapeBoldFont());
+		JPanel titleLeft = new JPanel(new BorderLayout(6, 0));
+		titleLeft.setOpaque(false);
+		titleLeft.add(title, BorderLayout.WEST);
+		titleLeft.add(tier, BorderLayout.CENTER);
+
 		JPanel titleRow = new JPanel(new BorderLayout());
 		titleRow.setOpaque(false);
-		titleRow.add(title, BorderLayout.WEST);
+		titleRow.add(titleLeft, BorderLayout.CENTER);
 		titleRow.add(eye, BorderLayout.EAST);
 
-		JPanel stats = new JPanel(new GridLayout(3, 2, 6, 0));
+		JPanel stats = new JPanel(new GridLayout(2, 2, 4, 0));
 		stats.setOpaque(false);
-		for (JLabel label : new JLabel[]{uniques, luck, dry, byNow, next, odds})
+		for (JLabel label : new JLabel[]{uniques, dry, byNow, next})
 		{
 			stats.add(label);
 		}
+
+		JPanel statRows = new JPanel(new BorderLayout());
+		statRows.setOpaque(false);
+		statRows.add(stats, BorderLayout.NORTH);
+		statRows.add(odds, BorderLayout.CENTER);
 
 		progress.setBackground(BAR_BACKGROUND);
 		progress.setForeground(ColorScheme.BRAND_ORANGE);
@@ -87,7 +100,7 @@ class LuckCard extends JPanel
 		progress.setRightLabel("");
 
 		body.setOpaque(false);
-		body.add(stats, BorderLayout.NORTH);
+		body.add(statRows, BorderLayout.NORTH);
 		body.add(progress, BorderLayout.CENTER);
 
 		add(titleRow, BorderLayout.NORTH);
@@ -134,17 +147,27 @@ class LuckCard extends JPanel
 		String basis = allTime != null
 			? String.format(Locale.ROOT, "%,d kills recorded by RuneLite's Loot Tracker (all-time)", basisKills)
 			: basisKills + " Open-stomach kills tracked by this plugin";
-		set(uniques, "Uniques", received + " / " + String.format(Locale.ROOT, "%.2f", expected), null,
+		// One decimal once expected reaches 10, so large counts still fit half the card
+		set(uniques, "Uniques", received + " / " + String.format(Locale.ROOT, expected >= 10 ? "%.1f" : "%.2f", expected), null,
 			"Uniques received vs expected from " + basis + " at 1/205.6." + breakdown);
 
 		double percentile = DropOdds.luckPercentile(received, expected);
-		String verdict = basisKills == 0 ? "N/A"
-			: percentile >= 0.6 ? "Lucky" : percentile <= 0.4 ? "Dry" : "On rate";
-		Color verdictColor = basisKills == 0 ? null
-			: percentile >= 0.6 ? UiFormat.PROFIT : percentile <= 0.4 ? UiFormat.LOSS : null;
-		set(luck, "Luck", verdict, verdictColor, "Compared with other players after the same number of kills, you've had"
-			+ " more uniques than about " + Math.round(percentile * 100) + "% of them (50% is exactly average)."
-			+ " Lucky above 60%, dry below 40%.");
+		if (basisKills == 0)
+		{
+			// No tier without kills
+			tier.setText("");
+			tier.setToolTipText(null);
+		}
+		else
+		{
+			LuckTier luckTier = LuckTier.of(percentile);
+			tier.setText(luckTier.getLabel());
+			tier.setForeground(tierColor(luckTier));
+			tier.setToolTipText(UiFormat.tooltip("You've had more uniques than about " + Math.round(percentile * 100)
+				+ "% of players with the same kills (50% is exactly average).\n\n"
+				+ "LUCKY AS RUCK: 90% and up\nLucky: 65% to 90%\nOn Rate: 35% to 65%\nDry: 10% to 35%\n"
+				+ "DRY AS RUCK: 10% and down"));
+		}
 
 		String sinceWhat = lastKc != null ? "your last unique at KC " + String.format(Locale.ROOT, "%,d", lastKc)
 			: dryness.getFirstTrackedKc() != null ? "tracking began at KC " + String.format(Locale.ROOT, "%,d", dryness.getFirstTrackedKc())
@@ -170,16 +193,32 @@ class LuckCard extends JPanel
 			set(next, "Overdue", "+" + (-toGo) + " kc", UiFormat.LOSS, "You're " + (-toGo)
 				+ " kills past the 205.6-kill average. Each kill is still 1/205.6: drops don't become more likely.");
 		}
-		set(odds, "50% / 90%", half + " / " + ninety, null, "Kills after a unique by which 50% and 90% of players"
-			+ " get the next one: " + half + " and " + ninety + ".");
+		set(odds, "50% / 90% of players by", half + " / " + ninety + " kc", null, "Kills after a unique by which 50%"
+			+ " and 90% of players get the next one: " + half + " and " + ninety + ".");
 
 		progress.setMaximumValue(onRate);
 		progress.setValue(Math.min(since, onRate));
-		progress.setCenterLabel(toGo > 0
-			? String.format(Locale.ROOT, "%.0f%% of drop rate", since * 100.0 / onRate)
-			: "Past drop rate");
-		progress.setToolTipText(UiFormat.tooltip("Kills since your last unique (" + since + ") out of the 205.6-kill"
-			+ " average between uniques."));
+		// The bar's centre label only gets a third of its width, so keep it short
+		progress.setCenterLabel(toGo > 0 ? String.format(Locale.ROOT, "%.0f%%", since * 100.0 / onRate) : "Past rate");
+		progress.setToolTipText(UiFormat.tooltip("Progress to the drop rate: kills since your last unique (" + since
+			+ ") out of the 205.6-kill average between uniques."));
+	}
+
+	private static Color tierColor(LuckTier tier)
+	{
+		switch (tier)
+		{
+			case LUCKY_AS_RUCK:
+				return UiFormat.UNIQUE_BORDER;
+			case LUCKY:
+				return UiFormat.PROFIT;
+			case DRY:
+				return ColorScheme.BRAND_ORANGE;
+			case DRY_AS_RUCK:
+				return UiFormat.LOSS;
+			default:
+				return ColorScheme.LIGHT_GRAY_COLOR;
+		}
 	}
 
 	private static void set(JLabel label, String name, String value, Color color, String help)
