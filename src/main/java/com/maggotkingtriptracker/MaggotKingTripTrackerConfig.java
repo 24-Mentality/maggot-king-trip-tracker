@@ -102,6 +102,18 @@ public interface MaggotKingTripTrackerConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "autoResumeOnAttack",
+		name = "Auto-resume when I attack",
+		description = "When a trip or goal is paused (AFK), resume it as soon as you damage the Maggot King",
+		section = tripsSection,
+		position = 4
+	)
+	default boolean autoResumeOnAttack()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = "tomePage",
 		name = "Tome of fire pages",
 		description = "Which page's GE price is used for Tome of fire charges (20 charges per page)",

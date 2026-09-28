@@ -16,7 +16,8 @@ import net.runelite.client.ui.ColorScheme;
 class TripSummaryCard extends JPanel
 {
 	private final StatCell time = new StatCell("Time", false)
-		.help("Time spent inside the lair this trip. Time outside (banking, logged out) isn't counted.");
+		.help("Time spent inside the lair this trip. Time outside (banking, logged out) and time paused with the Pause"
+			+ " button isn't counted.");
 	private final StatCell kills = new StatCell("Kills", false)
 		.help("Kills this trip, from the game's kill-count message.");
 	private final StatCell averageKill = new StatCell("Avg kill", false)
@@ -26,8 +27,9 @@ class TripSummaryCard extends JPanel
 
 	private final StatCell net = new StatCell("Net profit", true)
 		.help("Loot minus costs (supplies, dropped items and death costs), at the GE prices recorded at the time.");
-	private final StatCell gpPerHour = new StatCell("GP/hr", true)
-		.help("Net profit per hour of time inside the lair.");
+	private final StatCell gpPerHour = new StatCell("Net GP/hr", true)
+		.help("Net profit per hour of time inside the lair (paused time excluded). The Loot box's Loot GP/hr is loot"
+			+ " before costs.");
 	private final StatCell loot = new StatCell("Loot", false)
 		.help("GE value of everything received, including overflow picked up from the ground. Tarnished drops count"
 			+ " once polished.");
@@ -39,6 +41,7 @@ class TripSummaryCard extends JPanel
 		.help("Deaths in the lair this trip.");
 
 	private TripView trip;
+	private boolean paused;
 
 	TripSummaryCard()
 	{
@@ -46,7 +49,7 @@ class TripSummaryCard extends JPanel
 		setOpaque(false);
 
 		JPanel timeCard = card(new GridLayout(1, 4, 4, 0), time, kills, averageKill, fastestKill);
-		JPanel profitCard = card(new GridLayout(2, 3, 4, 3), net, gpPerHour, loot, costs, split, deaths);
+		JPanel profitCard = card(new GridLayout(2, 3, 4, 3), net, gpPerHour, split, loot, costs, deaths);
 
 		JPanel gap = new JPanel();
 		gap.setOpaque(false);
@@ -89,6 +92,14 @@ class TripSummaryCard extends JPanel
 		tick(now);
 	}
 
+	/**
+	 * Greys the timer while the trip is paused with the Pause button.
+	 */
+	void setPaused(boolean paused)
+	{
+		this.paused = paused;
+	}
+
 	void tick(long now)
 	{
 		if (trip == null)
@@ -96,7 +107,8 @@ class TripSummaryCard extends JPanel
 			return;
 		}
 		long activeMs = trip.activeMsAt(now);
-		time.setValue(UiFormat.duration(activeMs));
+		time.setValue(UiFormat.duration(activeMs), paused ? UiFormat.MUTED_TEXT : ColorScheme.LIGHT_GRAY_COLOR,
+			paused ? "Paused: the clock resumes when you press Resume" + " or attack the boss (if auto-resume is on)." : null);
 		long rate = TripMath.gpPerHour(trip.getNetProfit(), activeMs);
 		gpPerHour.setValue(UiFormat.gp(rate), UiFormat.profitColor(rate), UiFormat.fullGp(rate) + " net per hour in the lair");
 	}

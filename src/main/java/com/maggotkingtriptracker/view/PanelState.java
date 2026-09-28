@@ -11,7 +11,14 @@ public class PanelState
 		LOGGED_OUT,
 		LOADING,
 		IN_TRIP,
+		/**
+		 * Logged out mid-trip, within the grace period.
+		 */
 		PAUSED,
+		/**
+		 * Paused with the Pause button while in the lair.
+		 */
+		AFK_PAUSED,
 		IDLE,
 	}
 
@@ -29,5 +36,9 @@ public class PanelState
 	 * Null when no goal is set.
 	 */
 	GoalView goal;
+	/**
+	 * The Pause button is active (trip clock and/or goal clock stopped).
+	 */
+	boolean afkPaused;
 	boolean readOnly;
 }

@@ -214,6 +214,13 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 		}
 
 		@Override
+		public void togglePause()
+		{
+			TripTracker tracker = tripTracker;
+			clientThread.invokeLater(tracker::togglePause);
+		}
+
+		@Override
 		public void exportCsv()
 		{
 			export("Export trips", "maggot-king-trips.csv", "CSV files", "csv", TripTracker::exportCsv);

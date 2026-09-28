@@ -25,10 +25,10 @@ class CurrentTripPanel extends JPanel
 	private boolean live;
 	private TripView shownDetails;
 
-	CurrentTripPanel(ItemManager itemManager, Runnable onSetGoal, Runnable onResetGoal)
+	CurrentTripPanel(ItemManager itemManager, Runnable onSetGoal, Runnable onPause, Runnable onResetGoal)
 	{
 		this.itemManager = itemManager;
-		this.goalCard = new GoalCard(itemManager, onSetGoal, onResetGoal);
+		this.goalCard = new GoalCard(itemManager, onSetGoal, onPause, onResetGoal);
 		this.dropChances = new DropChancesCard(itemManager);
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		setBackground(ColorScheme.DARK_GRAY_COLOR);
@@ -70,7 +70,9 @@ class CurrentTripPanel extends JPanel
 		TripView trip = state.getCurrentTrip();
 		live = state.getStatus() == PanelState.Status.IN_TRIP;
 		goalCard.setVisible(state.getLifetime() != null);
+		goalCard.setPaused(state.isAfkPaused());
 		goalCard.setGoal(state.getGoal(), now);
+		summary.setPaused(state.getStatus() == PanelState.Status.AFK_PAUSED);
 		luckHolder.setVisible(state.getLifetime() != null);
 		if (state.getLifetime() != null)
 		{
@@ -132,6 +134,8 @@ class CurrentTripPanel extends JPanel
 				return "Trip in progress";
 			case PAUSED:
 				return "Trip paused (logged out)";
+			case AFK_PAUSED:
+				return "Trip paused (AFK)";
 			default:
 				TripView last = state.getCurrentTrip();
 				if (last == null)

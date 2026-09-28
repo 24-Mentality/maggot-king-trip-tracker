@@ -21,4 +21,9 @@ public interface PanelActions
 	void setGoal(int target);
 
 	void resetGoal();
+
+	/**
+	 * Pause or resume the trip and goal clocks.
+	 */
+	void togglePause();
 }

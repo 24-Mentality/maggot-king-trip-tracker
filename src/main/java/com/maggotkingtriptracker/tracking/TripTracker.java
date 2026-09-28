@@ -189,6 +189,10 @@ public class TripTracker
 	 * Last tick time while logged in, for the goal clock; 0 while logged out.
 	 */
 	private long lastGoalTickAt;
+	/**
+	 * Pause button: the trip's lair clock and the goal clock are stopped. Kills, loot and supplies still count.
+	 */
+	private boolean afkPaused;
 	private boolean runeIdsLoaded;
 	private final Deque<PreEntryUse> preEntryUses = new ArrayDeque<>();
 
@@ -455,6 +459,55 @@ public class TripTracker
 	}
 
 	/**
+	 * Pause or resume the trip clock (when a trip is running in the lair) and the goal clock.
+	 */
+	public void togglePause()
+	{
+		if (afkPaused)
+		{
+			resume();
+		}
+		else
+		{
+			pause();
+		}
+	}
+
+	private void pause()
+	{
+		if (history == null || afkPaused)
+		{
+			return;
+		}
+		afkPaused = true;
+		if (inLair && currentTrip != null && suspendedAt == null)
+		{
+			commitSegment(System.currentTimeMillis());
+			requestSave();
+		}
+		viewDirty = true;
+		pushState();
+	}
+
+	private void resume()
+	{
+		if (!afkPaused)
+		{
+			return;
+		}
+		afkPaused = false;
+		if (inLair && currentTrip != null && suspendedAt == null && currentTrip.getSegmentStartedAt() == null)
+		{
+			long now = System.currentTimeMillis();
+			currentTrip.setSegmentStartedAt(now);
+			currentTrip.setLastActiveAt(now);
+			requestSave();
+		}
+		viewDirty = true;
+		pushState();
+	}
+
+	/**
 	 * Restarts the goal's kill count and clock from now.
 	 */
 	public void resetGoal()
@@ -629,6 +682,11 @@ public class TripTracker
 		if (hitsplat.isMine() && event.getActor() instanceof NPC)
 		{
 			chargeCounter.hitsplat(client.getTickCount(), hitsplat.getHitsplatType(), hitsplat.getAmount());
+			if (afkPaused && config.autoResumeOnAttack() && ((NPC) event.getActor()).getId() == MaggotKingIds.BOSS
+				&& hitsplat.getAmount() > 0)
+			{
+				resume();
+			}
 		}
 	}
 
@@ -913,6 +971,7 @@ public class TripTracker
 		ignoreDeltasUntilTick = -1;
 		pendingDeath = null;
 		graveWindowEndTick = -1;
+		afkPaused = false;
 		resetKillState();
 
 		if (currentTrip != null && suspendedAt != null
@@ -1004,6 +1063,7 @@ public class TripTracker
 
 	private void endTrip(TripEndReason reason, long at)
 	{
+		afkPaused = false;
 		currentTrip.setEndedAt(at);
 		currentTrip.setEndReason(reason);
 		currentTrip.setLastActiveAt(at);
@@ -1148,7 +1208,7 @@ public class TripTracker
 	private void tickGoalClock(long now)
 	{
 		KillGoal goal = history != null ? history.getGoal() : null;
-		if (goal != null && lastGoalTickAt > 0)
+		if (goal != null && lastGoalTickAt > 0 && !afkPaused)
 		{
 			long elapsed = now - lastGoalTickAt;
 			// Ticks are 0.6s apart; a longer gap means the client was paused, so don't count it
@@ -1924,7 +1984,9 @@ public class TripTracker
 		}
 		else if (currentTrip != null)
 		{
-			status = suspendedAt != null ? PanelState.Status.PAUSED : PanelState.Status.IN_TRIP;
+			status = suspendedAt != null ? PanelState.Status.PAUSED
+				: afkPaused ? PanelState.Status.AFK_PAUSED
+				: PanelState.Status.IN_TRIP;
 			shown = viewBuilder.trip(currentTrip);
 		}
 		else
@@ -1938,7 +2000,8 @@ public class TripTracker
 			shown,
 			historyViews,
 			history == null ? null : viewBuilder.lifetime(history, allTime(), config.showCurrentValue(), System.currentTimeMillis()),
-			history == null ? null : viewBuilder.goal(history, lastGoalTickAt > 0, System.currentTimeMillis()),
+			history == null ? null : viewBuilder.goal(history, lastGoalTickAt > 0 && !afkPaused, System.currentTimeMillis()),
+			afkPaused,
 			readOnly);
 		stateListener.accept(state);
 	}
