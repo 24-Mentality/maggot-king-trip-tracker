@@ -70,9 +70,9 @@ class CurrentTripPanel extends JPanel
 		TripView trip = state.getCurrentTrip();
 		live = state.getStatus() == PanelState.Status.IN_TRIP;
 		goalCard.setVisible(state.getLifetime() != null);
-		goalCard.setPaused(state.isAfkPaused());
+		goalCard.setPauseState(state.isPausedInLair(), state.isCanPause());
 		goalCard.setGoal(state.getGoal(), now);
-		summary.setPaused(state.getStatus() == PanelState.Status.AFK_PAUSED);
+		summary.setPaused(state.getPauseText() != null);
 		luckHolder.setVisible(state.getLifetime() != null);
 		if (state.getLifetime() != null)
 		{
@@ -133,9 +133,8 @@ class CurrentTripPanel extends JPanel
 			case IN_TRIP:
 				return "Trip in progress";
 			case PAUSED:
-				return "Trip paused (logged out)";
 			case AFK_PAUSED:
-				return "Trip paused (AFK)";
+				return state.getPauseText();
 			default:
 				TripView last = state.getCurrentTrip();
 				if (last == null)

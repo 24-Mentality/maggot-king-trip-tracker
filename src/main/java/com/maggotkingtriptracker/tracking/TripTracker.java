@@ -15,6 +15,7 @@ import com.maggotkingtriptracker.model.Kill;
 import com.maggotkingtriptracker.model.KillGoal;
 import com.maggotkingtriptracker.model.Trip;
 import com.maggotkingtriptracker.model.TripEndReason;
+import com.maggotkingtriptracker.model.TripClock;
 import com.maggotkingtriptracker.model.TripMath;
 import com.maggotkingtriptracker.persistence.HistoryStore;
 import com.maggotkingtriptracker.pricing.PriceService;
@@ -186,13 +187,17 @@ public class TripTracker
 	private int lastEggClickTick = -100;
 	private int unclaimedPetMessageTick = -100;
 	/**
-	 * Last tick time while logged in, for the goal clock; 0 while logged out.
+	 * Why the clock is stopped while in the lair on a trip; null while it runs. Kills, loot and supplies still count.
 	 */
-	private long lastGoalTickAt;
+	private InLairPause inLairPause;
 	/**
-	 * Pause button: the trip's lair clock and the goal clock are stopped. Kills, loot and supplies still count.
+	 * Last time the player dealt a hitsplat in the lair (or entered it), for the idle pause.
 	 */
-	private boolean afkPaused;
+	private long lastActivityAt;
+	/**
+	 * The open trip is waiting outside the lair (walked out), rather than logged out.
+	 */
+	private boolean suspendedOutside;
 	private boolean runeIdsLoaded;
 	private final Deque<PreEntryUse> preEntryUses = new ArrayDeque<>();
 
@@ -264,6 +269,8 @@ public class TripTracker
 		{
 			currentTrip = null;
 			suspendedAt = null;
+			suspendedOutside = false;
+			inLairPause = null;
 			lootKill = null;
 		}
 		if (trip == lastEndedTrip)
@@ -289,6 +296,8 @@ public class TripTracker
 		history.getTrips().clear();
 		currentTrip = null;
 		suspendedAt = null;
+		suspendedOutside = false;
+		inLairPause = null;
 		lastEndedTrip = null;
 		lootKill = null;
 		pendingDeath = null;
@@ -459,52 +468,57 @@ public class TripTracker
 	}
 
 	/**
-	 * Pause or resume the trip clock (when a trip is running in the lair) and the goal clock.
+	 * Pause or resume the trip clock (and with it the goal clock) while in the lair on a trip.
 	 */
 	public void togglePause()
 	{
-		if (afkPaused)
+		if (!inLair || currentTrip == null || suspendedAt != null)
 		{
-			resume();
+			return;
+		}
+		long now = System.currentTimeMillis();
+		if (inLairPause == null)
+		{
+			pauseInLair(InLairPause.MANUAL, now);
 		}
 		else
 		{
-			pause();
+			resumeInLair(now);
 		}
 	}
 
-	private void pause()
+	/**
+	 * @param end when the clock stops; for an idle pause this is the last hit, so the idle time is left out
+	 */
+	private void pauseInLair(InLairPause reason, long end)
 	{
-		if (history == null || afkPaused)
-		{
-			return;
-		}
-		afkPaused = true;
-		if (inLair && currentTrip != null && suspendedAt == null)
-		{
-			commitSegment(System.currentTimeMillis());
-			requestSave();
-		}
+		TripClock.stop(currentTrip, goal(), end);
+		currentTrip.setLastActiveAt(end);
+		inLairPause = reason;
 		viewDirty = true;
+		requestSave();
 		pushState();
 	}
 
-	private void resume()
+	private void resumeInLair(long now)
 	{
-		if (!afkPaused)
-		{
-			return;
-		}
-		afkPaused = false;
-		if (inLair && currentTrip != null && suspendedAt == null && currentTrip.getSegmentStartedAt() == null)
-		{
-			long now = System.currentTimeMillis();
-			currentTrip.setSegmentStartedAt(now);
-			currentTrip.setLastActiveAt(now);
-			requestSave();
-		}
+		inLairPause = null;
+		lastActivityAt = now;
+		TripClock.start(currentTrip, now);
+		currentTrip.setLastActiveAt(now);
 		viewDirty = true;
+		requestSave();
 		pushState();
+	}
+
+	private KillGoal goal()
+	{
+		return history == null ? null : history.getGoal();
+	}
+
+	private long idlePauseMs()
+	{
+		return TimeUnit.SECONDS.toMillis(config.idlePauseSeconds());
 	}
 
 	/**
@@ -547,7 +561,6 @@ public class TripTracker
 				}
 				ledger.reset();
 				chargeCounter.reset();
-				lastGoalTickAt = 0;
 				recentClicks.clear();
 				preEntryUses.clear();
 				pushState();
@@ -573,7 +586,6 @@ public class TripTracker
 		{
 			loadRuneIds();
 		}
-		tickGoalClock(now);
 
 		// Attacks from the previous tick are complete, including gear switched in that tick
 		chargeCounter.process(tick - 1, this::chargesUsed);
@@ -601,14 +613,30 @@ public class TripTracker
 			leaveLair(region, tick, now);
 		}
 
-		if (!inLair && currentTrip != null && suspendedAt != null
-			&& now - suspendedAt > TimeUnit.MINUTES.toMillis(config.logoutGraceMinutes()))
+		if (!inLair && currentTrip != null && suspendedAt != null)
 		{
-			endTrip(TripEndReason.LOGOUT, suspendedAt);
+			if (suspendedOutside)
+			{
+				// The trip only waits while you stay just outside the lair
+				if (region != MaggotKingIds.LAIR_ENTRANCE_REGION_ID
+					|| now - suspendedAt > TimeUnit.MINUTES.toMillis(config.outsideGraceMinutes()))
+				{
+					endTrip(TripEndReason.WALKED_OUT, suspendedAt);
+				}
+			}
+			else if (now - suspendedAt > TimeUnit.MINUTES.toMillis(config.logoutGraceMinutes()))
+			{
+				endTrip(TripEndReason.LOGOUT, suspendedAt);
+			}
 		}
 
-		boolean goalRunning = history != null && history.getGoal() != null;
-		if (((inLair && currentTrip != null) || goalRunning) && now - lastPeriodicSave > ACTIVE_SAVE_INTERVAL_MS)
+		if (inLair && currentTrip != null && suspendedAt == null && inLairPause == null
+			&& TripClock.idle(lastActivityAt, now, idlePauseMs()))
+		{
+			pauseInLair(InLairPause.IDLE, lastActivityAt);
+		}
+
+		if (inLair && currentTrip != null && now - lastPeriodicSave > ACTIVE_SAVE_INTERVAL_MS)
 		{
 			lastPeriodicSave = now;
 			requestSave();
@@ -682,10 +710,16 @@ public class TripTracker
 		if (hitsplat.isMine() && event.getActor() instanceof NPC)
 		{
 			chargeCounter.hitsplat(client.getTickCount(), hitsplat.getHitsplatType(), hitsplat.getAmount());
-			if (afkPaused && config.autoResumeOnAttack() && ((NPC) event.getActor()).getId() == MaggotKingIds.BOSS
-				&& hitsplat.getAmount() > 0)
+			if (inLair && currentTrip != null && suspendedAt == null)
 			{
-				resume();
+				long now = System.currentTimeMillis();
+				lastActivityAt = now;
+				boolean onBoss = ((NPC) event.getActor()).getId() == MaggotKingIds.BOSS && hitsplat.getAmount() > 0;
+				if (inLairPause == InLairPause.IDLE
+					|| (inLairPause == InLairPause.MANUAL && config.autoResumeOnAttack() && onBoss))
+				{
+					resumeInLair(now);
+				}
 			}
 		}
 	}
@@ -971,19 +1005,21 @@ public class TripTracker
 		ignoreDeltasUntilTick = -1;
 		pendingDeath = null;
 		graveWindowEndTick = -1;
-		afkPaused = false;
+		inLairPause = null;
+		lastActivityAt = now;
 		resetKillState();
 
-		if (currentTrip != null && suspendedAt != null
-			&& now - suspendedAt > TimeUnit.MINUTES.toMillis(config.logoutGraceMinutes()))
+		if (currentTrip != null && suspendedAt != null && now - suspendedAt > TimeUnit.MINUTES.toMillis(
+			suspendedOutside ? config.outsideGraceMinutes() : config.logoutGraceMinutes()))
 		{
-			endTrip(TripEndReason.LOGOUT, suspendedAt);
+			endTrip(suspendedOutside ? TripEndReason.WALKED_OUT : TripEndReason.LOGOUT, suspendedAt);
 		}
 
 		if (currentTrip != null)
 		{
-			// Back within the logout grace period
+			// Back from just outside the lair, or from logging out, within the grace period
 			suspendedAt = null;
+			suspendedOutside = false;
 		}
 		else if (config.mergeReentries() && lastEndedTrip != null && lastEndedTrip.getEndedAt() != null
 			&& now - lastEndedTrip.getEndedAt() <= TimeUnit.MINUTES.toMillis(config.mergeWindowMinutes())
@@ -1001,7 +1037,7 @@ public class TripTracker
 			history.getTrips().add(currentTrip);
 		}
 		lastEndedTrip = null;
-		currentTrip.setSegmentStartedAt(now);
+		TripClock.start(currentTrip, now);
 		currentTrip.setLastActiveAt(now);
 		lastPeriodicSave = now;
 
@@ -1040,8 +1076,20 @@ public class TripTracker
 			return;
 		}
 
+		// The instance is gone either way, so anything left on the floor is lost
 		finalizeDrops();
 		commitSegment(now);
+		inLairPause = null;
+		if (reason == TripEndReason.WALKED_OUT && config.outsideGraceMinutes() > 0)
+		{
+			// AFK just outside: the trip stays open, paused, until you go back in or the grace period ends
+			suspendedAt = now;
+			suspendedOutside = true;
+			resetKillState();
+			viewDirty = true;
+			requestSave();
+			return;
+		}
 		endTrip(reason, now);
 	}
 
@@ -1055,7 +1103,9 @@ public class TripTracker
 
 		finalizeDrops();
 		commitSegment(now);
+		inLairPause = null;
 		suspendedAt = now;
+		suspendedOutside = false;
 		resetKillState();
 		viewDirty = true;
 		saveNow();
@@ -1063,7 +1113,8 @@ public class TripTracker
 
 	private void endTrip(TripEndReason reason, long at)
 	{
-		afkPaused = false;
+		inLairPause = null;
+		suspendedOutside = false;
 		currentTrip.setEndedAt(at);
 		currentTrip.setEndReason(reason);
 		currentTrip.setLastActiveAt(at);
@@ -1077,12 +1128,7 @@ public class TripTracker
 
 	private void commitSegment(long now)
 	{
-		Long segmentStart = currentTrip.getSegmentStartedAt();
-		if (segmentStart != null)
-		{
-			currentTrip.setActiveMs(currentTrip.getActiveMs() + Math.max(0, now - segmentStart));
-			currentTrip.setSegmentStartedAt(null);
-		}
+		TripClock.stop(currentTrip, goal(), now);
 		currentTrip.setLastActiveAt(now);
 	}
 
@@ -1204,21 +1250,6 @@ public class TripTracker
 	}
 
 	// ---- Kill goal ----
-
-	private void tickGoalClock(long now)
-	{
-		KillGoal goal = history != null ? history.getGoal() : null;
-		if (goal != null && lastGoalTickAt > 0 && !afkPaused)
-		{
-			long elapsed = now - lastGoalTickAt;
-			// Ticks are 0.6s apart; a longer gap means the client was paused, so don't count it
-			if (elapsed > 0 && elapsed < 5_000)
-			{
-				goal.setActiveMs(goal.getActiveMs() + elapsed);
-			}
-		}
-		lastGoalTickAt = now;
-	}
 
 	private void loadRuneIds()
 	{
@@ -1570,6 +1601,17 @@ public class TripTracker
 
 		if (trackingTrip)
 		{
+			for (ItemEntry entry : used)
+			{
+				ItemEntries.merge(currentTrip.getSupplies(), entry);
+			}
+			viewDirty = true;
+			requestSave();
+		}
+		else if (!inLair && !dead && currentTrip != null && suspendedOutside
+			&& tick - lastBankTick > CLICK_MATCH_TICKS && hasRecentConsumeClick(tick))
+		{
+			// Waiting just outside the lair: the trip is still open
 			for (ItemEntry entry : used)
 			{
 				ItemEntries.merge(currentTrip.getSupplies(), entry);
@@ -1984,8 +2026,8 @@ public class TripTracker
 		}
 		else if (currentTrip != null)
 		{
-			status = suspendedAt != null ? PanelState.Status.PAUSED
-				: afkPaused ? PanelState.Status.AFK_PAUSED
+			status = suspendedAt != null && !suspendedOutside ? PanelState.Status.PAUSED
+				: suspendedAt != null || inLairPause != null ? PanelState.Status.AFK_PAUSED
 				: PanelState.Status.IN_TRIP;
 			shown = viewBuilder.trip(currentTrip);
 		}
@@ -2000,13 +2042,42 @@ public class TripTracker
 			shown,
 			historyViews,
 			history == null ? null : viewBuilder.lifetime(history, allTime(), config.showCurrentValue(), System.currentTimeMillis()),
-			history == null ? null : viewBuilder.goal(history, lastGoalTickAt > 0 && !afkPaused, System.currentTimeMillis()),
-			afkPaused,
+			history == null ? null : viewBuilder.goal(history, currentTrip, System.currentTimeMillis()),
+			pauseText(),
+			inLairPause != null,
+			inLair && currentTrip != null && suspendedAt == null,
 			readOnly);
 		stateListener.accept(state);
 	}
 
+	private String pauseText()
+	{
+		if (currentTrip == null)
+		{
+			return null;
+		}
+		if (suspendedAt != null)
+		{
+			return suspendedOutside ? "Trip paused (outside the lair)" : "Trip paused (logged out)";
+		}
+		if (inLairPause == InLairPause.MANUAL)
+		{
+			return "Trip paused (AFK)";
+		}
+		if (inLairPause == InLairPause.IDLE)
+		{
+			return "Trip paused (idle)";
+		}
+		return null;
+	}
+
 	// ---- Small records ----
+
+	private enum InLairPause
+	{
+		MANUAL,
+		IDLE,
+	}
 
 	@AllArgsConstructor
 	private static class Click

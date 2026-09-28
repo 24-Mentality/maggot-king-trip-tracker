@@ -9,6 +9,7 @@ import com.maggotkingtriptracker.model.ItemEntry;
 import com.maggotkingtriptracker.model.KillGoal;
 import com.maggotkingtriptracker.model.Kill;
 import com.maggotkingtriptracker.model.Trip;
+import com.maggotkingtriptracker.model.TripClock;
 import com.maggotkingtriptracker.model.TripMath;
 import com.maggotkingtriptracker.pricing.PriceService;
 import java.util.ArrayList;
@@ -47,7 +48,10 @@ public class ViewBuilder
 		this.runeIds = runeIds;
 	}
 
-	public GoalView goal(AccountHistory history, boolean running, long now)
+	/**
+	 * @param currentTrip the open trip, whose running segment keeps the goal clock going; null if none
+	 */
+	public GoalView goal(AccountHistory history, Trip currentTrip, long now)
 	{
 		KillGoal goal = history.getGoal();
 		if (goal == null)
@@ -66,7 +70,9 @@ public class ViewBuilder
 				}
 			}
 		}
-		return new GoalView(goal.getTarget(), done, goal.getActiveMs(), now, running);
+		Long segmentStart = TripClock.goalSegmentStart(goal, currentTrip);
+		return new GoalView(goal.getTarget(), done, goal.getActiveMs(), segmentStart != null ? segmentStart : now,
+			segmentStart != null);
 	}
 
 	public TripView trip(Trip trip)

@@ -16,7 +16,7 @@ public class PanelState
 		 */
 		PAUSED,
 		/**
-		 * Paused with the Pause button while in the lair.
+		 * Paused in the lair (Pause button or idle), or waiting just outside it.
 		 */
 		AFK_PAUSED,
 		IDLE,
@@ -37,8 +37,16 @@ public class PanelState
 	 */
 	GoalView goal;
 	/**
-	 * The Pause button is active (trip clock and/or goal clock stopped).
+	 * Why the open trip's clock is stopped, e.g. "Trip paused (idle)"; null while it runs.
 	 */
-	boolean afkPaused;
+	String pauseText;
+	/**
+	 * The clock is paused in the lair, so the Pause button reads Resume.
+	 */
+	boolean pausedInLair;
+	/**
+	 * Pausing is possible: in the lair on an open trip.
+	 */
+	boolean canPause;
 	boolean readOnly;
 }

@@ -18,9 +18,10 @@ with persistent per-account history in a side panel.
 
 - **Kill goal** (top of the Trip tab): set a kill target and see kills per hour (logged-in
   time), kills done and left, time to goal, and a progress bar. **Reset** starts the count
-  again from now. **Pause** stops the trip clock and the goal clock while you're AFK (kills,
-  loot and supplies still count); it resumes when you press it again or, with **Auto-resume
-  when I attack** on, when you next damage the boss.
+  again from now. The clocks only run while you're fighting in the lair: after 30 seconds
+  without dealing damage they pause (the idle time isn't counted) and restart on your next
+  hit. **Pause** stops them straight away; it resumes when you press it again or, with
+  **Auto-resume when I attack** on, when you next damage the boss.
 - **Luck** (Trip tab): uniques received vs expected with a luck tier (LUCKY AS RUCK, Lucky,
   On Rate, Dry, DRY AS RUCK), your dry streak and when the next unique is due.
 - **Trip:** the current (or last) trip's time, kills, loot value, costs, net profit, GP/hr and average kill
@@ -48,9 +49,9 @@ The panel opens on the Trip tab automatically when you enter the lair
 
 ## How trips are counted
 
-- A trip starts when you enter the lair and ends when you leave it: walking out,
-  teleporting, dying, or logging out and not returning within the grace period
-  (5 minutes by default).
+- A trip starts when you enter the lair. It ends when you teleport out, die, walk out and
+  don't come back within 5 minutes while staying just outside, or log out and don't return
+  within 5 minutes (both grace periods are configurable).
 - **Merge re-entries** (off by default) counts leaving and re-entering within the merge
   window as one trip.
 - A kill is counted from the game's kill-count message. Kill time comes from the game's

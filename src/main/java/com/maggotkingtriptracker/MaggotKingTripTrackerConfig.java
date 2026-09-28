@@ -102,11 +102,41 @@ public interface MaggotKingTripTrackerConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "autoResumeOnAttack",
-		name = "Auto-resume when I attack",
-		description = "When a trip or goal is paused (AFK), resume it as soon as you damage the Maggot King",
+		keyName = "idlePauseSeconds",
+		name = "Idle pause after",
+		description = "In the lair, stop the trip and goal clocks after this long without dealing damage (the idle"
+			+ " time isn't counted). They restart on your next hit. 0 turns it off.",
 		section = tripsSection,
 		position = 4
+	)
+	@Range(max = 600)
+	@Units(Units.SECONDS)
+	default int idlePauseSeconds()
+	{
+		return 30;
+	}
+
+	@ConfigItem(
+		keyName = "outsideGraceMinutes",
+		name = "Outside the lair grace",
+		description = "After walking out of the lair, the trip stays open (paused) while you stay just outside for"
+			+ " this long. Going back in continues it. 0 ends the trip when you walk out.",
+		section = tripsSection,
+		position = 5
+	)
+	@Range(max = 30)
+	@Units(Units.MINUTES)
+	default int outsideGraceMinutes()
+	{
+		return 5;
+	}
+
+	@ConfigItem(
+		keyName = "autoResumeOnAttack",
+		name = "Auto-resume when I attack",
+		description = "After pressing Pause, resume as soon as you damage the Maggot King",
+		section = tripsSection,
+		position = 6
 	)
 	default boolean autoResumeOnAttack()
 	{

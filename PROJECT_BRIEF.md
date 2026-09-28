@@ -159,6 +159,18 @@ RuneLite does not accept new high-end PvM helper plugins.
    examine / destroy / banking, because the Pop option name is unconfirmed.
    Imports merge: only trips not already present are added, polish tallies
    take the larger count.
+10. Trip timing (2026-09-28, Milestone A feedback; replaces "trip = entering
+    the lair until leaving it"):
+    - The trip clock and the goal clock (KPH/TTG) only run while fighting in
+      the lair. After 30 s in the lair without dealing a hitsplat (configurable),
+      both pause retroactively to the last hit and restart on the next hit.
+      The goal clock never runs just because you're logged in.
+    - Walking out to the region just outside the lair (10618) keeps the trip
+      open and paused for 5 minutes (configurable). Re-entering continues it;
+      leaving that region or the grace period expiring ends it at the moment
+      you left the lair. Teleports and deaths still end the trip immediately.
+      Supplies used while waiting outside count toward the open trip.
+    - The Pause button stays for manual pauses (in the lair on a trip only).
 
 ## Observed in-game (diagnostic test trips, 2026-09-27)
 These come from diagnostic.log and take precedence over the assumptions above.

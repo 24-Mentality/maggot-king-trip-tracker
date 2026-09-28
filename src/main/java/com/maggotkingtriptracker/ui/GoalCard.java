@@ -37,6 +37,9 @@ class GoalCard extends JPanel
 	private final ProgressBar progress = new ProgressBar();
 	private final JButton resetButton = smallButton("Reset");
 	private final JButton pauseButton = smallButton("Pause");
+	/**
+	 * The goal clock isn't running (outside the lair, paused or idle); time-based stats are greyed.
+	 */
 	private boolean paused;
 
 	private GoalView goal;
@@ -48,17 +51,17 @@ class GoalCard extends JPanel
 		setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
 		JLabel icon = new JLabel();
-		icon.setPreferredSize(new Dimension(24, 18));
+		icon.setPreferredSize(new Dimension(30, 28));
 		icon.setHorizontalAlignment(SwingConstants.CENTER);
 		if (itemManager != null)
 		{
 			AsyncBufferedImage image = itemManager.getImage(MaggotKingIds.PET_ITEM);
-			Runnable scaled = () -> icon.setIcon(new ImageIcon(ImageUtil.resizeImage(image, 21, 18)));
+			Runnable scaled = () -> icon.setIcon(new ImageIcon(ImageUtil.resizeImage(image, 30, 27)));
 			image.onLoaded(scaled);
 			scaled.run();
 		}
 
-		JPanel stats = new JPanel(new GridLayout(2, 2, 4, 0));
+		JPanel stats = new JPanel(new GridLayout(2, 2, 3, 0));
 		stats.setOpaque(false);
 		for (JLabel label : new JLabel[]{kph, done, ttg, left})
 		{
@@ -66,11 +69,11 @@ class GoalCard extends JPanel
 			stats.add(label);
 		}
 
-		// The icon sits beside the bar so the four stats get the card's full width
-		JPanel barRow = new JPanel(new BorderLayout(4, 0));
-		barRow.setOpaque(false);
-		barRow.add(icon, BorderLayout.WEST);
-		barRow.add(progress, BorderLayout.CENTER);
+		// The icon sits at the top left beside the stats, as in RuneLite's XP tracker
+		JPanel top = new JPanel(new BorderLayout(3, 0));
+		top.setOpaque(false);
+		top.add(icon, BorderLayout.WEST);
+		top.add(stats, BorderLayout.CENTER);
 
 		progress.setBackground(BAR_BACKGROUND);
 		progress.setForeground(ColorScheme.PROGRESS_COMPLETE_COLOR);
@@ -81,8 +84,9 @@ class GoalCard extends JPanel
 		JButton setButton = smallButton("Set goal");
 		setButton.addActionListener(e -> onSetGoal.run());
 		pauseButton.addActionListener(e -> onPause.run());
-		pauseButton.setToolTipText(UiFormat.tooltip("Stop the trip clock and the goal clock while you're AFK. Kills,"
-			+ " loot and supplies still count. Resumes when you press it again or attack the boss."));
+		pauseButton.setToolTipText(UiFormat.tooltip("Stop the trip and goal clocks now, before the automatic idle pause."
+			+ " Kills, loot and supplies still count. Resumes when you press it again or attack the boss. The clocks only"
+			+ " run in the lair while you're fighting."));
 		resetButton.addActionListener(e -> onReset.run());
 		// Equal widths: a grid, not a row of natural-width buttons
 		JPanel buttons = new JPanel(new GridLayout(1, 3, 4, 0));
@@ -91,8 +95,8 @@ class GoalCard extends JPanel
 		buttons.add(pauseButton);
 		buttons.add(resetButton);
 
-		add(stats, BorderLayout.NORTH);
-		add(barRow, BorderLayout.CENTER);
+		add(top, BorderLayout.NORTH);
+		add(progress, BorderLayout.CENTER);
 		add(buttons, BorderLayout.SOUTH);
 	}
 
@@ -105,15 +109,20 @@ class GoalCard extends JPanel
 		return button;
 	}
 
-	void setPaused(boolean paused)
+	/**
+	 * @param pausedInLair the button resumes rather than pauses
+	 * @param canPause only in the lair on an open trip
+	 */
+	void setPauseState(boolean pausedInLair, boolean canPause)
 	{
-		this.paused = paused;
-		pauseButton.setText(paused ? "Resume" : "Pause");
+		pauseButton.setText(pausedInLair ? "Resume" : "Pause");
+		pauseButton.setEnabled(canPause);
 	}
 
 	void setGoal(GoalView goal, long now)
 	{
 		this.goal = goal;
+		paused = goal == null || !goal.isRunning();
 		resetButton.setEnabled(goal != null);
 		if (goal == null)
 		{
@@ -142,16 +151,24 @@ class GoalCard extends JPanel
 
 		setStats(
 			killsPerHour > 0 ? String.format(Locale.ROOT, "%.1f", killsPerHour) : NOT_AVAILABLE,
-			String.format(Locale.ROOT, "%,d", doneKills),
+			count(doneKills),
 			remaining == 0 ? "Done" : killsPerHour > 0 ? timeToGoal((long) (remaining / killsPerHour * 3_600_000)) : NOT_AVAILABLE,
-			String.format(Locale.ROOT, "%,d", remaining));
+			count(remaining));
 
 		progress.setMaximumValue(Math.max(1, target));
 		progress.setValue(Math.min(doneKills, target));
 		double percent = Math.min(100, doneKills * 100.0 / Math.max(1, target));
 		progress.setCenterLabel(String.format(Locale.ROOT, "%.1f%%", percent));
-		setToolTipText("Goal: " + target + " kills · logged-in time " + UiFormat.duration(activeMs)
-			+ (paused ? " · paused" : ""));
+		setToolTipText("Goal: " + String.format(Locale.ROOT, "%,d", target) + " kills · " + UiFormat.duration(activeMs)
+			+ " of fighting time" + (paused ? " · clock stopped" : ""));
+	}
+
+	/**
+	 * Exact up to 9,999, then compact ("12.3K") so the stat still fits beside the icon.
+	 */
+	private static String count(int n)
+	{
+		return n >= 10_000 ? String.format(Locale.ROOT, "%.1fK", n / 1000.0) : String.format(Locale.ROOT, "%,d", n);
 	}
 
 	private static String timeToGoal(long ms)

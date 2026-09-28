@@ -174,7 +174,8 @@ public class PanelFitTest
 
 		// 1 kill per hour for 12,000 hours: KPH and the time to goal are at their longest
 		GoalView goal = new GoalView(99_999, 12_345, 12_345L * 3600 * 1000, System.currentTimeMillis(), !paused);
-		return new PanelState(status, trip, Collections.singletonList(trip), lifetime, goal, paused, false);
+		return new PanelState(status, trip, Collections.singletonList(trip), lifetime, goal,
+			paused ? "Trip paused (outside the lair)" : null, paused, true, false);
 	}
 
 	private static class NoActions implements PanelActions
