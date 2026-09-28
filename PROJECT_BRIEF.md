@@ -244,3 +244,12 @@ These come from diagnostic.log and take precedence over the assumptions above.
   qty, ...]} (2,630 kills since 2026-07-30: 6 fangs, 5 kistens, no pet) and
   Chat Commands `killcount` / `maggot king` = 2636. The drop chances and luck
   cards read these through ConfigManager for all-time expected vs received.
+- Milestone A confirmed in game (2026-09-28): profit card order, Net vs Loot
+  GP/hr labels, Pause / Resume / auto-resume, luck tiers ("Luck Status:") and
+  sidebar fit all passed. Timing check on a 26-kill trip: 58.1 min of fighting
+  time recorded against 67.7 min wall-clock (idle and outside time left out).
+  Walking out to region 10618 and back 2.5 min later, and logging out outside
+  and back, both continued the same trip; leaving 10618 (to region 14642)
+  ended it at the moment of walking out.
+- Entering and immediately leaving the lair creates a trip with 0 kills; it is
+  kept (open, then ended by the grace rules) and shows in History.
