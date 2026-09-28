@@ -175,6 +175,13 @@ RuneLite does not accept new high-end PvM helper plugins.
     discarded (e.g. walking in and straight back out). Existing ones in the
     saved history are left alone.
 
+12. Milestone B (2026-09-28): the dropdown is shown even with one boss, each
+    option with the boss's icon. A dry streak from an entered "KC of my last
+    unique" counts the kills between that KC and the start of tracking by kill
+    count (Take-eggs kills included, since they can't be told apart), then
+    tracked Open-stomach kills; a newer tracked unique wins. Export file names
+    carry a date and time stamp; CSV is per boss, JSON covers every boss.
+
 ## Observed in-game (diagnostic test trips, 2026-09-27)
 These come from diagnostic.log and take precedence over the assumptions above.
 - Lair template region is always 11645; the real instance region changes per
@@ -256,3 +263,12 @@ These come from diagnostic.log and take precedence over the assumptions above.
   ended it at the moment of walking out.
 - Entering and immediately leaving the lair creates a trip with 0 kills; it is
   kept (open, then ended by the grace rules) and shows in History.
+- Milestone B confirmed in game (2026-09-28): the v1 history migrated to
+  schema 2 on first login with a v1 backup written next to it; all 23
+  finished trips, the goal and the polish tallies carried over unchanged, and
+  the Lifetime tab and Luck card (6 fangs / 5 kistens all-time) matched the
+  numbers from before. The boss dropdown (icon, live-trip dot), a normal trip
+  (kills, loot, supplies, Stom / Eggs, pause, walk out and back, teleport),
+  the right-click "KC of my last unique" (set and clear) and timestamped
+  CSV / JSON exports and re-import all passed. The last unique before
+  tracking was at KC 1,920, entered through the Luck card.
