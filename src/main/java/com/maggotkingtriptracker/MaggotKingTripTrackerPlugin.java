@@ -36,9 +36,10 @@ import net.runelite.client.util.ImageUtil;
 
 @Slf4j
 @PluginDescriptor(
-	name = "Maggot King Trip Tracker",
-	description = "Tracks loot, supplies and profit per Maggot King trip with per-account history",
-	tags = {"maggot", "king", "vampyrium", "loot", "profit", "supplies", "trip", "boss"},
+	name = "Boss Trip Tracker",
+	description = "Tracks loot, supplies and profit per boss trip (Maggot King) with per-account history",
+	tags = {"maggot", "king", "vampyrium", "loot", "profit", "supplies", "trip", "boss", "tracker"},
+	// Kept from the original name so the data folder and saved history stay where they are
 	internalName = "maggot-king-trip-tracker"
 )
 public class MaggotKingTripTrackerPlugin extends Plugin
@@ -110,14 +111,14 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 
 		BufferedImage icon = ImageUtil.loadImageResource(getClass(), "panel_icon.png");
 		navigationButton = NavigationButton.builder()
-			.tooltip("Maggot King Trip Tracker")
+			.tooltip("Boss Trip Tracker")
 			.icon(icon)
 			.priority(7)
 			.panel(trackerPanel)
 			.build();
 		clientToolbar.addNavigation(navigationButton);
 
-		log.debug("Maggot King Trip Tracker started");
+		log.debug("Boss Trip Tracker started");
 	}
 
 	@Override
@@ -140,7 +141,7 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 		panel.shutDown();
 		panel = null;
 
-		log.debug("Maggot King Trip Tracker stopped");
+		log.debug("Boss Trip Tracker stopped");
 	}
 
 	@Subscribe

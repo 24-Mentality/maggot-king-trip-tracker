@@ -1,12 +1,14 @@
-# Maggot King Trip Tracker
+# Boss Trip Tracker
 
-> **No combat or mechanic assistance.** This plugin only tracks loot, supplies and profit.
-> It has no attack, prayer or hazard cues, no tile or NPC highlighting, no phase indicators,
-> and it draws nothing on the game screen. It only listens to game events and never creates
-> input or menu actions.
+> **No combat or mechanic assistance, for any supported boss.** This plugin only tracks loot,
+> supplies, costs, deaths, time and luck. It has no attack, prayer, phase or hazard cues, no
+> tile or NPC highlighting, no alerts tied to boss mechanics, and it draws nothing on the game
+> screen. It only listens to game events and never creates input or menu actions.
 
-Tracks loot, supplies used and net profit for each trip to the Maggot King in Vampyrium,
-with persistent per-account history in a side panel.
+Tracks loot, supplies used and net profit for each boss trip, with persistent per-account
+history in a side panel. Formerly **Maggot King Trip Tracker**.
+
+**Supported bosses:** the Maggot King in Vampyrium. More bosses are planned.
 
 ## Requirements
 
@@ -16,6 +18,10 @@ with persistent per-account history in a side panel.
 
 ## Side panel
 
+- **Boss dropdown** (top of the panel): picks the boss shown in all three tabs. Entering a
+  tracked boss's area selects it; otherwise your last choice is kept, so you can browse any
+  boss's trips while a trip keeps tracking in the background. A green dot marks the boss with
+  a trip in progress. Bosses with modes get a row of chips under the dropdown.
 - **Kill goal** (top of the Trip tab): set a kill target and see kills per hour (logged-in
   time), kills done and left, time to goal, and a progress bar. **Reset** starts the count
   again from now. The clocks only run while you're fighting in the lair: after 30 seconds
@@ -23,7 +29,10 @@ with persistent per-account history in a side panel.
   hit. **Pause** stops them straight away; it resumes when you press it again or, with
   **Auto-resume when I attack** on, when you next damage the boss.
 - **Luck** (Trip tab): uniques received vs expected with a luck tier (LUCKY AS RUCK, Lucky,
-  On Rate, Dry, DRY AS RUCK), your dry streak and when the next unique is due.
+  On Rate, Dry, DRY AS RUCK), your dry streak and when the next unique is due. Right-click
+  the card to enter the kill count of your last unique from before you installed the plugin;
+  the dry streak then counts from there (kills before tracking began are counted from your
+  kill count) until the plugin tracks a newer unique.
 - **Trip:** the current (or last) trip's time, kills, loot value, costs, net profit, GP/hr and average kill
   time, plus item grids for loot, supplies and anything you dropped and left behind.
   Uniques have a gold border; tarnished drops waiting to be polished have a dashed border.
@@ -41,13 +50,17 @@ with persistent per-account history in a side panel.
   - **Eggs popped:** eggs popped per tier (anywhere, not just in the lair), pets from eggs,
     and your total pet chance from the eggs popped so far.
   - **Polish results:** what each type of tarnished item has polished into.
-  - **Data:** export trips as CSV, export or import the account's full history as JSON
-    (imports only add trips you don't already have), and clear all history.
+  - **Data:** export the shown boss's trips as CSV, export or import the account's full
+    history (every boss) as JSON (imports only add trips you don't already have; exports from
+    older versions import too), and clear the shown boss's history. Export file names include
+    the date and time.
 
-The panel opens on the Trip tab automatically when you enter the lair
-(Configuration → Display → **Open panel in the lair**; on by default).
+The panel opens on the Trip tab automatically when you enter a tracked boss's area
+(Configuration → Display → **Open panel on entry**; on by default).
 
 ## How trips are counted
+
+For the Maggot King:
 
 - A trip starts when you enter the lair. It ends when you teleport out, die, walk out and
   don't come back within 5 minutes while staying just outside, or log out and don't return
@@ -78,11 +91,13 @@ The panel opens on the Trip tab automatically when you enter the lair
 ## Data
 
 History is saved per account to
-`~/.runelite/plugin-data/maggot-king-trip-tracker/history-<account>.json`.
+`~/.runelite/plugin-data/maggot-king-trip-tracker/history-<account>.json` (the folder keeps
+its original name so existing history carries over). When a file from an older version is
+upgraded, the old file is kept next to it as `history-<account>.json.v1-backup-<date>`.
 
-**Diagnostic mode** (Configuration → Maggot King Trip Tracker → Developer) records raw
-Maggot King related game events to `diagnostic.log` in the same folder, for development.
-Leave it off during normal play.
+**Diagnostic mode** (Configuration → Boss Trip Tracker → Developer) records raw boss related
+game events to `diagnostic.log` in the same folder, for development. Leave it off during
+normal play.
 
 ## License
 
