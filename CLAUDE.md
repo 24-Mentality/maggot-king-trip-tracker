@@ -1,2 +1,3 @@
 @AGENTS.md
 @PROJECT_BRIEF.md
+@ROADMAP.md
