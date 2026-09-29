@@ -416,3 +416,49 @@ These come from diagnostic.log and take precedence over the assumptions above.
 - The Nightmare's totems show the player's damage as DAMAGE_ME_YELLOW (22) /
   DAMAGE_MAX_ME_YELLOW (46); a scythe attack that only hit a totem uses a
   charge like any other, so every "ME" damage colour counts.
+- Theatre of Blood, first diagnostic raid (2026-09-29, Normal, team of 4,
+  completion 6, loot claimed at the chest by the bank). Teammates' names
+  appear in many messages and are never copied here.
+  - Regions (template): Ver Sinhaza 14642; entering the Theatre ("Enter" on
+    object 32653, message "You enter the Theatre of Blood (Normal Mode)...")
+    lands in 12869, then Maiden 12613, Bloat 13125, Nylocas 13122, Sotetseg
+    13123, Xarpus 12612, Verzik 12611, the vault ("Enter" Treasure room,
+    object 32738) 12867; the vault's Teleport crystal (object 32996) returns
+    to 14642.
+  - Mode is in the entry message and every wave message: "Wave 'The Maiden of
+    Sugadinti' (Normal Mode) complete!<br>Duration: ... Total: ...".
+    Completion: "Wave 'The Final Challenge' (Normal Mode) complete!...",
+    "Theatre of Blood total completion time: <col=ff0000>19:51.60</col> (new
+    personal best)" and "Your completed Theatre of Blood count is:
+    <col=ff0000>6</col>." (all GAMEMESSAGE, same tick).
+  - Team size: TOB_CLIENT_P0..P3 are set (health bars) and P4 is not for a
+    team of 4; partystatus 1 = in a party, 2 = raid started, 3 leaving, 0
+    disbanded.
+  - Deaths: "You have died. Death count: <col=ff0000>2</col>." for the
+    player; a teammate's is "<name> has died. Death count: ...". The player
+    died at Bloat, kept every item and rejoined at the next room; no fee.
+  - Supply chest: "Search" on Chest (object 32759), "Buy-1" per item; message
+    "You purchase one Stamina potion(4) for a total of 1 point." and the item
+    arrives in the inventory the same tick. TOB_MIDWAYCHEST_POINTS goes 0 ->
+    9 after Bloat and +10 after Sotetseg, minus each purchase (stamina 1,
+    super restore 3, Saradomin brew 3).
+  - Drops mid-raid: the salve amulet (e) after Bloat, and empty or part-used
+    potions to make room for chest purchases. Dawnbringer is picked up and
+    dropped at Verzik (an untradeable raid item).
+  - Loot: Loot Tracker events per room boss (NPC, each with a book such as
+    "Serafina's diary"), then, after "Claim" on the Rewards Chest by the bank
+    (object 41437), LootReceived "Theatre of Blood" type EVENT with the
+    player's loot (3 Rune battleaxe, 140 Adamantite ore, 3 Rune platebody),
+    followed by "Your loot is worth around 265,945 coins."
+    (FRIENDSCHATNOTIFICATION). Leaving the vault unclaimed gives "You have
+    unclaimed rewards from the Theatre. They can be collected from the chest
+    near the bank.". TOB_TREASUREROOM_CHEST_3 = 2 and TOB_SHOULD_HAVE_LOOT = 1
+    until the claim.
+  - On entering the vault: "You are on a personal dry streak of
+    <col=cf3f21>7</col>." and "You have completed <col=cf3f21>7</col> raids
+    since you've seen any purple." (GAMEMESSAGE; 7 = 6 Normal + 1 Entry).
+  - Record keys: loottracker "drops_EVENT_Theatre of Blood" (7 kills) and
+    "drops_NPC_Verzik Vitur" (6); killcount "theatre of blood" (5 before this
+    raid) and "theatre of blood entry mode" (1).
+  - Not seen yet: a claim at the vault chest itself, a purple (own or a
+    teammate's broadcast), Hard Mode, and a wipe.
