@@ -113,6 +113,8 @@ public class ChargeCounterTest
 		assertEquals(Integer.valueOf(1), used.get(ChargeType.TOXIC_BLOWPIPE_DARTS_80));
 		// Two short of the amulet's message
 		assertEquals(Integer.valueOf(23), replay("charge-test-tob.log", 617).get(ChargeType.BLOOD_FURY));
+		// Three special attacks with the crystal halberd (its Check has no earlier reading to compare with)
+		assertEquals(Integer.valueOf(3), used.get(ChargeType.CRYSTAL_HALBERD));
 	}
 
 	/**

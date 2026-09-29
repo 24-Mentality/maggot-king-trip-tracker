@@ -26,6 +26,7 @@ import net.runelite.api.gameval.SpotanimID;
  * after switching to melee. While a thrall is out, hits of up to a thrall's max hit that don't land the tick
  * after a melee attack are the thrall's: its hitsplats look like the player's own.</li>
  * <li>Toxic blowpipe: its attack animation (hitsplats can't be used: a thrall's look the same).</li>
+ * <li>Crystal halberd: its attack and special attack animations.</li>
  * </ul>
  * Events are grouped by game tick and evaluated with the gear worn at the end of that tick, because gear
  * switches in the same tick can arrive after the attack. Validated against the game's Check messages.
@@ -93,6 +94,13 @@ class ChargeCounter
 	 * Covers a thrall whose "returns to the grave" message was missed.
 	 */
 	static final int THRALL_MAX_TICKS = 130;
+
+	/**
+	 * The crystal halberd's stab, slash and special attack (Sweep). Its spec was seen as 1203 in the Theatre of
+	 * Blood log; the others are the usual halberd animations (unverified).
+	 */
+	static final Set<Integer> HALBERD_ANIMATIONS = ImmutableSet.of(AnimationID.HUMAN_SPEAR_SPIKE,
+		AnimationID.HUMAN_SCYTHE_SWEEP, AnimationID.DRAGON_HALBERD_SPECIAL_ATTACK);
 
 	/**
 	 * Charged scythes, ornamented ones included.
@@ -321,6 +329,12 @@ class ChargeCounter
 				: DART_SAVE_72.contains(gear.getCape()) ? ChargeType.TOXIC_BLOWPIPE_DARTS_72
 				: DART_SAVE_60.contains(gear.getCape()) ? ChargeType.TOXIC_BLOWPIPE_DARTS_60
 				: ChargeType.TOXIC_BLOWPIPE_DARTS_0, 1);
+		}
+
+		if (events.animations.stream().anyMatch(HALBERD_ANIMATIONS::contains)
+			&& (gear.getWeapon() == ItemID.CRYSTAL_HALBERD || previousWeapon == ItemID.CRYSTAL_HALBERD))
+		{
+			listener.chargesUsed(ChargeType.CRYSTAL_HALBERD, 1);
 		}
 
 		// Hits land at least a tick after the attack, so judge them by attacks from earlier ticks. Some attacks hit

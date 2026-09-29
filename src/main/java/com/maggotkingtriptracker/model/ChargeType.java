@@ -71,7 +71,13 @@ public enum ChargeType
 	TOXIC_BLOWPIPE_DARTS_80(ItemID.TOXIC_BLOWPIPE_LOADED, 25, new Component(ItemID.DRAGON_DART, 5)),
 	TOXIC_BLOWPIPE_DARTS_72(ItemID.TOXIC_BLOWPIPE_LOADED, 25, new Component(ItemID.DRAGON_DART, 7)),
 	TOXIC_BLOWPIPE_DARTS_60(ItemID.TOXIC_BLOWPIPE_LOADED, 25, new Component(ItemID.DRAGON_DART, 10)),
-	TOXIC_BLOWPIPE_DARTS_0(ItemID.TOXIC_BLOWPIPE_LOADED, 25, new Component(ItemID.DRAGON_DART, 25));
+	TOXIC_BLOWPIPE_DARTS_0(ItemID.TOXIC_BLOWPIPE_LOADED, 25, new Component(ItemID.DRAGON_DART, 25)),
+	/**
+	 * One charge per attack (special attack included), recharged with crystal shards at 100 charges a shard (OSRS
+	 * Wiki). Shards are untradeable, so it costs 0 gp but shows the count. Counted from its attack animations
+	 * (unverified: no before-and-after Check yet).
+	 */
+	CRYSTAL_HALBERD(ItemID.CRYSTAL_HALBERD, 100, new Component(ItemID.PRIF_CRYSTAL_SHARD, 1));
 
 	/**
 	 * Some of an item that recharges a charged item.
