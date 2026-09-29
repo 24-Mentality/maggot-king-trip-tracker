@@ -30,7 +30,7 @@ public class HistoryCodecTest
 		assertFalse(decoded.isNewer());
 
 		AccountHistory history = decoded.getHistory();
-		assertEquals(2, history.getSchemaVersion());
+		assertEquals(AccountHistory.CURRENT_SCHEMA_VERSION, history.getSchemaVersion());
 		assertEquals(42, history.getAccountHash());
 		assertEquals("Example", history.getLastDisplayName());
 		assertEquals(1, history.getBosses().size());
@@ -85,7 +85,7 @@ public class HistoryCodecTest
 		}
 		assertEquals(original.get("accountHash"), migrated.get("accountHash"));
 		assertEquals(original.get("lastDisplayName"), migrated.get("lastDisplayName"));
-		assertEquals(2, migrated.get("schemaVersion").getAsInt());
+		assertEquals(AccountHistory.CURRENT_SCHEMA_VERSION, migrated.get("schemaVersion").getAsInt());
 	}
 
 	@Test
@@ -95,7 +95,7 @@ public class HistoryCodecTest
 		String v2 = gson.toJson(history);
 
 		HistoryCodec.Decoded again = HistoryCodec.decode(gson, v2);
-		assertEquals(2, again.getSourceVersion());
+		assertEquals(AccountHistory.CURRENT_SCHEMA_VERSION, again.getSourceVersion());
 		assertFalse(again.isMigrated());
 		assertEquals(v2, gson.toJson(again.getHistory()));
 	}
@@ -116,10 +116,10 @@ public class HistoryCodecTest
 	public void newerFilesAreLeftAlone()
 	{
 		HistoryCodec.Decoded decoded = HistoryCodec.decode(gson,
-			"{\"schemaVersion\":3,\"bosses\":{\"maggot_king\":{\"trips\":[]}},\"somethingNew\":1}");
+			"{\"schemaVersion\":99,\"bosses\":{\"maggot_king\":{\"trips\":[]}},\"somethingNew\":1}");
 		assertTrue(decoded.isNewer());
 		assertFalse(decoded.isMigrated());
-		assertEquals(3, decoded.getHistory().getSchemaVersion());
+		assertEquals(99, decoded.getHistory().getSchemaVersion());
 	}
 
 	@Test
@@ -132,5 +132,19 @@ public class HistoryCodecTest
 	public void corruptFileIsRejected()
 	{
 		HistoryCodec.decode(gson, "{\"trips\": [");
+	}
+
+	@Test
+	public void schemaTwoFilesAreMigratedAndBackedUp()
+	{
+		// Schema 2: same layout, scythe lines still at the old price
+		HistoryCodec.Decoded decoded = HistoryCodec.decode(gson, "{\"schemaVersion\":2,\"bosses\":{\"nightmare\":{\"trips\":"
+			+ "[{\"id\":\"t\",\"startedAt\":1,\"supplies\":[{\"itemId\":22325,\"quantity\":100,\"priceEach\":110400,"
+			+ "\"chargeItemId\":22446,\"chargesPerItem\":100}]}]}}}");
+		assertEquals(2, decoded.getSourceVersion());
+		assertTrue(decoded.isMigrated());
+		assertEquals(AccountHistory.CURRENT_SCHEMA_VERSION, decoded.getHistory().getSchemaVersion());
+		assertEquals(110_400, decoded.getHistory().getBosses().get("nightmare").getTrips().get(0).getSupplies().get(0)
+			.getPriceEach());
 	}
 }

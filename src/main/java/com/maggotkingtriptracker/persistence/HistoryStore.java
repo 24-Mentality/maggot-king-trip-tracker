@@ -80,7 +80,7 @@ public class HistoryStore
 	/**
 	 * Reads a user-chosen history export. The callback gets the parsed history, or null and the error.
 	 */
-	public void readHistoryFile(Filepath file, BiConsumer<AccountHistory, Exception> callback)
+	public void readHistoryFile(Filepath file, BiConsumer<HistoryCodec.Decoded, Exception> callback)
 	{
 		submit(() ->
 		{
@@ -91,7 +91,7 @@ public class HistoryStore
 				{
 					throw new IOException("Not a Boss Trip Tracker export");
 				}
-				callback.accept(decoded.getHistory(), null);
+				callback.accept(decoded, null);
 			}
 			catch (Exception e)
 			{
@@ -120,7 +120,7 @@ public class HistoryStore
 			Filepath file = directory().joinSegment(fileName(accountHash));
 			if (!file.exists())
 			{
-				return new LoadResult(emptyHistory(accountHash), false);
+				return new LoadResult(emptyHistory(accountHash), false, AccountHistory.CURRENT_SCHEMA_VERSION);
 			}
 
 			HistoryCodec.Decoded decoded;
@@ -133,12 +133,12 @@ public class HistoryStore
 				Filepath backup = directory().joinSegment(fileName(accountHash) + ".corrupt-" + System.currentTimeMillis());
 				log.warn("Trip history for this account is unreadable; moving it to {}", backup.getFileName(), e);
 				file.moveTo(backup);
-				return new LoadResult(emptyHistory(accountHash), false);
+				return new LoadResult(emptyHistory(accountHash), false, AccountHistory.CURRENT_SCHEMA_VERSION);
 			}
 
 			if (decoded == null)
 			{
-				return new LoadResult(emptyHistory(accountHash), false);
+				return new LoadResult(emptyHistory(accountHash), false, AccountHistory.CURRENT_SCHEMA_VERSION);
 			}
 			if (decoded.isMigrated())
 			{
@@ -156,12 +156,12 @@ public class HistoryStore
 			AccountHistory history = decoded.getHistory();
 			history.setAccountHash(accountHash);
 			// A file from a newer plugin version is shown but never overwritten
-			return new LoadResult(history, decoded.isNewer());
+			return new LoadResult(history, decoded.isNewer(), decoded.getSourceVersion());
 		}
 		catch (Exception e)
 		{
 			log.warn("Unable to load trip history", e);
-			return new LoadResult(emptyHistory(accountHash), true);
+			return new LoadResult(emptyHistory(accountHash), true, AccountHistory.CURRENT_SCHEMA_VERSION);
 		}
 	}
 
@@ -227,5 +227,9 @@ public class HistoryStore
 		 * True if the file must not be overwritten (newer schema, or it could not be read).
 		 */
 		boolean readOnly;
+		/**
+		 * Schema version of the file as read; the current version for a new history.
+		 */
+		int sourceVersion;
 	}
 }

@@ -214,7 +214,9 @@ RuneLite does not accept new high-end PvM helper plugins.
     Unverified until checked against the game's Check messages. The wiki
     also corrected the Scythe to 200 blood runes per 100 charges (it had been
     priced at 300 on five Nightmare trips of 2026-09-28, about 84k gp high in
-    total; those saved lines were left as they were).
+    total). Schema 3 corrects saved scythe lines on load: each loses 100 blood
+    runes (at the GE price then) per 100 charges, after backing up the v2 file;
+    older exports get the same correction when imported.
 
 ## Observed in-game (diagnostic test trips, 2026-09-27)
 These come from diagnostic.log and take precedence over the assumptions above.

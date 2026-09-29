@@ -21,6 +21,7 @@ import com.maggotkingtriptracker.model.KillGoal;
 import com.maggotkingtriptracker.model.Trip;
 import com.maggotkingtriptracker.model.TripEndReason;
 import com.maggotkingtriptracker.model.TripClock;
+import com.maggotkingtriptracker.model.SupplyCorrections;
 import com.maggotkingtriptracker.model.TripMath;
 import com.maggotkingtriptracker.model.VariantFilter;
 import com.maggotkingtriptracker.persistence.HistoryStore;
@@ -507,11 +508,15 @@ public class TripTracker
 	/**
 	 * Adds trips, egg pops and polish outcomes from an export that aren't already here, boss by boss. Client thread.
 	 */
-	public void importHistory(AccountHistory imported)
+	public void importHistory(AccountHistory imported, int sourceVersion)
 	{
 		if (describeImport(imported).startsWith("!"))
 		{
 			return;
+		}
+		if (sourceVersion < SupplyCorrections.SCYTHE_FIXED_IN_SCHEMA)
+		{
+			SupplyCorrections.repriceScythe(imported, prices.price(ItemID.BLOODRUNE));
 		}
 
 		imported.getBosses().forEach((bossId, theirs) ->
@@ -1890,6 +1895,15 @@ public class TripTracker
 		if (player != null && player.getName() != null)
 		{
 			history.setLastDisplayName(player.getName());
+		}
+		if (!readOnly && result.getSourceVersion() < SupplyCorrections.SCYTHE_FIXED_IN_SCHEMA)
+		{
+			int fixed = SupplyCorrections.repriceScythe(history, prices.price(ItemID.BLOODRUNE));
+			if (fixed > 0)
+			{
+				log.info("Repriced {} Scythe of Vitur charge lines (200 blood runes per 100 charges, not 300)", fixed);
+				saveNow();
+			}
 		}
 
 		// Trips left open by a client exit: close all but the most recent, which may resume within the grace period

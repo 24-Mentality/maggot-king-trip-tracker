@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.inject.Provides;
 import com.maggotkingtriptracker.boss.BossRegistry;
 import com.maggotkingtriptracker.diagnostic.DiagnosticRecorder;
+import com.maggotkingtriptracker.model.AccountHistory;
 import com.maggotkingtriptracker.persistence.HistoryStore;
 import com.maggotkingtriptracker.pricing.PriceService;
 import com.maggotkingtriptracker.tracking.TripTracker;
@@ -364,7 +365,7 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 
 			TripTracker tracker = tripTracker;
 			TrackerPanel trackerPanel = panel;
-			store.readHistoryFile(chosen.get(0), (imported, error) ->
+			store.readHistoryFile(chosen.get(0), (decoded, error) ->
 			{
 				if (error != null)
 				{
@@ -372,6 +373,7 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 						"That file couldn't be read as a Boss Trip Tracker export.", true));
 					return;
 				}
+				AccountHistory imported = decoded.getHistory();
 				clientThread.invokeLater(() ->
 				{
 					String description = tracker.describeImport(imported);
@@ -383,7 +385,7 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 						}
 						else if (trackerPanel.confirm("Import history", description))
 						{
-							clientThread.invokeLater(() -> tracker.importHistory(imported));
+							clientThread.invokeLater(() -> tracker.importHistory(imported, decoded.getSourceVersion()));
 						}
 					});
 				});
