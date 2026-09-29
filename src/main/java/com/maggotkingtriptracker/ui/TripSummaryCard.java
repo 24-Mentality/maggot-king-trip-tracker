@@ -1,5 +1,6 @@
 package com.maggotkingtriptracker.ui;
 
+import com.maggotkingtriptracker.CanvasSection;
 import com.maggotkingtriptracker.model.TripMath;
 import com.maggotkingtriptracker.view.TripView;
 import java.awt.GridLayout;
@@ -47,6 +48,8 @@ class TripSummaryCard extends JPanel
 	private final StatCell deaths = new StatCell("Deaths", false)
 		.help("Deaths in the lair this trip.");
 
+	private final JPanel timeCard;
+	private final JPanel profitCard;
 	private TripView trip;
 	private boolean paused;
 	private Long killStartedAt;
@@ -56,8 +59,8 @@ class TripSummaryCard extends JPanel
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		setOpaque(false);
 
-		JPanel timeCard = card(new FitRowLayout(4), time, kills, averageKill, fastestKill, currentKill);
-		JPanel profitCard = card(new GridLayout(2, 3, 4, 3), net, gpPerHour, bossStat, loot, costs, deaths);
+		timeCard = card(new FitRowLayout(4), time, kills, averageKill, fastestKill, currentKill);
+		profitCard = card(new GridLayout(2, 3, 4, 3), net, gpPerHour, bossStat, loot, costs, deaths);
 
 		JPanel gap = new JPanel();
 		gap.setOpaque(false);
@@ -100,6 +103,16 @@ class TripSummaryCard extends JPanel
 		bossStat.setValue(trip.getBossStat().getValue());
 		deaths.setValue(trip.getDeaths() + (trip.isPet() ? " · Pet!" : ""));
 		tick(now);
+	}
+
+	/**
+	 * Adds the right-click Add to canvas menus: the time card for the overlay's trip row, the profit card for its
+	 * profit row.
+	 */
+	void attachCanvasMenus(PanelActions actions)
+	{
+		CanvasMenu.attach(timeCard, CanvasSection.TRIP, actions);
+		CanvasMenu.attach(profitCard, CanvasSection.LOOT, actions);
 	}
 
 	/**

@@ -55,7 +55,7 @@ public class TrackerPanel extends PluginPanel
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARK_GRAY_COLOR);
 
-		currentTab = new CurrentTripPanel(itemManager, () -> promptGoal(actions), actions::togglePause,
+		currentTab = new CurrentTripPanel(itemManager, actions, () -> promptGoal(actions), actions::togglePause,
 			() -> confirmResetGoal(actions), () -> promptLastUniqueKc(actions), () -> actions.setLastUniqueKc(null));
 		historyTab = new HistoryPanel(itemManager, trip -> confirmDelete(trip, actions::deleteTrip));
 		lifetimeTab = new LifetimePanel(actions, () -> confirmClear(actions::clearHistory));

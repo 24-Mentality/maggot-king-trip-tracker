@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * The overlay's second row: the trip's times.
+ * The overlay's trip row.
  */
 @Getter
 @RequiredArgsConstructor
@@ -14,8 +14,7 @@ public enum OverlayTripStat
 	TRIP_TIME("Trip time"),
 	KILLS("Trip kills"),
 	AVERAGE_KILL("Average kill"),
-	PB("PB (fastest this trip)"),
-	NONE("Nothing");
+	PB("PB (fastest this trip)");
 
 	private final String label;
 

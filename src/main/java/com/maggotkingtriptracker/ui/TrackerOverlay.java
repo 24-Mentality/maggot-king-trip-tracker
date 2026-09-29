@@ -12,40 +12,60 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.components.ComponentOrientation;
 import net.runelite.client.ui.overlay.components.ImageComponent;
 import net.runelite.client.ui.overlay.components.LayoutableRenderableEntity;
 import net.runelite.client.ui.overlay.components.LineComponent;
+import net.runelite.client.ui.overlay.components.PanelComponent;
 import net.runelite.client.ui.overlay.components.ProgressBarComponent;
 import net.runelite.client.ui.overlay.components.SplitComponent;
+import net.runelite.client.util.AsyncBufferedImage;
+import net.runelite.client.util.ImageUtil;
 
 /**
- * An optional box on the game screen in the style of RuneLite's XP tracker box: the boss icon at the top left, up to
- * three rows beside it (a kill goal stat, a trip time and the trip's profit, each picked in the config) and the goal
- * progress bar underneath. It shows nothing about the boss or its mechanics, and drawing only formats a few numbers
- * from the latest panel state.
+ * An optional box on the game screen built exactly like RuneLite's XP tracker box (XpInfoBoxOverlay): the same small
+ * font, borders, gaps and standard width, the boss icon scaled to the skill icon's size, the rows beside it (goal,
+ * trip and profit, each shown or hidden and picked in the config) and the goal progress bar underneath. It shows
+ * nothing about the boss or its mechanics, and drawing only formats a few numbers from the latest panel state.
  */
 public class TrackerOverlay extends OverlayPanel
 {
-	private static final int WIDTH = 150;
-	private static final int ICON_GAP = 4;
-	private static final int BAR_GAP = 2;
+	/**
+	 * RuneLite's skill icons are 25 x 23; the 36 x 32 item icon is scaled to the same height.
+	 */
+	static final int ICON_WIDTH = 26;
+	static final int ICON_HEIGHT = 23;
+	// The XP tracker box's spacing
+	private static final int BORDER_SIZE = 2;
+	private static final int ROWS_AND_BAR_GAP = 2;
+	private static final int ROWS_AND_ICON_GAP = 4;
+	private static final Rectangle ROWS_AND_ICON_BORDER = new Rectangle(2, 1, 4, 0);
+	private static final Color BAR_BACKGROUND = new Color(61, 56, 49);
 	private static final String NOT_AVAILABLE = "N/A";
 	private static final Color MUTED = ColorScheme.LIGHT_GRAY_COLOR.darker();
 
 	private final MaggotKingTripTrackerConfig config;
 	private final Supplier<PanelState> state;
 	private final IntFunction<BufferedImage> icons;
+	private final PanelComponent iconRowsPanel = new PanelComponent();
+	/**
+	 * Scaled icons by item id. Only used on the client thread, where both drawing and icon loading callbacks run.
+	 */
+	private final Map<Integer, BufferedImage> scaledIcons = new HashMap<>();
 
 	/**
 	 * @param state the latest panel state; read on the client thread, where it is also produced
@@ -59,8 +79,10 @@ public class TrackerOverlay extends OverlayPanel
 		this.state = state;
 		this.icons = icons;
 		setPosition(OverlayPosition.TOP_LEFT);
-		panelComponent.setPreferredSize(new Dimension(WIDTH, 0));
-		panelComponent.setGap(new Point(0, BAR_GAP));
+		panelComponent.setBorder(new Rectangle(BORDER_SIZE, BORDER_SIZE, BORDER_SIZE, BORDER_SIZE));
+		panelComponent.setGap(new Point(0, ROWS_AND_BAR_GAP));
+		iconRowsPanel.setBorder(ROWS_AND_ICON_BORDER);
+		iconRowsPanel.setBackgroundColor(null);
 	}
 
 	@Override
@@ -73,7 +95,7 @@ public class TrackerOverlay extends OverlayPanel
 	public Dimension render(Graphics2D graphics)
 	{
 		PanelState s = state.get();
-		if (!config.showOverlay() || s == null || s.getLifetime() == null || s.getBoss() == null)
+		if (s == null || s.getLifetime() == null || s.getBoss() == null)
 		{
 			return null;
 		}
@@ -84,40 +106,69 @@ public class TrackerOverlay extends OverlayPanel
 		}
 
 		long now = System.currentTimeMillis();
-		GoalView goal = s.getGoal();
+		GoalView goal = config.overlayShowGoal() ? s.getGoal() : null;
 		TripView trip = s.getCurrentTrip();
 		List<LineComponent> rows = new ArrayList<>(3);
 		if (goal != null)
 		{
 			addGoalRow(rows, goal, config.overlayGoalRow(), now);
 		}
-		if (trip != null)
+		if (trip != null && config.overlayShowTrip())
 		{
 			addTripRow(rows, s, trip, config.overlayTripRow(), now);
+		}
+		if (trip != null && config.overlayShowLoot())
+		{
 			addLootRow(rows, trip, config.overlayLootRow(), now);
 		}
-		boolean bar = config.overlayProgressBar() && goal != null;
+		boolean bar = goal != null && config.overlayProgressBar();
 		if (rows.isEmpty() && !bar)
 		{
 			return null;
 		}
 
-		BufferedImage icon = icons.apply(s.getBoss().getIconItemId());
+		graphics.setFont(FontManager.getRunescapeSmallFont());
+		iconRowsPanel.getChildren().clear();
 		LayoutableRenderableEntity lines = stack(rows);
 		if (lines != null)
 		{
-			panelComponent.getChildren().add(icon == null ? lines : SplitComponent.builder()
+			BufferedImage icon = icon(s.getBoss().getIconItemId());
+			iconRowsPanel.getChildren().add(icon == null ? lines : SplitComponent.builder()
 				.first(new ImageComponent(icon))
 				.second(lines)
 				.orientation(ComponentOrientation.HORIZONTAL)
-				.gap(new Point(ICON_GAP, 0))
+				.gap(new Point(ROWS_AND_ICON_GAP, 0))
 				.build());
+			panelComponent.getChildren().add(iconRowsPanel);
 		}
 		if (bar)
 		{
 			panelComponent.getChildren().add(progressBar(goal));
 		}
 		return super.render(graphics);
+	}
+
+	/**
+	 * The item icon scaled to the skill icon's size, redone once the icon has loaded.
+	 */
+	private BufferedImage icon(int itemId)
+	{
+		BufferedImage scaled = scaledIcons.get(itemId);
+		if (scaled == null)
+		{
+			BufferedImage raw = icons.apply(itemId);
+			if (raw == null)
+			{
+				return null;
+			}
+			scaled = ImageUtil.resizeImage(raw, ICON_WIDTH, ICON_HEIGHT);
+			scaledIcons.put(itemId, scaled);
+			if (raw instanceof AsyncBufferedImage)
+			{
+				((AsyncBufferedImage) raw).onLoaded(() -> scaledIcons.put(itemId, ImageUtil.resizeImage(raw, ICON_WIDTH, ICON_HEIGHT)));
+			}
+		}
+		return scaled;
 	}
 
 	/**
@@ -207,19 +258,16 @@ public class TrackerOverlay extends OverlayPanel
 	}
 
 	/**
-	 * Kills done on the left, the percentage in the middle and the goal on the right.
+	 * Like the XP tracker's bar: kills done on the left, the goal on the right and the percentage in the middle.
 	 */
 	private static ProgressBarComponent progressBar(GoalView goal)
 	{
 		ProgressBarComponent bar = new ProgressBarComponent();
-		bar.setMinimum(0);
-		bar.setMaximum(Math.max(1, goal.getTarget()));
-		bar.setValue(Math.min(goal.getDone(), goal.getTarget()));
+		bar.setBackgroundColor(BAR_BACKGROUND);
+		bar.setForegroundColor(ColorScheme.PROGRESS_COMPLETE_COLOR);
 		bar.setLeftLabel(GoalCard.count(goal.getDone()));
 		bar.setRightLabel(GoalCard.count(goal.getTarget()));
-		bar.setLabelDisplayMode(ProgressBarComponent.LabelDisplayMode.TEXT_ONLY);
-		bar.setCenterLabel(String.format(Locale.ROOT, "%.1f%%", Math.min(100, goal.getDone() * 100.0 / Math.max(1, goal.getTarget()))));
-		bar.setForegroundColor(ColorScheme.PROGRESS_COMPLETE_COLOR);
+		bar.setValue(Math.min(100, goal.getDone() * 100.0 / Math.max(1, goal.getTarget())));
 		return bar;
 	}
 

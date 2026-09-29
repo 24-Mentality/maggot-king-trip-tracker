@@ -1,6 +1,7 @@
 package com.maggotkingtriptracker.ui;
 
 import static org.junit.Assert.assertTrue;
+import com.maggotkingtriptracker.CanvasSection;
 import com.maggotkingtriptracker.LuckCardStyle;
 import com.maggotkingtriptracker.boss.BossDefinition;
 import com.maggotkingtriptracker.boss.MaggotKingBoss;
@@ -264,6 +265,17 @@ public class PanelFitTest
 
 	private static class NoActions implements PanelActions
 	{
+		@Override
+		public boolean isOnCanvas(CanvasSection section)
+		{
+			return false;
+		}
+
+		@Override
+		public void toggleCanvas(CanvasSection section)
+		{
+		}
+
 		@Override
 		public void selectBoss(String bossId)
 		{

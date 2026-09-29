@@ -264,22 +264,23 @@ public interface MaggotKingTripTrackerConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "showOverlay",
-		name = "Show overlay",
-		description = "Show a small box on the game screen with your kill goal, the trip's times and its profit, like"
-			+ " RuneLite's XP tracker box. Hold Alt and drag it to move it.",
+		keyName = "overlayShowGoal",
+		name = "Show goal",
+		description = "Put a kill goal row on the overlay, a small box on the game screen like RuneLite's XP tracker"
+			+ " box (hidden while no goal is set). Also: right-click the goal card, Add to canvas. Alt+drag the box to"
+			+ " move it.",
 		section = overlaySection,
 		position = 0
 	)
-	default boolean showOverlay()
+	default boolean overlayShowGoal()
 	{
 		return false;
 	}
 
 	@ConfigItem(
 		keyName = "overlayGoalRow",
-		name = "First row",
-		description = "Kill goal stat on the first row (hidden while no goal is set)",
+		name = "Goal stat",
+		description = "What the goal row shows",
 		section = overlaySection,
 		position = 1
 	)
@@ -289,12 +290,36 @@ public interface MaggotKingTripTrackerConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "overlayTripRow",
-		name = "Second row",
-		description = "Trip stat on the second row. Current kill counts from the boss spawning, like the game's Fight"
-			+ " duration, and shows the last kill's time between kills.",
+		keyName = "overlayProgressBar",
+		name = "Goal progress bar",
+		description = "With the goal shown, a progress bar at the bottom with kills done, the percentage and your goal",
 		section = overlaySection,
 		position = 2
+	)
+	default boolean overlayProgressBar()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "overlayShowTrip",
+		name = "Show trip",
+		description = "Put a trip time row on the overlay. Also: right-click the trip time card, Add to canvas.",
+		section = overlaySection,
+		position = 3
+	)
+	default boolean overlayShowTrip()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "overlayTripRow",
+		name = "Trip stat",
+		description = "What the trip row shows. Current kill counts from the boss spawning, like the game's Fight"
+			+ " duration, and shows the last kill's time between kills.",
+		section = overlaySection,
+		position = 4
 	)
 	default OverlayTripStat overlayTripRow()
 	{
@@ -302,27 +327,27 @@ public interface MaggotKingTripTrackerConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "overlayLootRow",
-		name = "Third row",
-		description = "The trip's net profit or net GP/hr on the third row",
+		keyName = "overlayShowLoot",
+		name = "Show profit",
+		description = "Put the trip's profit on the overlay. Also: right-click the profit card, Add to canvas.",
 		section = overlaySection,
-		position = 3
+		position = 5
+	)
+	default boolean overlayShowLoot()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "overlayLootRow",
+		name = "Profit stat",
+		description = "What the profit row shows",
+		section = overlaySection,
+		position = 6
 	)
 	default OverlayLootStat overlayLootRow()
 	{
 		return OverlayLootStat.NET_PROFIT;
-	}
-
-	@ConfigItem(
-		keyName = "overlayProgressBar",
-		name = "Goal progress bar",
-		description = "A progress bar under the rows with kills done, the percentage and your goal",
-		section = overlaySection,
-		position = 4
-	)
-	default boolean overlayProgressBar()
-	{
-		return true;
 	}
 
 	@ConfigItem(
@@ -331,7 +356,7 @@ public interface MaggotKingTripTrackerConfig extends Config
 		description = "Only show the overlay while a trip is in progress (including paused or waiting just outside)."
 			+ " Off shows it whenever you're logged in, with your last trip.",
 		section = overlaySection,
-		position = 5
+		position = 7
 	)
 	default boolean overlayOnlyOnTrip()
 	{

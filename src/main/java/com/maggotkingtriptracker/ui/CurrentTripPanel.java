@@ -1,5 +1,6 @@
 package com.maggotkingtriptracker.ui;
 
+import com.maggotkingtriptracker.CanvasSection;
 import com.maggotkingtriptracker.LuckCardStyle;
 import com.maggotkingtriptracker.model.TripEndReason;
 import com.maggotkingtriptracker.view.PanelState;
@@ -29,8 +30,8 @@ class CurrentTripPanel extends JPanel
 	private final JPanel detailsHolder = new JPanel();
 	private TripView shownDetails;
 
-	CurrentTripPanel(ItemManager itemManager, Runnable onSetGoal, Runnable onPause, Runnable onResetGoal,
-		Runnable onSetLastUniqueKc, Runnable onClearLastUniqueKc)
+	CurrentTripPanel(ItemManager itemManager, PanelActions actions, Runnable onSetGoal, Runnable onPause,
+		Runnable onResetGoal, Runnable onSetLastUniqueKc, Runnable onClearLastUniqueKc)
 	{
 		this.itemManager = itemManager;
 		this.luckCard = new LuckCard(onSetLastUniqueKc, onClearLastUniqueKc);
@@ -78,6 +79,10 @@ class CurrentTripPanel extends JPanel
 		luckHolder.add(dropHolder, BorderLayout.SOUTH);
 		add(luckHolder);
 		add(detailsHolder);
+
+		// Right-click a card to put its numbers on the overlay
+		CanvasMenu.attach(goalCard, CanvasSection.GOAL, actions);
+		summary.attachCanvasMenus(actions);
 	}
 
 	void update(PanelState state, long now)

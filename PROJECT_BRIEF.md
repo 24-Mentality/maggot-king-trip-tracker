@@ -184,12 +184,16 @@ RuneLite does not accept new high-end PvM helper plugins.
     carry a date and time stamp; CSV is per boss, JSON covers every boss.
 
 13. Overlay (2026-09-28, replaces "No overlays on the game screen at all"):
-    one optional box, off by default, styled like RuneLite's XP tracker box:
-    the boss icon, then three rows picked from dropdowns (goal: KPH / TTG /
-    kills done / kills left; trip: current kill / trip time / kills / average
-    kill / PB; loot: net profit / net GP/hr; each can be Nothing), and an
-    optional goal progress bar (kills done, %, goal). "Only during a trip"
-    is on by default. Nothing about the boss or its mechanics is ever drawn.
+    one optional box, off by default, built exactly like RuneLite's XP
+    tracker box (XpInfoBoxOverlay: small font, standard width, same borders
+    and gaps, icon scaled to the skill icon's 23 px height): the boss icon,
+    then goal / trip / profit rows, each with a Show toggle and a dropdown
+    (goal: KPH / TTG / kills done / kills left; trip: current kill / trip time
+    / kills / average kill / PB; profit: net profit / net GP/hr), and an
+    optional goal progress bar (kills done, %, goal). The goal card, trip time
+    card and profit card have a right-click Add to canvas / Remove from canvas
+    that flips their Show toggle. "Only during a trip" is on by default.
+    Nothing about the boss or its mechanics is ever drawn.
 
 ## Observed in-game (diagnostic test trips, 2026-09-27)
 These come from diagnostic.log and take precedence over the assumptions above.

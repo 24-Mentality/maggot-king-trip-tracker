@@ -296,6 +296,18 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 		}
 
 		@Override
+		public boolean isOnCanvas(CanvasSection section)
+		{
+			return section.isShown(config);
+		}
+
+		@Override
+		public void toggleCanvas(CanvasSection section)
+		{
+			configManager.setConfiguration(MaggotKingTripTrackerConfig.GROUP, section.getConfigKey(), !section.isShown(config));
+		}
+
+		@Override
 		public void shareCard()
 		{
 			TrackerPanel trackerPanel = panel;

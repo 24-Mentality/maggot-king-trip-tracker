@@ -28,12 +28,13 @@ history in a side panel. Formerly **Maggot King Trip Tracker**.
   to the clipboard ready to paste into Discord, and saves it to your RuneLite screenshots
   folder under "Boss Trip Tracker". Nothing is uploaded. Your name is on the card unless you
   turn off **Show my name on share cards** (Configuration → Display).
-- **Overlay** (Configuration → Overlay, off by default): a small box on the game screen in
-  the style of RuneLite's XP tracker box, with the boss icon and up to three rows, each
-  picked from a dropdown: a kill goal stat (KPH, TTG, kills done or left), a trip time
-  (current kill, trip time, kills, average kill, PB) and the trip's net profit or net
-  GP/hr, plus an optional goal progress bar. Hold Alt and drag it to move it. By default it
-  only shows during a trip.
+- **Overlay** (off by default): a small box on the game screen built like RuneLite's XP
+  tracker box, with the boss icon and up to three rows: a kill goal stat (KPH, TTG, kills
+  done or left) with an optional progress bar, a trip time (current kill, trip time, kills,
+  average kill, PB) and the trip's net profit or net GP/hr. Right-click the goal card, the
+  trip time card or the profit card and choose **Add to canvas** (or **Remove from
+  canvas**), or use Configuration → Overlay, where each row has a Show toggle and a dropdown.
+  Hold Alt and drag the box to move it. By default it only shows during a trip.
 - **Boss dropdown** (top of the panel): picks the boss shown in all three tabs. Entering a
   tracked boss's area selects it; otherwise your last choice is kept, so you can browse any
   boss's trips while a trip keeps tracking in the background. A green dot marks the boss with

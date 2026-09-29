@@ -25,7 +25,9 @@ import org.junit.Test;
 
 public class TrackerOverlayTest
 {
-	private boolean show;
+	private boolean showGoal;
+	private boolean showTrip;
+	private boolean showLoot;
 	private boolean onlyOnTrip = true;
 	private boolean bar = true;
 	private OverlayGoalStat goalRow = OverlayGoalStat.KILLS_PER_HOUR;
@@ -35,9 +37,21 @@ public class TrackerOverlayTest
 	private final MaggotKingTripTrackerConfig config = new MaggotKingTripTrackerConfig()
 	{
 		@Override
-		public boolean showOverlay()
+		public boolean overlayShowGoal()
 		{
-			return show;
+			return showGoal;
+		}
+
+		@Override
+		public boolean overlayShowTrip()
+		{
+			return showTrip;
+		}
+
+		@Override
+		public boolean overlayShowLoot()
+		{
+			return showLoot;
 		}
 
 		@Override
@@ -80,7 +94,7 @@ public class TrackerOverlayTest
 	public void offByDefaultAndOnlyDuringATrip()
 	{
 		assertNull(render(state(PanelState.Status.IN_TRIP, true)));
-		show = true;
+		showAll();
 		assertNotNull(render(state(PanelState.Status.IN_TRIP, true)));
 		assertNull(render(state(PanelState.Status.IDLE, true)));
 		onlyOnTrip = false;
@@ -90,9 +104,7 @@ public class TrackerOverlayTest
 	@Test
 	public void boxOnlyAppearsWithSomethingToShow()
 	{
-		show = true;
-		lootRow = OverlayLootStat.NONE;
-		tripRow = OverlayTripStat.NONE;
+		showGoal = true;
 		bar = false;
 		// Just the goal row
 		assertNotNull(render(state(PanelState.Status.IN_TRIP, true)));
@@ -100,29 +112,35 @@ public class TrackerOverlayTest
 		assertNull(render(state(PanelState.Status.IN_TRIP, false)));
 		// The progress bar alone is enough
 		bar = true;
-		goalRow = OverlayGoalStat.NONE;
 		assertNotNull(render(state(PanelState.Status.IN_TRIP, true)));
 		// A trip row shows without a goal
-		bar = false;
-		tripRow = OverlayTripStat.PB;
+		showTrip = true;
 		assertNotNull(render(state(PanelState.Status.IN_TRIP, false)));
+	}
+
+	private void showAll()
+	{
+		showGoal = true;
+		showTrip = true;
+		showLoot = true;
 	}
 
 	@Test
 	public void preview() throws Exception
 	{
-		show = true;
+		showAll();
 		BufferedImage image = new BufferedImage(340, 110, BufferedImage.TYPE_INT_RGB);
 		Graphics2D g = image.createGraphics();
 		g.setColor(new Color(70, 90, 60));
 		g.fillRect(0, 0, image.getWidth(), image.getHeight());
 		g.setFont(FontManager.getRunescapeFont());
-		// Defaults on the left (KPH, current kill, net profit, bar); TTG / trip time / GP/hr on the right
+		// All three rows on the left (KPH, current kill, net profit, bar); goal and trip only (TTG, trip time) in the
+		// middle, the size of RuneLite's XP tracker box
 		draw(g, 10, 10);
+		showLoot = false;
 		goalRow = OverlayGoalStat.TIME_TO_GOAL;
 		tripRow = OverlayTripStat.TRIP_TIME;
-		lootRow = OverlayLootStat.NET_GP_PER_HOUR;
-		draw(g, 175, 10);
+		draw(g, 160, 10);
 		g.dispose();
 		ImageIO.write(image, "PNG", new File("build/overlay-preview.png"));
 	}
@@ -134,6 +152,10 @@ public class TrackerOverlayTest
 		overlay.getPanelComponent().setBackgroundColor(ComponentConstants.STANDARD_BACKGROUND_COLOR);
 		Graphics2D at = (Graphics2D) g.create();
 		at.translate(x, y);
+		// PanelComponent sizes itself from the previous frame's layout, so draw a first frame off-screen
+		Graphics2D scratch = new BufferedImage(200, 200, BufferedImage.TYPE_INT_ARGB).createGraphics();
+		overlay.render(scratch);
+		scratch.dispose();
 		overlay.render(at);
 		at.dispose();
 	}
