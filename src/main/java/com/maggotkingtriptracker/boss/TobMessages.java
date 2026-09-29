@@ -3,7 +3,6 @@ package com.maggotkingtriptracker.boss;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import lombok.Value;
 
 /**
  * Parsers for the Theatre of Blood's game messages. Input is a message without colour tags. Normal Mode texts are
@@ -50,16 +49,6 @@ public final class TobMessages
 	{
 	}
 
-	@Value
-	public static class Completion
-	{
-		/**
-		 * Variant id of the mode.
-		 */
-		String variant;
-		int count;
-	}
-
 	/**
 	 * @return the variant id of the mode named when entering the Theatre or completing a room, or null
 	 */
@@ -77,7 +66,7 @@ public final class TobMessages
 	/**
 	 * @return the mode and completion count from the completion-count message, or null
 	 */
-	public static Completion completion(String text)
+	public static RaidCompletion completion(String text)
 	{
 		Matcher m = COMPLETION.matcher(text);
 		if (!m.matches())
@@ -85,7 +74,7 @@ public final class TobMessages
 			return null;
 		}
 		String mode = m.group(1) == null ? "Normal" : m.group(1);
-		return new Completion(variant(mode), Integer.parseInt(m.group(2).replace(",", "")));
+		return new RaidCompletion(variant(mode), Integer.parseInt(m.group(2).replace(",", "")));
 	}
 
 	/**

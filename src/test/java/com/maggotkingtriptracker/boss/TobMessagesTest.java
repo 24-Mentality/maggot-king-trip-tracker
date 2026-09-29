@@ -29,10 +29,10 @@ public class TobMessagesTest
 	@Test
 	public void completionCountAndTime()
 	{
-		TobMessages.Completion normal = TobMessages.completion(text("Your completed Theatre of Blood count is: <col=ff0000>6</col>."));
+		RaidCompletion normal = TobMessages.completion(text("Your completed Theatre of Blood count is: <col=ff0000>6</col>."));
 		assertEquals("normal", normal.getVariant());
 		assertEquals(6, normal.getCount());
-		TobMessages.Completion hard = TobMessages.completion(text("Your completed Theatre of Blood: Hard Mode count is: <col=ff0000>1,234</col>."));
+		RaidCompletion hard = TobMessages.completion(text("Your completed Theatre of Blood: Hard Mode count is: <col=ff0000>1,234</col>."));
 		assertEquals("hard", hard.getVariant());
 		assertEquals(1234, hard.getCount());
 		assertEquals("entry", TobMessages.completion(text("Your completed Theatre of Blood: Entry Mode count is: 2.")).getVariant());

@@ -2,6 +2,7 @@ package com.maggotkingtriptracker.tracking;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.maggotkingtriptracker.model.AllTimeCounts;
 import java.util.Collections;
@@ -48,5 +49,22 @@ public class AllTimeRecordsTest
 		assertEquals(3, both.dropped(ItemID.ELDER_VENATOR_FANG));
 		assertEquals(a, AllTimeRecords.combine(a, null));
 		assertEquals(b, AllTimeRecords.combine(null, b));
+	}
+
+	@Test
+	public void theatreRecordCountsNormalAndHardRaidsOnly()
+	{
+		// The Theatre of Blood record from the diagnostic raid: 7 raids with loot, one of them Entry Mode
+		String json = "{\"type\":\"EVENT\",\"name\":\"Theatre of Blood\",\"kills\":7,\"first\":1,\"last\":2,"
+			+ "\"drops\":[1127,3,449,140]}";
+		AllTimeCounts record = AllTimeRecords.snapshot(new Gson().fromJson(json, AllTimeRecords.LootTrackerRecord.class), null);
+		AllTimeCounts byMode = AllTimeRecords.byMode(record, ImmutableMap.of("normal", 6, "hard", 0));
+
+		assertEquals(6, byMode.getLootKills());
+		assertEquals(Integer.valueOf(6), byMode.getKillCount());
+		assertEquals(Integer.valueOf(6), byMode.getVariantKillCounts().get("normal"));
+		assertEquals(3, byMode.dropped(ItemID.RUNE_PLATEBODY));
+		// Without Chat Commands' counts, the record's own total stays
+		assertEquals(7, AllTimeRecords.byMode(record, Collections.emptyMap()).getLootKills());
 	}
 }

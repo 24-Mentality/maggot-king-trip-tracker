@@ -4,7 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import com.maggotkingtriptracker.boss.AllTimeSource;
 import com.maggotkingtriptracker.model.AllTimeCounts;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
@@ -48,13 +50,48 @@ class AllTimeRecords
 			{
 				continue;
 			}
+			boolean sharedByModes = !source.getVariantKillCountKeys().isEmpty();
+			if (variant != null && sharedByModes)
+			{
+				// One record for every mode can't be split by mode
+				continue;
+			}
 			LootTrackerRecord record = parse(source.getLootTrackerKey(),
 				configManager.getRSProfileConfiguration(LOOT_TRACKER_GROUP, source.getLootTrackerKey()));
+			if (sharedByModes)
+			{
+				Map<String, Integer> killCounts = new LinkedHashMap<>();
+				source.getVariantKillCountKeys().forEach((mode, key) ->
+				{
+					Integer count = configManager.getRSProfileConfiguration(KILL_COUNT_GROUP, key, Integer.class);
+					if (count != null)
+					{
+						killCounts.put(mode, count);
+					}
+				});
+				combined = combine(combined, byMode(snapshot(record, null), killCounts));
+				continue;
+			}
 			Integer killCount = record == null || source.getKillCountKey() == null ? null
 				: configManager.getRSProfileConfiguration(KILL_COUNT_GROUP, source.getKillCountKey(), Integer.class);
 			combined = combine(combined, snapshot(record, killCount));
 		}
 		return combined;
+	}
+
+	/**
+	 * A record shared by several modes, with its kill total replaced by the kill counts of the modes that count
+	 * for luck (the Theatre of Blood's Normal and Hard, not Entry). Unchanged if none of them is known.
+	 */
+	static AllTimeCounts byMode(AllTimeCounts record, Map<String, Integer> killCounts)
+	{
+		if (record == null || killCounts.isEmpty())
+		{
+			return record;
+		}
+		int total = killCounts.values().stream().mapToInt(Integer::intValue).sum();
+		return new AllTimeCounts(total, total, record.getFirstRecordedAt(), record.getLastRecordedAt(), record.getDrops(),
+			Collections.unmodifiableMap(new LinkedHashMap<>(killCounts)));
 	}
 
 	static AllTimeCounts combine(AllTimeCounts a, AllTimeCounts b)
@@ -67,9 +104,11 @@ class AllTimeRecords
 		b.getDrops().forEach((id, quantity) -> drops.merge(id, quantity, Integer::sum));
 		Integer killCount = a.getKillCount() == null ? b.getKillCount()
 			: b.getKillCount() == null ? a.getKillCount() : Integer.valueOf(a.getKillCount() + b.getKillCount());
+		Map<String, Integer> byMode = new LinkedHashMap<>(a.getVariantKillCounts());
+		b.getVariantKillCounts().forEach((mode, count) -> byMode.merge(mode, count, Integer::sum));
 		return new AllTimeCounts(a.getLootKills() + b.getLootKills(), killCount,
 			Math.min(a.getFirstRecordedAt(), b.getFirstRecordedAt()),
-			Math.min(a.getLastRecordedAt(), b.getLastRecordedAt()), drops);
+			Math.min(a.getLastRecordedAt(), b.getLastRecordedAt()), drops, byMode);
 	}
 
 	static AllTimeCounts snapshot(LootTrackerRecord record, Integer killCount)

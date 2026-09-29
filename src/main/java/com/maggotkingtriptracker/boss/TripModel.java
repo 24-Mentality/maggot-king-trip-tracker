@@ -10,7 +10,9 @@ public enum TripModel
 	 */
 	INSTANCE_KILLS,
 	/**
-	 * One raid per trip, from entering until the raid ends (Theatre of Blood). Not implemented yet.
+	 * One raid per trip, from entering until leaving the raid (Theatre of Blood). A completed raid is one kill, with
+	 * its loot claimable after the trip ends; the clock doesn't pause while idle, since time between rooms is part of
+	 * the raid.
 	 */
 	ONE_RAID,
 }

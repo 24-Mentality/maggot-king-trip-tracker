@@ -2,11 +2,13 @@ package com.maggotkingtriptracker.boss;
 
 import com.maggotkingtriptracker.model.ChargeType;
 import com.maggotkingtriptracker.model.Kill;
+import com.maggotkingtriptracker.model.Trip;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import net.runelite.http.api.loottracker.LootRecordType;
 
 /**
@@ -278,11 +280,145 @@ public abstract class BossDefinition
 	}
 
 	/**
-	 * Supplies obtained inside (e.g. Theatre of Blood supply chests) are free. Not implemented yet.
+	 * Supplies obtained inside (Theatre of Blood supply chest purchases, items picked up) are free: only use beyond
+	 * them is paid for, per item and per dose.
 	 */
 	public boolean isAcquiredInsideFree()
 	{
 		return false;
+	}
+
+	/**
+	 * Dropped items left behind are used supplies (per dose for potions), except equipment, which is never a cost
+	 * (the salve amulet after Bloat). Otherwise they are a "Dropped" cost at their item price.
+	 */
+	public boolean isDroppedSupplyUsed()
+	{
+		return false;
+	}
+
+	/**
+	 * Dying ends the trip (items go to a grave). False where you keep your items and carry on (Theatre of Blood
+	 * rooms: you rejoin when the team clears the room).
+	 */
+	public boolean isDeathEndsTrip()
+	{
+		return true;
+	}
+
+	// ---- Raids (TripModel.ONE_RAID) ----
+
+	/**
+	 * @param text a game message without colour tags
+	 * @return the variant a message names for the raid you're in (entering it, completing a room), or null
+	 */
+	public String raidMode(String text)
+	{
+		return null;
+	}
+
+	/**
+	 * @return the completion-count message's mode and count, or null
+	 */
+	public RaidCompletion raidCompletion(String text)
+	{
+		return null;
+	}
+
+	/**
+	 * The kill count stored on a completed raid, on the same scale as {@link #getAllTimeSources()} kill counts.
+	 *
+	 * @param killCounts reads a Chat Commands kill count by key; null if unknown
+	 * @return the kill count, or null if this raid isn't counted on that scale
+	 */
+	public Integer raidKillCount(RaidCompletion completion, Function<String, Integer> killCounts)
+	{
+		return completion.getCount();
+	}
+
+	/**
+	 * @return the raid's total time from its completion-time message, or null
+	 */
+	public Long raidTimeMs(String text)
+	{
+		return null;
+	}
+
+	/**
+	 * Your own death in the raid (not a teammate's).
+	 */
+	public boolean isOwnRaidDeath(String text)
+	{
+		return false;
+	}
+
+	/**
+	 * @return the item name from a broadcast of a unique anyone in the raid received, or null
+	 */
+	public String teamUniqueName(String text)
+	{
+		return null;
+	}
+
+	/**
+	 * @return the game's own count of raids since your last unique, or null
+	 */
+	public Integer gameDryStreak(String text)
+	{
+		return null;
+	}
+
+	/**
+	 * Whether a Loot Tracker event is this raid's reward, which can be claimed after the raid has ended.
+	 */
+	public boolean isRaidLootEvent(String name, LootRecordType type)
+	{
+		return false;
+	}
+
+	/**
+	 * What a wipe costs (the reclaim fee), added when a raid ends in one.
+	 */
+	public long getWipeFee()
+	{
+		return 0;
+	}
+
+	/**
+	 * Varbits that are set for each player in the team (the Theatre of Blood's health bar slots), to count the
+	 * team size at the start of a raid. Empty for solo bosses.
+	 */
+	public List<Integer> getTeamSlotVarbits()
+	{
+		return Collections.emptyList();
+	}
+
+	/**
+	 * Whether a kill is on the kill-count scale used for the dry streak (Entry Mode raids have their own count).
+	 */
+	public boolean countsTowardKillCount(Kill kill)
+	{
+		return true;
+	}
+
+	/**
+	 * The chance context for past kills from the all-time records, which don't say the mode or team size.
+	 *
+	 * @param variant the mode, or null for the boss's usual one
+	 * @param pastTeamSize the "Typical team size for past raids" setting
+	 */
+	public KillContext pastKillContext(String variant, int pastTeamSize)
+	{
+		return KillContext.DEFAULT;
+	}
+
+	/**
+	 * A short description of a trip for the History card (e.g. "Normal · team of 4 · 1 death"); null to show the
+	 * kill count.
+	 */
+	public String tripDetail(Trip trip)
+	{
+		return null;
 	}
 
 	// ---- Panel ----
