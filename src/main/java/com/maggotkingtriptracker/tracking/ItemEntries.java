@@ -1,6 +1,7 @@
 package com.maggotkingtriptracker.tracking;
 
 import com.maggotkingtriptracker.model.ItemEntry;
+import java.util.Iterator;
 import java.util.List;
 
 final class ItemEntries
@@ -35,6 +36,27 @@ final class ItemEntries
 		ItemEntry entry = new ItemEntry(itemId, quantity, priceEach);
 		entry.setPerDose(perDose);
 		entries.add(entry);
+	}
+
+	/**
+	 * Takes quantity off the line for this item (not charges), removing it when nothing is left.
+	 */
+	static void reduce(List<ItemEntry> entries, int itemId, boolean perDose, long quantity)
+	{
+		for (Iterator<ItemEntry> it = entries.iterator(); it.hasNext() && quantity > 0; )
+		{
+			ItemEntry entry = it.next();
+			if (entry.getItemId() == itemId && entry.isPerDose() == perDose && !entry.isPending() && !entry.isCharges())
+			{
+				long taken = Math.min(quantity, entry.getQuantity());
+				entry.setQuantity(entry.getQuantity() - taken);
+				quantity -= taken;
+				if (entry.getQuantity() <= 0)
+				{
+					it.remove();
+				}
+			}
+		}
 	}
 
 	static void merge(List<ItemEntry> entries, ItemEntry added)

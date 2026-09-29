@@ -9,22 +9,43 @@ import java.util.Objects;
 
 /**
  * Supplies obtained inside a raid (Theatre of Blood supply chest purchases, items picked up) cost nothing: only use
- * beyond what was obtained there is paid for. Counted per item, and per dose for potions, so a brew bought from the
- * chest is free whether it's drunk, dropped or kept. Charges are never covered.
+ * beyond what was obtained there, over the whole raid, is paid for. Counted per item, and per dose for potions, so a
+ * brew bought from the chest is free whether it's drunk, dropped or kept, and arrows picked back up make up for ones
+ * already fired. Charges are never covered.
  */
 class FreeSupplies
 {
+	/**
+	 * Obtained and not used yet.
+	 */
 	private final Map<Key, Long> allowance = new HashMap<>();
+	/**
+	 * Used and paid for so far this raid, which something obtained later makes up for.
+	 */
+	private final Map<Key, Long> paid = new HashMap<>();
 
 	/**
 	 * Something obtained inside, as a supply line would count it (per dose for potions).
+	 *
+	 * @return how much of it makes up for use already paid for: take that off the trip's supply line
 	 */
-	void acquired(ItemEntry entry)
+	long acquired(ItemEntry entry)
 	{
-		if (!entry.isCharges() && entry.getQuantity() > 0)
+		if (entry.isCharges() || entry.getQuantity() <= 0)
 		{
-			allowance.merge(Key.of(entry), entry.getQuantity(), Long::sum);
+			return 0;
 		}
+		Key key = Key.of(entry);
+		long refund = Math.min(paid.getOrDefault(key, 0L), entry.getQuantity());
+		if (refund > 0)
+		{
+			paid.merge(key, -refund, Long::sum);
+		}
+		if (entry.getQuantity() - refund > 0)
+		{
+			allowance.merge(key, entry.getQuantity() - refund, Long::sum);
+		}
+		return refund;
 	}
 
 	/**
@@ -34,12 +55,12 @@ class FreeSupplies
 	 */
 	List<ItemEntry> paidFor(List<ItemEntry> used)
 	{
-		List<ItemEntry> paid = new ArrayList<>();
+		List<ItemEntry> charged = new ArrayList<>();
 		for (ItemEntry entry : used)
 		{
 			if (entry.isCharges())
 			{
-				paid.add(entry);
+				charged.add(entry);
 				continue;
 			}
 			Key key = Key.of(entry);
@@ -59,12 +80,13 @@ class FreeSupplies
 			long rest = entry.getQuantity() - covered;
 			if (rest > 0)
 			{
+				paid.merge(key, rest, Long::sum);
 				ItemEntry part = new ItemEntry(entry.getItemId(), rest, entry.getPriceEach());
 				part.setPerDose(entry.isPerDose());
-				paid.add(part);
+				charged.add(part);
 			}
 		}
-		return paid;
+		return charged;
 	}
 
 	/**
@@ -78,6 +100,7 @@ class FreeSupplies
 	void clear()
 	{
 		allowance.clear();
+		paid.clear();
 	}
 
 	private static final class Key

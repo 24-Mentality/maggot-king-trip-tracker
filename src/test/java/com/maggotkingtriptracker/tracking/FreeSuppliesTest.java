@@ -67,4 +67,20 @@ public class FreeSuppliesTest
 		entry.setPerDose(true);
 		return entry;
 	}
+
+	@Test
+	public void whatIsObtainedLaterMakesUpForUseAlreadyPaidFor()
+	{
+		FreeSupplies free = new FreeSupplies();
+		// Four dragon arrows fired, then three picked back up (the Nylocas room of the diagnostic raid)
+		assertEquals(4, free.paidFor(Collections.singletonList(new ItemEntry(ItemID.DRAGON_ARROW, 4, 1_000))).get(0).getQuantity());
+		assertEquals(3, free.acquired(new ItemEntry(ItemID.DRAGON_ARROW, 3, 1_000)));
+		assertEquals(0, free.remaining(ItemID.DRAGON_ARROW, false));
+
+		// Six restore doses drunk, then two bought from the chest (8 doses): 6 make up for what was drunk, 2 stay free
+		assertEquals(6, free.paidFor(Collections.singletonList(doses(ItemID._4DOSE2RESTORE, 6))).get(0).getQuantity());
+		assertEquals(6, free.acquired(doses(ItemID._4DOSE2RESTORE, 8)));
+		assertEquals(2, free.remaining(ItemID._4DOSE2RESTORE, true));
+		assertTrue(free.paidFor(Collections.singletonList(doses(ItemID._4DOSE2RESTORE, 2))).isEmpty());
+	}
 }

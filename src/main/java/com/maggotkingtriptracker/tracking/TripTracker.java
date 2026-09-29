@@ -1860,7 +1860,14 @@ public class TripTracker
 			// Supply chest purchases and items picked up inside cost nothing: only use beyond them is paid for
 			for (ItemEntry entry : acquisitions(removed, gained))
 			{
-				freeSupplies.acquired(entry);
+				long refund = freeSupplies.acquired(entry);
+				if (refund > 0)
+				{
+					// Makes up for use already charged this raid (e.g. arrows picked back up)
+					ItemEntries.reduce(currentTrip.getSupplies(), entry.getItemId(), entry.isPerDose(), refund);
+					viewDirty = true;
+					requestSave();
+				}
 			}
 			used = freeSupplies.paidFor(used);
 		}
