@@ -2,6 +2,7 @@ package com.maggotkingtriptracker.diagnostic;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.maggotkingtriptracker.boss.BossDefinition;
 import com.maggotkingtriptracker.boss.BossRegistry;
 import java.util.HashMap;
@@ -11,6 +12,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import net.runelite.api.Actor;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.ActorSpotAnim;
 import net.runelite.api.EquipmentInventorySlot;
 import net.runelite.api.Hitsplat;
@@ -95,6 +97,19 @@ public class DiagnosticRecorder
 	private static final String[] EVERYWHERE_NPC_NAMES = {"Nightmare", "Totem", "Sister Senga", "Shura",
 		// Theatre of Blood room bosses
 		"Maiden of Sugadinti", "Pestilent Bloat", "Nylocas Vasilias", "Sotetseg", "Xarpus", "Verzik Vitur"};
+
+	/**
+	 * What players type or send (public, private, clan and friends chat, trade requests) isn't needed and carries
+	 * other players' names and words, so it's never logged. Game messages still are.
+	 */
+	static final Set<ChatMessageType> PLAYER_CHAT = Sets.immutableEnumSet(ChatMessageType.PUBLICCHAT,
+		ChatMessageType.MODCHAT, ChatMessageType.PRIVATECHAT, ChatMessageType.PRIVATECHATOUT,
+		ChatMessageType.MODPRIVATECHAT, ChatMessageType.FRIENDSCHAT, ChatMessageType.CLAN_CHAT,
+		ChatMessageType.CLAN_MESSAGE, ChatMessageType.CLAN_GUEST_CHAT, ChatMessageType.CLAN_GUEST_MESSAGE,
+		ChatMessageType.CLAN_GIM_CHAT, ChatMessageType.CLAN_GIM_MESSAGE, ChatMessageType.AUTOTYPER,
+		ChatMessageType.MODAUTOTYPER, ChatMessageType.TRADEREQ, ChatMessageType.TRADE, ChatMessageType.TRADE_SENT,
+		ChatMessageType.CHALREQ_TRADE, ChatMessageType.CHALREQ_FRIENDSCHAT, ChatMessageType.CHALREQ_CLANCHAT,
+		ChatMessageType.LOGINLOGOUTNOTIFICATION, ChatMessageType.FRIENDNOTIFICATION);
 
 	/**
 	 * Theatre of Blood state, for learning how raids, teams and loot look: party status and slots (team size),
@@ -348,7 +363,8 @@ public class DiagnosticRecorder
 
 		StringBuilder sb = new StringBuilder()
 			.append("option=\"").append(event.getMenuOption()).append('"')
-			.append(" target=\"").append(event.getMenuTarget()).append('"')
+			// A player's name in the target (e.g. "Walk here" on a player) isn't logged
+			.append(" target=\"").append(entry.getPlayer() != null ? "<player>" : event.getMenuTarget()).append('"')
 			.append(" action=").append(event.getMenuAction())
 			.append(" id=").append(event.getId())
 			.append(" itemId=").append(itemId)
@@ -369,7 +385,7 @@ public class DiagnosticRecorder
 	@Subscribe
 	public void onChatMessage(ChatMessage event)
 	{
-		if (!isRecording())
+		if (!isRecording() || PLAYER_CHAT.contains(event.getType()))
 		{
 			return;
 		}
