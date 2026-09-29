@@ -68,6 +68,12 @@ public class PanelFitTest
 			panel.selectTab(0);
 			check(panel, "paused", problems);
 
+			// The profit card collapsed to net profit and net GP/hr
+			TripSummaryCard summary = find(panel, TripSummaryCard.class);
+			summary.setProfitCollapsed(true);
+			check(panel, "profit collapsed", problems);
+			summary.setProfitCollapsed(false);
+
 			// The classic Luck card, hidden by default
 			PanelState classic = worstCaseState(PanelState.Status.IN_TRIP, false).toBuilder()
 				.luckCardStyle(LuckCardStyle.CLASSIC)
@@ -107,6 +113,26 @@ public class PanelFitTest
 		{
 			throw new UncheckedIOException(e);
 		}
+	}
+
+	private static <T> T find(Component component, Class<T> type)
+	{
+		if (type.isInstance(component))
+		{
+			return type.cast(component);
+		}
+		if (component instanceof Container)
+		{
+			for (Component child : ((Container) component).getComponents())
+			{
+				T found = find(child, type);
+				if (found != null)
+				{
+					return found;
+				}
+			}
+		}
+		return null;
 	}
 
 	private static void layout(Component component)

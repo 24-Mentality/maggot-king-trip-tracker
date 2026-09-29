@@ -59,6 +59,7 @@ history in a side panel. Formerly **Maggot King Trip Tracker**.
   game's "Fight duration", and shows the last kill's time between kills), plus loot value,
   costs, net profit and GP/hr, plus item grids for loot, supplies and anything you dropped and left behind.
   Uniques have a gold border; tarnished drops waiting to be polished have a dashed border.
+  The profit card's eye icon collapses it to just net profit and net GP/hr (green or red).
   Loot shows kills, loot per kill, loot per hour and net profit; Supplies shows the cost of
   charges, runes, potions, food and anything else.
 - **History:** one card per completed trip. Click to expand it, right-click to delete it.

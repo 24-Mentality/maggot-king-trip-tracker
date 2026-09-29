@@ -26,6 +26,7 @@ import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
+import net.runelite.client.ui.overlay.components.ComponentConstants;
 import net.runelite.client.ui.overlay.components.ComponentOrientation;
 import net.runelite.client.ui.overlay.components.ImageComponent;
 import net.runelite.client.ui.overlay.components.LayoutableRenderableEntity;
@@ -54,8 +55,27 @@ public class TrackerOverlay extends OverlayPanel
 	private static final int ROWS_AND_BAR_GAP = 2;
 	private static final int ROWS_AND_ICON_GAP = 4;
 	private static final Rectangle ROWS_AND_ICON_BORDER = new Rectangle(2, 1, 4, 0);
+	/**
+	 * Room for a row beside the icon: the standard width minus the borders, the icon and the gap.
+	 */
+	static final int ROW_WIDTH = ComponentConstants.STANDARD_WIDTH - 2 * BORDER_SIZE
+		- (ROWS_AND_ICON_BORDER.x + ROWS_AND_ICON_BORDER.width) - ICON_WIDTH - ROWS_AND_ICON_GAP;
 	private static final Color BAR_BACKGROUND = new Color(61, 56, 49);
+	// Row labels
+	static final String KILLS_PER_HOUR = "Kills/Hr:";
+	static final String TIME_TO_GOAL = "TTG:";
+	static final String KC_DONE = "KC Done:";
+	static final String KC_LEFT = "KC Left:";
+	static final String CURRENT_KILL = "Kill:";
+	static final String LAST_KILL = "Last KC:";
+	static final String TRIP_TIME = "Trip Time:";
+	static final String TRIP_KC = "Trip KC:";
+	static final String AVERAGE_KILL = "Avg KC:";
+	static final String PB = "PB:";
+	static final String NET_PROFIT = "Net Profit:";
+	static final String NET_GP_PER_HOUR = "GP/hr:";
 	private static final String NOT_AVAILABLE = "N/A";
+	private static final long TEN_HOURS_MS = 10 * 3_600_000L;
 	private static final Color MUTED = ColorScheme.LIGHT_GRAY_COLOR.darker();
 
 	private final MaggotKingTripTrackerConfig config;
@@ -172,6 +192,14 @@ public class TrackerOverlay extends OverlayPanel
 	}
 
 	/**
+	 * Trip time as h:mm:ss; from 10 hours of fighting time on, "10h+" so the row still fits the box.
+	 */
+	static String tripTime(long ms)
+	{
+		return ms >= TEN_HOURS_MS ? "10h+" : UiFormat.duration(ms);
+	}
+
+	/**
 	 * The rows one above the other, beside the icon.
 	 */
 	private static LayoutableRenderableEntity stack(List<LineComponent> rows)
@@ -196,18 +224,18 @@ public class TrackerOverlay extends OverlayPanel
 		{
 			case KILLS_PER_HOUR:
 				double killsPerHour = goal.killsPerHourAt(now);
-				rows.add(line("KPH:", killsPerHour > 0 ? String.format(Locale.ROOT, "%.1f", killsPerHour) : NOT_AVAILABLE, clock));
+				rows.add(line(KILLS_PER_HOUR, killsPerHour > 0 ? String.format(Locale.ROOT, "%.1f", killsPerHour) : NOT_AVAILABLE, clock));
 				break;
 			case TIME_TO_GOAL:
 				Long toGoal = goal.msToGoalAt(now);
-				rows.add(line("TTG:", goal.getRemaining() == 0 ? "Done" : toGoal != null ? GoalCard.timeToGoal(toGoal)
+				rows.add(line(TIME_TO_GOAL, goal.getRemaining() == 0 ? "Done" : toGoal != null ? GoalCard.timeToGoal(toGoal)
 					: NOT_AVAILABLE, clock));
 				break;
 			case KILLS_DONE:
-				rows.add(line("Done:", GoalCard.count(goal.getDone()), Color.WHITE));
+				rows.add(line(KC_DONE, GoalCard.count(goal.getDone()), Color.WHITE));
 				break;
 			case KILLS_LEFT:
-				rows.add(line("Left:", GoalCard.count(goal.getRemaining()), Color.WHITE));
+				rows.add(line(KC_LEFT, GoalCard.count(goal.getRemaining()), Color.WHITE));
 				break;
 			default:
 				break;
@@ -221,20 +249,20 @@ public class TrackerOverlay extends OverlayPanel
 			case CURRENT_KILL:
 				Long start = s.getKillStartedAt();
 				// Counts from the boss spawning, like the game's Fight duration; the last kill's time between kills
-				rows.add(start != null ? line("Kill:", UiFormat.duration(now - start), Color.WHITE)
-					: line("Last:", UiFormat.killTime(trip.getLastKillMs()), MUTED));
+				rows.add(start != null ? line(CURRENT_KILL, UiFormat.duration(now - start), Color.WHITE)
+					: line(LAST_KILL, UiFormat.killTime(trip.getLastKillMs()), MUTED));
 				break;
 			case TRIP_TIME:
-				rows.add(line("Trip:", UiFormat.duration(trip.activeMsAt(now)), s.getPauseText() != null ? MUTED : Color.WHITE));
+				rows.add(line(TRIP_TIME, tripTime(trip.activeMsAt(now)), s.getPauseText() != null ? MUTED : Color.WHITE));
 				break;
 			case KILLS:
-				rows.add(line("Kills:", String.valueOf(trip.getKills()), Color.WHITE));
+				rows.add(line(TRIP_KC, String.valueOf(trip.getKills()), Color.WHITE));
 				break;
 			case AVERAGE_KILL:
-				rows.add(line("Avg:", UiFormat.killTime(trip.getAverageKillMs()), Color.WHITE));
+				rows.add(line(AVERAGE_KILL, UiFormat.killTime(trip.getAverageKillMs()), Color.WHITE));
 				break;
 			case PB:
-				rows.add(line("PB:", UiFormat.killTime(trip.getFastestKillMs()), Color.WHITE));
+				rows.add(line(PB, UiFormat.killTime(trip.getFastestKillMs()), Color.WHITE));
 				break;
 			default:
 				break;
@@ -246,11 +274,11 @@ public class TrackerOverlay extends OverlayPanel
 		switch (stat)
 		{
 			case NET_PROFIT:
-				rows.add(line("Net:", UiFormat.gp(trip.getNetProfit()), UiFormat.profitColor(trip.getNetProfit())));
+				rows.add(line(NET_PROFIT, UiFormat.gp(trip.getNetProfit()), UiFormat.profitColor(trip.getNetProfit())));
 				break;
 			case NET_GP_PER_HOUR:
 				long rate = TripMath.gpPerHour(trip.getNetProfit(), trip.activeMsAt(now));
-				rows.add(line("GP/hr:", UiFormat.gp(rate), UiFormat.profitColor(rate)));
+				rows.add(line(NET_GP_PER_HOUR, UiFormat.gp(rate), UiFormat.profitColor(rate)));
 				break;
 			default:
 				break;

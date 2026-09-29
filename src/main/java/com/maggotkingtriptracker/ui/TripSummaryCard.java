@@ -3,10 +3,15 @@ package com.maggotkingtriptracker.ui;
 import com.maggotkingtriptracker.CanvasSection;
 import com.maggotkingtriptracker.model.TripMath;
 import com.maggotkingtriptracker.view.TripView;
+import java.awt.BorderLayout;
+import java.awt.Cursor;
 import java.awt.GridLayout;
 import java.awt.LayoutManager;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import net.runelite.client.ui.ColorScheme;
 
@@ -50,6 +55,12 @@ class TripSummaryCard extends JPanel
 
 	private final JPanel timeCard;
 	private final JPanel profitCard;
+	private final JPanel profitGrid = new JPanel();
+	private final JLabel eye = new JLabel();
+	/**
+	 * Collapsed with the eye icon; remembered for the session, like the other cards.
+	 */
+	private boolean profitCollapsed;
 	private TripView trip;
 	private boolean paused;
 	private Long killStartedAt;
@@ -60,7 +71,33 @@ class TripSummaryCard extends JPanel
 		setOpaque(false);
 
 		timeCard = card(new FitRowLayout(4), time, kills, averageKill, fastestKill, currentKill);
-		profitCard = card(new GridLayout(2, 3, 4, 3), net, gpPerHour, bossStat, loot, costs, deaths);
+
+		// The profit card collapses with the eye icon to just net profit and net GP/hr
+		profitGrid.setOpaque(false);
+		eye.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		eye.setBorder(BorderFactory.createEmptyBorder(0, 3, 0, 0));
+		eye.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mousePressed(MouseEvent e)
+			{
+				if (e.getButton() == MouseEvent.BUTTON1)
+				{
+					profitCollapsed = !profitCollapsed;
+					layoutProfit();
+				}
+			}
+		});
+		JPanel eyeHolder = new JPanel(new BorderLayout());
+		eyeHolder.setOpaque(false);
+		eyeHolder.add(eye, BorderLayout.NORTH);
+		profitCard = new JPanel(new BorderLayout());
+		profitCard.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		profitCard.setBorder(BorderFactory.createEmptyBorder(5, 6, 5, 6));
+		profitCard.setAlignmentX(LEFT_ALIGNMENT);
+		profitCard.add(profitGrid, BorderLayout.CENTER);
+		profitCard.add(eyeHolder, BorderLayout.EAST);
+		layoutProfit();
 
 		JPanel gap = new JPanel();
 		gap.setOpaque(false);
@@ -70,6 +107,38 @@ class TripSummaryCard extends JPanel
 		add(timeCard);
 		add(gap);
 		add(profitCard);
+	}
+
+	void setProfitCollapsed(boolean collapsed)
+	{
+		profitCollapsed = collapsed;
+		layoutProfit();
+	}
+
+	/**
+	 * All six cells, or collapsed just net profit and net GP/hr, which keep their green / red colours.
+	 */
+	private void layoutProfit()
+	{
+		profitGrid.removeAll();
+		if (profitCollapsed)
+		{
+			profitGrid.setLayout(new GridLayout(1, 2, 4, 0));
+			profitGrid.add(net);
+			profitGrid.add(gpPerHour);
+		}
+		else
+		{
+			profitGrid.setLayout(new GridLayout(2, 3, 4, 3));
+			for (StatCell cell : new StatCell[]{net, gpPerHour, bossStat, loot, costs, deaths})
+			{
+				profitGrid.add(cell);
+			}
+		}
+		eye.setIcon(new EyeIcon(profitCollapsed));
+		eye.setToolTipText(profitCollapsed ? "Show loot, costs and deaths" : "Show only net profit and net GP/hr");
+		revalidate();
+		repaint();
 	}
 
 	private static JPanel card(LayoutManager layout, StatCell... cells)
