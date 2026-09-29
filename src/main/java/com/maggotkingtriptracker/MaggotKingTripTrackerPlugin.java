@@ -120,7 +120,7 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 
 		executor = Executors.newSingleThreadScheduledExecutor(r ->
 		{
-			Thread thread = new Thread(r, "maggot-king-trip-tracker-io");
+			Thread thread = new Thread(r, "boss-trip-tracker-io");
 			thread.setDaemon(true);
 			return thread;
 		});

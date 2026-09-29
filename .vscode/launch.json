@@ -6,7 +6,7 @@
 			"name": "RuneLite (Maggot King Trip Tracker)",
 			"request": "launch",
 			"mainClass": "com.maggotkingtriptracker.MaggotKingTripTrackerPluginTest",
-			"projectName": "maggot-king-trip-tracker",
+			"projectName": "boss-trip-tracker",
 			"javaExec": "/Library/Java/JavaVirtualMachines/temurin-11.jdk/Contents/Home/bin/java",
 			"vmArgs": "-ea",
 			"args": "--developer-mode --debug",

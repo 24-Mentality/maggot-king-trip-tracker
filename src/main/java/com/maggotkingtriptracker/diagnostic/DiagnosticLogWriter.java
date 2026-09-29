@@ -39,7 +39,7 @@ class DiagnosticLogWriter
 	private final AtomicBoolean drainScheduled = new AtomicBoolean();
 	private final ExecutorService executor = Executors.newSingleThreadExecutor(r ->
 	{
-		Thread thread = new Thread(r, "maggot-king-trip-tracker-diagnostic");
+		Thread thread = new Thread(r, "boss-trip-tracker-diagnostic");
 		thread.setDaemon(true);
 		return thread;
 	});

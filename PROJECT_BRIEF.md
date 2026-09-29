@@ -1,13 +1,17 @@
-# Maggot King Trip Tracker — Project Brief
+# Boss Trip Tracker — Project Brief
 
-My repo is already cloned in this folder (github.com/24-Mentality/maggot-king-trip-tracker),
-created from runelite/example-plugin. Plugin name: Maggot King Trip Tracker.
+Originally written for the Maggot King Trip Tracker; the plugin is now the multi-boss
+Boss Trip Tracker (see ROADMAP.md).
+
+My repo is already cloned in this folder (github.com/24-Mentality/boss-trip-tracker,
+formerly maggot-king-trip-tracker), created from runelite/example-plugin. Plugin name:
+Boss Trip Tracker (formerly Maggot King Trip Tracker).
 Author: 24-Mentality. I use VS Code on macOS (Apple Silicon, macOS 13) with
 Temurin Java 11. Give run and debug instructions for VS Code, never IntelliJ.
 Git is already configured with my GitHub noreply email; never change git config.
 
-Save this whole brief as PROJECT_BRIEF.md and add a line `@PROJECT_BRIEF.md`
-to the existing CLAUDE.md so both it and AGENTS.md load every session.
+Save this whole brief as PROJECT_BRIEF.md and have it load every session along with
+AGENTS.md (the local agent instructions file that loads them isn't committed).
 Do not edit AGENTS.md. Where AGENTS.md and this brief disagree, AGENTS.md wins.
 
 ## Goal
