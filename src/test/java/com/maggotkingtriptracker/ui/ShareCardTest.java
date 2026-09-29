@@ -62,6 +62,12 @@ public class ShareCardTest
 		assertEquals(5, card.getDrops().get(1).getCount());
 		assertEquals(ItemID.MAGGOTKINGPET, card.getDrops().get(2).getItemId());
 		assertEquals(ShareCard.RECENT_TRIPS, card.getRecentTrips().size());
+		// Drop chances from the all-time record: any unique, fang, kisten, pet
+		assertEquals(4, card.getChances().size());
+		assertEquals(11, card.getChances().get(0).getReceived());
+		assertEquals(2630 / 205.6, card.getChances().get(0).getExpected(), 1e-9);
+		assertEquals(6, card.getChances().get(1).getReceived());
+		assertEquals("All-time · 2,630 kills · KC 2,752", card.getChancesSource());
 		assertEquals(9_620_000, card.getCosts());
 		assertEquals(-5_350_000, card.getNet());
 	}
@@ -79,7 +85,8 @@ public class ShareCardTest
 		ShareCardRenderer renderer = new ShareCardRenderer(ZoneId.of("UTC"));
 		BufferedImage image = renderer.render(ShareCard.from(state(8), true, NOW), ShareCardTest::placeholderIcon);
 		assertEquals(760, image.getWidth());
-		assertTrue(image.getHeight() < 800);
+		// Header, luck, drop chances (any unique, fang, kisten, pet), totals and five trips
+		assertTrue(image.getHeight() < 1_100);
 
 		BufferedImage few = renderer.render(ShareCard.from(state(0), false, NOW), id -> null);
 		assertTrue(few.getHeight() < image.getHeight());
@@ -135,8 +142,8 @@ public class ShareCardTest
 		ShareCardRenderer renderer = new ShareCardRenderer(ZoneId.of("UTC"));
 		BufferedImage maggotKing = renderer.render(ShareCard.from(base, true, NOW), ShareCardTest::placeholderIcon);
 		BufferedImage image = renderer.render(ShareCard.from(state, true, NOW), ShareCardTest::placeholderIcon);
-		// Eight uniques and the pet: two rows of icons instead of one
-		assertEquals(maggotKing.getHeight() + 26 * ShareCardRenderer.SCALE, image.getHeight());
+		// Eight uniques and the pet: two rows of icons instead of one, and six more drop chances rows
+		assertEquals(maggotKing.getHeight() + (26 + 6 * ShareCardRenderer.CHANCE_ROW) * ShareCardRenderer.SCALE, image.getHeight());
 		ImageIO.write(image, "PNG", new File("build/share-card-nightmare.png"));
 	}
 

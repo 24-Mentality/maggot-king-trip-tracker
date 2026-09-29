@@ -48,7 +48,8 @@ final class ShareCardRenderer
 	 */
 	BufferedImage render(ShareCard card, IntFunction<Image> icons)
 	{
-		int height = PAD + header() + GAP + luck(card) + GAP + stats() + GAP + trips(card) + GAP + footer() + PAD;
+		int height = PAD + header() + GAP + luck(card) + GAP + chances(card) + GAP + stats() + GAP + trips(card) + GAP
+			+ footer() + PAD;
 		BufferedImage image = new BufferedImage(WIDTH * SCALE, height * SCALE, BufferedImage.TYPE_INT_RGB);
 		Graphics2D g = image.createGraphics();
 		try
@@ -63,6 +64,7 @@ final class ShareCardRenderer
 			int y = PAD;
 			y = drawHeader(g, card, icons, y) + GAP;
 			y = drawLuck(g, card, icons, y) + GAP;
+			y = drawChances(g, card, icons, y) + GAP;
 			y = drawStats(g, card, y) + GAP;
 			y = drawTrips(g, card, y) + GAP;
 			drawFooter(g, card, y);
@@ -159,6 +161,60 @@ final class ShareCardRenderer
 			drawIcon(g, icons.apply(drop.getItemId()), x, rowY, 27, 24);
 			String count = "x" + drop.getCount();
 			text(g, bold, drop.getCount() > 0 ? UiFormat.UNIQUE_BORDER : UiFormat.MUTED_TEXT, count, x + 29, rowY + 18);
+		}
+		return y + h;
+	}
+
+	/**
+	 * One drop chances row: the item, then its Expected bar and count, then its Received bar and count.
+	 */
+	static final int CHANCE_ROW = 20;
+	private static final int CHANCE_BAR = 16;
+	private static final int CHANCE_NUMBER = 24;
+
+	static int chances(ShareCard card)
+	{
+		return 40 + card.getChances().size() * CHANCE_ROW;
+	}
+
+	/**
+	 * Both of the panel's drop chances tabs side by side: Expected (progress to the next statistical drop, and the
+	 * drops expected) and Received (ahead of or behind expectation, and the drops received).
+	 */
+	private int drawChances(Graphics2D g, ShareCard card, IntFunction<Image> icons, int y)
+	{
+		int h = chances(card);
+		card(g, y, h);
+		int left = PAD + INNER;
+		int right = WIDTH - PAD - INNER;
+		text(g, bold, TEXT, "Drop chances", left, y + 17);
+		textRight(g, small, UiFormat.MUTED_TEXT, card.getChancesSource(), right, y + 16);
+
+		int barsLeft = left + 28;
+		int column = (right - barsLeft - 8) / 2;
+		int barWidth = column - CHANCE_NUMBER;
+		int receivedLeft = barsLeft + column + 8;
+		text(g, small, UiFormat.MUTED_TEXT, "Expected", barsLeft, y + 32);
+		text(g, small, UiFormat.MUTED_TEXT, "Received", receivedLeft, y + 32);
+
+		double scale = DropChances.luckScale(card.getChances());
+		int rowY = y + 36;
+		for (DropChances.Row row : card.getChances())
+		{
+			if (row.getItemId() == DropChances.ANY)
+			{
+				text(g, small, Color.YELLOW, "Any", left + 2, rowY + 13);
+			}
+			else
+			{
+				drawIcon(g, icons.apply(row.getItemId()), left, rowY, 23, 20);
+			}
+			int barY = rowY + (CHANCE_ROW - CHANCE_BAR) / 2;
+			DropBar.paintExpected(g, small, barsLeft, barY, barWidth, CHANCE_BAR, row.toNext());
+			textRight(g, small, TEXT, String.valueOf((int) Math.floor(row.getExpected())), barsLeft + column, barY + 12);
+			DropBar.paintReceived(g, small, receivedLeft, barY, barWidth, CHANCE_BAR, row.luck(), scale);
+			textRight(g, small, TEXT, String.valueOf(row.getReceived()), receivedLeft + column, barY + 12);
+			rowY += CHANCE_ROW;
 		}
 		return y + h;
 	}

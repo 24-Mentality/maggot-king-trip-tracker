@@ -84,6 +84,14 @@ class ShareCard
 	 * Each unique, then the pet.
 	 */
 	List<Drop> drops;
+	/**
+	 * The drop chances rows (any unique, each unique, the pet), shown with both the Expected and Received bars.
+	 */
+	List<DropChances.Row> chances;
+	/**
+	 * Where the drop chances come from, e.g. "All-time · 2,630 kills · KC 2,752".
+	 */
+	String chancesSource;
 	long loot;
 	long costs;
 	long net;
@@ -163,6 +171,8 @@ class ShareCard
 			.dueInKills(LuckSummary.dueInKills(dryness))
 			.uniqueRate(dryness.getAnyUniqueRate())
 			.drops(drops)
+			.chances(DropChances.rows(dryness))
+			.chancesSource(DropChances.source(dryness))
 			.loot(lifetime.getLootValue())
 			.costs(costs)
 			.net(lifetime.getNetProfit())

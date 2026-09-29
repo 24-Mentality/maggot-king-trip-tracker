@@ -24,7 +24,8 @@ bosses are planned.
 
 - **Share card** (camera button next to the boss dropdown): makes an image of the shown
   boss's stats (kill count, uniques received vs expected with the luck tier, kills since
-  your last unique and how far past the drop rate you are, each unique, the loot, costs, net
+  your last unique and how far past the drop rate you are, each unique, the drop chances
+  with both the Expected and Received bars, the loot, costs, net
   profit and GP/hr of the kills tracked since the plugin was installed (with the kill count
   tracking began at), and your last 5 trips), copies it
   to the clipboard ready to paste into Discord, and saves it to your RuneLite screenshots

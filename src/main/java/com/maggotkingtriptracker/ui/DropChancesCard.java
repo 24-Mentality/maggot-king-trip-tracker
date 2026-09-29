@@ -137,24 +137,19 @@ class DropChancesCard extends JPanel
 			return;
 		}
 
-		// Rows: any unique, each unique, then the pet
+		// Rows: any unique, each unique, then the pet (the numbers are shared with the share card)
+		List<DropChances.Row> chances = DropChances.rows(dryness);
 		List<String> names = new ArrayList<>();
-		List<Double> expected = new ArrayList<>();
-		List<Integer> received = new ArrayList<>();
 		// Extra facts per row for the tooltip: how dry you are, and the kill counts of tracked uniques
 		List<String> extras = new ArrayList<>();
 		DrynessView.AllTime allTime = dryness.getAllTime();
 		List<DrynessView.Drop> uniques = allTime != null ? allTime.getUniques() : dryness.getUniques();
 		names.add("Any unique (1/" + UiFormat.oneIn(dryness.getAnyUniqueRate()) + ")");
-		expected.add(allTime != null ? allTime.getExpectedUniques() : dryness.getExpectedUniques());
-		received.add(allTime != null ? allTime.getUniquesReceived() : dryness.getUniquesReceived());
 		extras.add(String.format(Locale.ROOT, " You're on a %,d kill dry streak: %s of players would have had a unique by now.",
 			dryness.getKillsSinceUnique(), percent(1 - dryness.getChanceThisDry())));
 		for (DrynessView.Drop unique : uniques)
 		{
 			names.add(unique.getName() + " (1/" + UiFormat.oneIn(unique.getRate()) + ")");
-			expected.add(unique.getExpected());
-			received.add(unique.getReceived());
 			extras.add(trackedKcs(unique.getItemId()));
 		}
 
@@ -165,22 +160,9 @@ class DropChancesCard extends JPanel
 		{
 			names.add(boss.getDisplayName() + " pet (1/" + UiFormat.oneIn(pet.getRate()) + " per kill"
 				+ (hasEggs ? ", plus eggs" : "") + ")");
-			if (allTime != null)
-			{
-				expected.add(allTime.getPet().getExpected());
-				received.add(allTime.getPet().getReceived());
-			}
-			else
-			{
-				expected.add(pet.getExpected() + eggPetExpected);
-				received.add(pet.getReceived() + dryness.getPetsFromEggs());
-			}
-		}
-		int petRow = pet != null ? names.size() - 1 : -1;
-		if (pet != null)
-		{
 			extras.add("");
 		}
+		int petRow = pet != null ? names.size() - 1 : -1;
 
 		String basis;
 		if (allTime != null)
@@ -190,8 +172,7 @@ class DropChancesCard extends JPanel
 			basis = String.format(Locale.ROOT, "%,d kills recorded by RuneLite's Loot Tracker since %s", kills,
 				UiFormat.date(allTime.getFirstRecordedAt()))
 				+ (allTime.getKillCount() != null ? String.format(Locale.ROOT, " (KC %,d)", allTime.getKillCount()) : "");
-			source.setText(String.format(Locale.ROOT, "All-time · %,d kills", kills)
-				+ (allTime.getKillCount() != null ? String.format(Locale.ROOT, " · KC %,d", allTime.getKillCount()) : ""));
+			source.setText(DropChances.source(dryness));
 		}
 		else
 		{
@@ -201,29 +182,24 @@ class DropChancesCard extends JPanel
 		}
 		source.setToolTipText(UiFormat.tooltip("Based on " + basis + "."));
 
-		double scale = 1;
-		for (int i = 0; i < rows.size(); i++)
-		{
-			scale = Math.max(scale, Math.abs(received.get(i) - expected.get(i)));
-		}
-
-		for (int i = 0; i < rows.size(); i++)
+		double scale = DropChances.luckScale(chances);
+		for (int i = 0; i < rows.size() && i < chances.size(); i++)
 		{
 			Row row = rows.get(i);
-			double whole = Math.floor(expected.get(i));
-			double toNext = expected.get(i) - whole;
+			DropChances.Row chance = chances.get(i);
+			double toNext = chance.toNext();
 			if (showReceived)
 			{
-				row.bar.showReceived(received.get(i) - expected.get(i), scale);
-				row.number.setText(String.valueOf(received.get(i)));
+				row.bar.showReceived(chance.luck(), scale);
+				row.number.setText(String.valueOf(chance.getReceived()));
 			}
 			else
 			{
 				row.bar.showExpected(toNext);
-				row.number.setText(String.valueOf((int) whole));
+				row.number.setText(String.valueOf((int) Math.floor(chance.getExpected())));
 			}
-			String help = names.get(i) + ": " + received.get(i) + " received, "
-				+ String.format(Locale.ROOT, "%.2f", expected.get(i)) + " expected from " + basis
+			String help = names.get(i) + ": " + chance.getReceived() + " received, "
+				+ String.format(Locale.ROOT, "%.2f", chance.getExpected()) + " expected from " + basis
 				+ (i == petRow && eggPetExpected > 0 ? String.format(Locale.ROOT, " plus eggs popped (%.3f)", eggPetExpected) : "")
 				+ ". " + String.format(Locale.ROOT, "%.0f%%", toNext * 100) + " of the way to the next expected drop."
 				+ (i == petRow && allTime != null ? " The Loot Tracker doesn't record pets, so pets are the ones this plugin saw." : "")
