@@ -286,3 +286,74 @@ Facts from the OSRS Wiki (verify):
 
 Done when I've confirmed a Normal raid, and a Hard raid if I run them, track
 correctly.
+
+## Milestone F: Nex (Plan first)
+
+Can run any time after Milestone D, since it reuses the regular Nightmare's
+team-share luck model.
+
+**Step 1, then stop:** extend diagnostic mode to the Ancient Prison (bank
+lobby, safe room, Nex's chamber, the instance entrance and the reclaim
+chest), list the record keys it finds for Nex, and tell me what to do on my
+diagnostic runs. Suggested runs:
+- One trip with my usual team: pre-pot just before entering Nex's chamber,
+  get 2 or more kills, then leave to bank.
+- If I use private instances, create one so the fee shows up in the log.
+- If a death happens naturally, keep that log and pay the reclaim chest as
+  normal. Don't die on purpose.
+
+Teammates' names will be in the logs; I'll replace them with PLAYER1,
+PLAYER2 and so on before sharing.
+
+**Step 2, after I send the logs:** implement Nex as a new boss.
+
+Facts from the OSRS Wiki (verify, and prefer the wiki where it differs):
+
+- **Where:** the Ancient Prison beneath the God Wars Dungeon, through the
+  frozen door. The first room is a bank lobby. A trip runs from entering
+  Nex's chamber until leaving it, so going back to bank ends the trip (one
+  trip = one inventory, as decided). Several kills per trip are normal.
+- **Instances:** Nex is fought on free-for-all worlds or in a private
+  instance, created at the boss entry door for 100,000 coins (requires the
+  hard Combat Achievements tier). Record the fee as a trip cost only when I
+  actually pay it; confirm from the logs who pays when a team shares one
+  instance.
+- **Deaths:** the arena has a deathbank. Items are reclaimed from a chest in
+  the Ancient Prison bank lobby for 100,000 coins, and must be reclaimed
+  straight away or they're lost; an unsafe death deletes them. Record the fee
+  when paid.
+- **Loot:** Nex drops one large pile, scaled by team size, and each player's
+  share depends on their total damage to Nex, her minions and reavers.
+  Players below a minimum damage threshold get nothing, and only kills where
+  I got a drop count as kills in the log. The MVP gets big bones, 10% more
+  common loot and a 10% higher unique chance, so big bones in my drop marks a
+  kill where I was MVP. Confirm from the logs how loot is delivered and
+  capture it the way Maggot King overflow is captured.
+- **Uniques:** an effective 1/43 per kill for the whole team, split between
+  players by contribution, with each player rolling separately (so several
+  uniques can drop in one kill). Jagex's example: two players at 50%
+  contribution each get half the team chance. Once a player hits the table:
+  each Torva piece (damaged) 2/12, Nihil horn 2/12, Zaryte vambraces 3/12,
+  Ancient hilt 1/12, which works out per kill to 1/258 for each Torva piece
+  and the horn, 1/172 for the vambraces and 1/516 for the hilt.
+  For luck, my chance per kill = 1/43 x my share, where my share is 1 divided
+  by the number of players who got loot, times 1.1 on kills where I was MVP.
+  Say in the tooltip that this assumes equal contribution.
+- **Pet:** Nexling 1/500, rolled separately from the unique table. The wiki
+  doesn't say whether that's per player or split by contribution. Treat it
+  like uniques unless you find a Jagex source that says otherwise, and note
+  the assumption in the tooltip.
+- **Tertiary:** elite clue 1/48 (1/45 with the elite Combat Achievements
+  tier). Nihil shards are common loot, not uniques.
+- **Supplies:** the same rules as Maggot King: pre-pots within 60 s of
+  entering, inventory, equipment and rune pouch use, and charges. Ammo is a
+  big share of Nex costs (ruby or diamond dragon bolts (e), arrows for the
+  Twisted bow), plus thrall runes. Use the Nex strategies page for commonly
+  used gear with charges. The altar is free, so it's never a cost.
+- **Third profit cell:** MVP, shown as kills I was MVP / kills.
+- **All-time:** read Nex's Loot Tracker and Chat Commands records, as for the
+  other bosses. For past kills, where team size is unknown, use a setting
+  "Typical team size for past Nex kills" (default 4).
+- Add Nex to the plugin tags and to the README's list of supported bosses.
+
+Done when I've confirmed a Nex trip tracks correctly.
