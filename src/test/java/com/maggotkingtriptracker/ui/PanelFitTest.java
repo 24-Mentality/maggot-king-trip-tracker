@@ -288,7 +288,7 @@ public class PanelFitTest
 
 		List<PolishView> polish = Collections.singletonList(new PolishView(ItemID.TARNISHED_NECKLACE, "Tarnished necklace",
 			999, Collections.singletonList(new ItemView(ItemID.DIAMOND_NECKLACE, "Diamond necklace", 999, 0, false, false,
-			false, null, 0, null))));
+			false, null, 0, null, null))));
 
 		LifetimeView lifetime = LifetimeView.builder()
 			.trips(9_999)

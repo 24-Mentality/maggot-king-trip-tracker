@@ -21,6 +21,10 @@ public class ItemView
 	 * For a polished tarnished drop, the tarnished item's name; otherwise null.
 	 */
 	String polishedFromName;
+	/**
+	 * A caveat shown in the tooltip, e.g. that a charge count is approximate at this boss; otherwise null.
+	 */
+	String note;
 
 	public boolean isCharges()
 	{

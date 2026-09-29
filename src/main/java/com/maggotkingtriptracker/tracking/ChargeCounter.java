@@ -202,8 +202,8 @@ class ChargeCounter
 		}
 
 		// Hits land at least a tick after the attack, so judge them by attacks from earlier ticks
-		// Unverified at the Nightmare: there this counts about 30% more than the Check messages show (117 vs 90 on
-		// 2026-09-28); the Maggot King's count matched exactly
+		// At the Nightmare this counts 13-36% more than the Check messages show (four readings on 2026-09-28), and
+		// the supply tooltip says so; the Maggot King's count matched exactly
 		if (events.damagingHits > 0 && Boolean.TRUE.equals(lastAttackMelee) && gear.getAmulet() == ItemID.BLOOD_AMULET)
 		{
 			listener.chargesUsed(ChargeType.BLOOD_FURY, events.damagingHits);

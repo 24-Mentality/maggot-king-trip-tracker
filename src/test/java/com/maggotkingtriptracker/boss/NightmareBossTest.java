@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import com.maggotkingtriptracker.model.ChargeType;
 import com.maggotkingtriptracker.model.ItemEntry;
 import com.maggotkingtriptracker.model.Kill;
 import com.maggotkingtriptracker.model.Trip;
@@ -87,6 +88,14 @@ public class NightmareBossTest
 		trip.getKills().add(kill);
 		assertEquals("Uniques", boss.getProfitCell().getLabel());
 		assertEquals("1", boss.getProfitCell().valueOf(trip));
+	}
+
+	@Test
+	public void bloodFuryIsMarkedApproximateHereOnly()
+	{
+		assertTrue(boss.getChargeNote(ChargeType.BLOOD_FURY).startsWith("Approximate at the Nightmare"));
+		assertNull(boss.getChargeNote(ChargeType.SCYTHE_OF_VITUR));
+		assertNull(registry.byId(MaggotKingBoss.ID).getChargeNote(ChargeType.BLOOD_FURY));
 	}
 
 	@Test

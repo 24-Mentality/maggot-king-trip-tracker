@@ -478,7 +478,7 @@ public class ViewBuilder
 				int count = e.getValue();
 				total += count;
 				items.add(new ItemView(e.getKey(), prices.name(e.getKey()), count, count * prices.price(e.getKey()),
-					false, false, false, null, 0, null));
+					false, false, false, null, 0, null, null));
 			}
 			items.sort(Comparator.comparingLong(ItemView::getQuantity).reversed());
 			views.add(new PolishView(tarnishedId, prices.name(tarnishedId), total, items));
@@ -535,6 +535,12 @@ public class ViewBuilder
 		}
 	}
 
+	private static String chargeNote(BossDefinition boss, ItemEntry entry)
+	{
+		ChargeType type = ChargeType.forSourceItem(entry.getItemId());
+		return type == null ? null : boss.getChargeNote(type);
+	}
+
 	/**
 	 * What recharges a charge line, e.g. "Blood shard" or "Vial of blood + 300 Blood rune".
 	 */
@@ -580,7 +586,8 @@ public class ViewBuilder
 			views.add(new ItemView(itemId, prices.name(itemId), sum[0], sum[1], first.isPerDose(),
 				highlighted.contains(itemId), first.isPending(),
 				first.isCharges() ? rechargeName(first) : null, first.getChargesPerItem(),
-				first.getPolishedFrom() > 0 ? prices.name(first.getPolishedFrom()) : null));
+				first.getPolishedFrom() > 0 ? prices.name(first.getPolishedFrom()) : null,
+				first.isCharges() ? chargeNote(boss, first) : null));
 		}
 		views.sort(BY_VALUE);
 		return views;

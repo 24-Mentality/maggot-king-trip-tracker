@@ -80,9 +80,12 @@ class ItemGrid extends JPanel
 				.append("<br>").append(QuantityFormatter.formatNumber(item.getChargesPerItem()))
 				.append(item.getChargesPerItem() == 1 ? " charge from " : " charges from ")
 				.append(UiFormat.html(item.getChargeItemName()))
-				.append("<br>").append(UiFormat.fullGp(item.getTotalValue()))
-				.append("</html>");
-			return sb.toString();
+				.append("<br>").append(UiFormat.fullGp(item.getTotalValue()));
+			if (item.getNote() != null)
+			{
+				sb.append("<br><i>").append(UiFormat.html(item.getNote())).append("</i>");
+			}
+			return sb.append("</html>").toString();
 		}
 		sb.append(" x ").append(QuantityFormatter.formatNumber(item.getQuantity()));
 		if (item.isPerDose())

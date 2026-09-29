@@ -1,5 +1,6 @@
 package com.maggotkingtriptracker.boss;
 
+import com.maggotkingtriptracker.model.ChargeType;
 import com.maggotkingtriptracker.model.Kill;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -248,6 +249,14 @@ public abstract class BossDefinition
 	public Set<Integer> getConvertedItems()
 	{
 		return Collections.emptySet();
+	}
+
+	/**
+	 * @return a caveat for this charge type's count at this boss, shown in the supply tooltip; null if none
+	 */
+	public String getChargeNote(ChargeType type)
+	{
+		return null;
 	}
 
 	// ---- Deaths and supplies ----

@@ -201,6 +201,12 @@ RuneLite does not accept new high-end PvM helper plugins.
     aren't recognised and its all-time record is left out until a regular
     kill has been logged.
 
+15. Blood fury at the Nightmare (2026-09-28): no rule matched the amulet's
+    Check readings, so every damaging melee hit (cyan included) keeps
+    counting, and the supply tooltip says the count is approximate there (up
+    to about a third high). The user chose this over an unproven rule or
+    not counting it.
+
 ## Observed in-game (diagnostic test trips, 2026-09-27)
 These come from diagnostic.log and take precedence over the assumptions above.
 - Lair template region is always 11645; the real instance region changes per
@@ -352,3 +358,13 @@ These come from diagnostic.log and take precedence over the assumptions above.
   missed (it recorded 14). Counting them gives 117, still about 30% over, so
   blood fury at the Nightmare is not solved; the Maggot King's 17 still
   matches.
+
+- More Checks at Phosani's (2026-09-28, 23:13-23:26, including a Scythe-only
+  kill and two deaths): Shadow 17 of 17 and 38 of 38; Scythe 26 of 26, 61 of
+  61, and 66 vs 65 on the Scythe-only kill (one attack in 350 checked in
+  total, probably a swing at a parasite or husk). Blood fury used 52, 73, 90
+  and 130 in four intervals where counting every damaging melee hit gives
+  59, 99, 117 and 171; hits on the boss only (59, 98, 112, 164) and boss hits
+  of 2+ damage (53, 83, 84, 132) don't fit all four either. Both deaths show
+  "Payment has been taken from your bank: 60,000 x Coins" and were recorded
+  with a 60,000 fee.

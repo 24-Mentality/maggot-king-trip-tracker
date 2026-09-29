@@ -3,6 +3,7 @@ package com.maggotkingtriptracker.boss;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.maggotkingtriptracker.model.ChargeType;
 import com.maggotkingtriptracker.model.ItemEntry;
 import com.maggotkingtriptracker.model.Kill;
 import com.maggotkingtriptracker.model.Trip;
@@ -196,6 +197,17 @@ public final class NightmareBoss extends BossDefinition
 	public double anyUniqueChance(KillContext context)
 	{
 		return ANY_UNIQUE;
+	}
+
+	@Override
+	public String getChargeNote(ChargeType type)
+	{
+		// Four in-game Check readings (2026-09-28) used 52, 73, 90 and 130 charges where every damaging melee hit
+		// counts 59, 99, 117 and 171; no simple rule matched all four
+		return type == ChargeType.BLOOD_FURY
+			? "Approximate at the Nightmare: can read up to about a third high. Checked against the amulet's Check;"
+				+ " at the Maggot King it's exact."
+			: null;
 	}
 
 	@Override
