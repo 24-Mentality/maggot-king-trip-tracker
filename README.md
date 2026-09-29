@@ -106,10 +106,13 @@ For the Maggot King:
   Potions are counted per dose. Gear switches don't count. With **Count supplies used
   before entry** (on by default), food, potions and spells used in the 60 seconds before
   entering are added to the trip too.
-- Charges used in the lair count as supplies, counted from your attacks: Amulet of blood
+- Charges used during a trip count as supplies, counted from your attacks: Amulet of blood
   fury (one per damaging melee hit, priced from blood shards at 10,000 charges each), Tome
   of fire (one per fire spell, searing or burnt pages at 20 charges each, set by **Tome of
-  fire pages**) and revenant bows such as the Webweaver bow (one revenant ether per shot).
+  fire pages**), revenant bows such as the Webweaver bow (one revenant ether per shot),
+  Scythe of Vitur (one per attack; a vial of blood and 300 blood runes per 100 charges) and
+  Tumeken's shadow (one per cast; 2 soul runes and 5 chaos runes each). This applies at every
+  supported boss.
 - Items you drop in the lair and don't pick up again are a "Dropped" cost. Zero-value items
   such as empty vials are ignored.
 - Gravestone moves paid to the aranei scout are recorded as death costs.

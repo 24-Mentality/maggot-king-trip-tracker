@@ -7,6 +7,7 @@ import com.maggotkingtriptracker.boss.KillContext;
 import com.maggotkingtriptracker.boss.LootChoice;
 import com.maggotkingtriptracker.boss.TripStat;
 import com.maggotkingtriptracker.model.AllTimeCounts;
+import com.maggotkingtriptracker.model.ChargeType;
 import com.maggotkingtriptracker.model.BossHistory;
 import com.maggotkingtriptracker.model.DryStreak;
 import com.maggotkingtriptracker.model.EggPop;
@@ -26,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import net.runelite.client.util.QuantityFormatter;
 
 /**
  * Turns stored trips into immutable view objects for the panel. Runs on the client thread,
@@ -533,6 +535,25 @@ public class ViewBuilder
 		}
 	}
 
+	/**
+	 * What recharges a charge line, e.g. "Blood shard" or "Vial of blood + 300 Blood rune".
+	 */
+	private String rechargeName(ItemEntry entry)
+	{
+		ChargeType type = ChargeType.forSourceItem(entry.getItemId());
+		if (type == null || type.getComponents().size() == 1)
+		{
+			return prices.name(entry.getChargeItemId());
+		}
+		List<String> parts = new ArrayList<>();
+		for (ChargeType.Component component : type.getComponents())
+		{
+			parts.add((component.getQuantity() > 1 ? QuantityFormatter.formatNumber(component.getQuantity()) + " " : "")
+				+ prices.name(component.getItemId()));
+		}
+		return String.join(" + ", parts);
+	}
+
 	private List<ItemView> items(BossDefinition boss, Collection<ItemEntry> entries)
 	{
 		// Combine lines for the same item; pending tarnished drops stay separate
@@ -558,7 +579,7 @@ public class ViewBuilder
 			int itemId = first.getItemId();
 			views.add(new ItemView(itemId, prices.name(itemId), sum[0], sum[1], first.isPerDose(),
 				highlighted.contains(itemId), first.isPending(),
-				first.isCharges() ? prices.name(first.getChargeItemId()) : null, first.getChargesPerItem(),
+				first.isCharges() ? rechargeName(first) : null, first.getChargesPerItem(),
 				first.getPolishedFrom() > 0 ? prices.name(first.getPolishedFrom()) : null));
 		}
 		views.sort(BY_VALUE);

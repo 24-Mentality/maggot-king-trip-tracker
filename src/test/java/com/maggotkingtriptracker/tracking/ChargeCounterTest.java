@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.runelite.api.HitsplatID;
+import net.runelite.api.gameval.AnimationID;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.SpotanimID;
 import org.junit.Test;
@@ -20,7 +21,8 @@ import org.junit.Test;
 public class ChargeCounterTest
 {
 	private static final Set<Integer> WEAPONS = ImmutableSet.of(
-		ItemID.NIGHTMARE_STAFF_HARMONISED, ItemID.WILD_CAVE_WEBWEAVER_CHARGED, ItemID.ELDER_MAUL);
+		ItemID.NIGHTMARE_STAFF_HARMONISED, ItemID.WILD_CAVE_WEBWEAVER_CHARGED, ItemID.ELDER_MAUL,
+		ItemID.SCYTHE_OF_VITUR, ItemID.TUMEKENS_SHADOW, ItemID.CRIMSON_KISTEN, ItemID.HALLOWFELL, ItemID.BLISTERWOOD_STAKE);
 	private static final Set<Integer> AMULETS = ImmutableSet.of(ItemID.BLOOD_AMULET, 34428);
 
 	private static final Pattern TICK = Pattern.compile("^tick=(\\d+) \\S+ \\S+ (\\w+) (.*)$");
@@ -28,6 +30,7 @@ public class ChargeCounterTest
 	private static final Pattern ITEM = Pattern.compile("(?:^|\\[|, )([+-]?)[^,\\[]*?\\((\\d+)\\) x\\d+");
 	private static final Pattern SPOTANIMS = Pattern.compile("spotanims=\\[([\\d, ]*)\\]");
 	private static final Pattern HITSPLAT = Pattern.compile("type=(\\d+) amount=(\\d+) target=npc");
+	private static final Pattern ANIM = Pattern.compile("^id=(\\d+)");
 
 	/**
 	 * Diagnostic log of one kill (2026-09-27) with in-game Check messages before and after:
@@ -43,6 +46,57 @@ public class ChargeCounterTest
 		assertEquals(Integer.valueOf(37), used.get(ChargeType.TOME_OF_FIRE));
 	}
 
+	/**
+	 * Diagnostic log of two Phosani's Nightmare kills and a death (2026-09-28), switching between the scythe,
+	 * Tumeken's shadow and other weapons: every scythe attack animation and every shadow casting graphic counts,
+	 * none are lost to the switches. (Not yet checked against in-game Check messages.)
+	 */
+	@Test
+	public void replayedPhosanisTripCountsEveryScytheAttackAndShadowCast() throws Exception
+	{
+		Map<ChargeType, Integer> used = replay("charge-test-phosani.log");
+
+		assertEquals(Integer.valueOf(132), used.get(ChargeType.SCYTHE_OF_VITUR));
+		assertEquals(Integer.valueOf(135), used.get(ChargeType.TUMEKENS_SHADOW));
+	}
+
+	@Test
+	public void scytheBlocksAndUnchargedScythesUseNoCharge()
+	{
+		Map<ChargeType, Integer> used = new EnumMap<>(ChargeType.class);
+		ChargeCounter counter = new ChargeCounter(id -> true);
+
+		counter.gearChanged(1, new ChargeCounter.Gear(ItemID.SCYTHE_OF_VITUR, -1, -1));
+		counter.animation(2, AnimationID.SCYTHE_OF_VITUR_ATTACK);
+		counter.animation(3, AnimationID.HUMAN_SCYTHE_BLOCK);
+		// Switched to the scythe in the same tick as the attack
+		counter.gearChanged(5, new ChargeCounter.Gear(ItemID.TUMEKENS_SHADOW, -1, -1));
+		counter.animation(6, AnimationID.SCYTHE_OF_VITUR_ATTACK);
+		counter.gearChanged(6, new ChargeCounter.Gear(ItemID.SCYTHE_OF_VITUR, -1, -1));
+		counter.gearChanged(8, new ChargeCounter.Gear(ItemID.SCYTHE_OF_VITUR_UNCHARGED, -1, -1));
+		counter.animation(9, AnimationID.SCYTHE_OF_VITUR_ATTACK);
+		counter.process(10, (type, n) -> used.merge(type, n, Integer::sum));
+
+		assertEquals(Integer.valueOf(2), used.get(ChargeType.SCYTHE_OF_VITUR));
+	}
+
+	@Test
+	public void shadowCastsOnlyCountWithTheShadowWorn()
+	{
+		Map<ChargeType, Integer> used = new EnumMap<>(ChargeType.class);
+		ChargeCounter counter = new ChargeCounter(id -> false);
+
+		counter.gearChanged(1, new ChargeCounter.Gear(ItemID.TUMEKENS_SHADOW, -1, -1));
+		counter.spotAnimsChanged(2, ImmutableSet.of(SpotanimID.TUMEKENS_SHADOW_CASTING));
+		// The graphic re-applied in the same tick is still one cast
+		counter.spotAnimsChanged(2, ImmutableSet.of(SpotanimID.TUMEKENS_SHADOW_CASTING));
+		counter.gearChanged(3, new ChargeCounter.Gear(ItemID.TUMEKENS_SHADOW_UNCHARGED, -1, -1));
+		counter.spotAnimsChanged(5, ImmutableSet.of(SpotanimID.TUMEKENS_SHADOW_CASTING));
+		counter.process(10, (type, n) -> used.merge(type, n, Integer::sum));
+
+		assertEquals(Integer.valueOf(1), used.get(ChargeType.TUMEKENS_SHADOW));
+	}
+
 	@Test
 	public void rangedHitAfterSwitchingToMeleeUsesNoBloodFuryCharge()
 	{
@@ -50,11 +104,11 @@ public class ChargeCounterTest
 		ChargeCounter counter = new ChargeCounter(id -> id == ItemID.ELDER_MAUL);
 
 		counter.gearChanged(10, new ChargeCounter.Gear(ItemID.WILD_CAVE_WEBWEAVER_CHARGED, -1, ItemID.BLOOD_AMULET));
-		counter.animation(10);
+		counter.animation(10, 0);
 		counter.spotAnimsChanged(10, ImmutableSet.of(SpotanimID.WILD_CAVE_BOW_ARROW_LAUNCH02));
 		counter.gearChanged(11, new ChargeCounter.Gear(ItemID.ELDER_MAUL, -1, ItemID.BLOOD_AMULET));
 		counter.hitsplat(13, HitsplatID.DAMAGE_ME, 30);
-		counter.animation(14);
+		counter.animation(14, 0);
 		counter.hitsplat(15, HitsplatID.DAMAGE_MAX_ME, 75);
 		counter.hitsplat(16, HitsplatID.BLOCK_ME, 0);
 		counter.process(20, (type, n) -> used.merge(type, n, Integer::sum));
@@ -123,7 +177,8 @@ public class ChargeCounterTest
 						counter.gearChanged(tick, gear(worn));
 						break;
 					case "ANIM":
-						counter.animation(tick);
+						Matcher a = ANIM.matcher(details);
+						counter.animation(tick, a.find() ? Integer.parseInt(a.group(1)) : -1);
 						break;
 					case "GRAPHIC":
 						Matcher s = SPOTANIMS.matcher(details);

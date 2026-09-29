@@ -329,3 +329,12 @@ These come from diagnostic.log and take precedence over the assumptions above.
   "nightmare". The main also has "drops_NPC_Nex" / "nex" and
   "drops_EVENT_Theatre of Blood", "drops_NPC_Verzik Vitur", "theatre of
   blood", "theatre of blood entry mode" (for Milestones E and F).
+- Scythe of Vitur and Tumeken's shadow charges (Phosani's log 2026-09-28):
+  every scythe attack is animation SCYTHE_OF_VITUR_ATTACK (8056) while the
+  scythe is worn; blocks are HUMAN_SCYTHE_BLOCK (435). Every shadow cast is
+  animation 9493 with the TUMEKENS_SHADOW_CASTING graphic (2125), 135 of each.
+  One charge per attack or cast; priced as a vial of blood + 300 blood runes
+  per 100 scythe charges and 2 soul + 5 chaos runes per shadow charge (OSRS
+  Wiki). Not yet checked against in-game Check messages. Hallowfell, the
+  Crimson kisten and the Confliction gauntlets have no uncharged variants, so
+  they aren't treated as charged.

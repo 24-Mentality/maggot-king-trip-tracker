@@ -78,7 +78,8 @@ class ItemGrid extends JPanel
 			sb.append(": ").append(QuantityFormatter.formatNumber(item.getQuantity()))
 				.append(item.getQuantity() == 1 ? " charge" : " charges")
 				.append("<br>").append(QuantityFormatter.formatNumber(item.getChargesPerItem()))
-				.append(" per ").append(UiFormat.html(item.getChargeItemName()))
+				.append(item.getChargesPerItem() == 1 ? " charge from " : " charges from ")
+				.append(UiFormat.html(item.getChargeItemName()))
 				.append("<br>").append(UiFormat.fullGp(item.getTotalValue()))
 				.append("</html>");
 			return sb.toString();

@@ -271,6 +271,11 @@ public class DiagnosticRecorder
 		{
 			keysPending = false;
 			recordRecordKeys();
+			if (enabled && everywhere)
+			{
+				// Turned on before logging in: note what's carried so later changes can be followed
+				recordContainerSnapshots();
+			}
 		}
 		else if (state == GameState.LOGIN_SCREEN || state == GameState.HOPPING)
 		{

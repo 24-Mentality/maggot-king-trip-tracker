@@ -837,7 +837,7 @@ public class TripTracker
 		Actor actor = event.getActor();
 		if (actor == client.getLocalPlayer() && actor.getAnimation() != -1)
 		{
-			chargeCounter.animation(client.getTickCount());
+			chargeCounter.animation(client.getTickCount(), actor.getAnimation());
 		}
 	}
 
@@ -889,9 +889,16 @@ public class TripTracker
 			return;
 		}
 
+		// Priced from everything one recharge takes (e.g. a vial of blood and 300 blood runes for 100 scythe charges)
 		int chargeItemId = type == ChargeType.TOME_OF_FIRE ? config.tomePage().getItemId() : type.getChargeItemId();
+		long rechargePrice = 0;
+		for (ChargeType.Component component : type.getComponents())
+		{
+			int itemId = component == type.getComponents().get(0) ? chargeItemId : component.getItemId();
+			rechargePrice += component.getQuantity() * prices.price(itemId);
+		}
 		ItemEntries.merge(currentTrip.getSupplies(), ItemEntry.charges(type.getSourceItemId(), used,
-			chargeItemId, prices.price(chargeItemId), type.getChargesPerItem()));
+			chargeItemId, rechargePrice, type.getChargesPerRecharge()));
 		viewDirty = true;
 		requestSave();
 	}

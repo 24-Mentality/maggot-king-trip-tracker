@@ -9,6 +9,7 @@ import java.util.TreeMap;
 import java.util.function.IntPredicate;
 import lombok.Value;
 import net.runelite.api.HitsplatID;
+import net.runelite.api.gameval.AnimationID;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.SpotanimID;
 
@@ -17,6 +18,8 @@ import net.runelite.api.gameval.SpotanimID;
  * <ul>
  * <li>Tome of fire: a fire spell casting graphic on the player while the tome is worn.</li>
  * <li>Revenant bows: a revenant bow launch graphic on the player (one ether per shot or special).</li>
+ * <li>Scythe of Vitur: its attack animation while a charged scythe is worn (blocks use another animation).</li>
+ * <li>Tumeken's shadow: its casting graphic on the player while the shadow is worn.</li>
  * <li>Blood fury: each damaging hitsplat the player deals while wearing the amulet, if the player's last
  * attack before the hit was with a melee weapon. That excludes ranged and magic hits still in flight
  * after switching to melee.</li>
@@ -44,6 +47,12 @@ class ChargeCounter
 
 	static final Set<Integer> DAMAGE_HITSPLATS = ImmutableSet.of(HitsplatID.DAMAGE_ME, HitsplatID.DAMAGE_MAX_ME);
 
+	/**
+	 * Charged scythes, ornamented ones included.
+	 */
+	static final Set<Integer> SCYTHES = ImmutableSet.of(
+		ItemID.SCYTHE_OF_VITUR, ItemID.SCYTHE_OF_VITUR_OR, ItemID.SCYTHE_OF_VITUR_BL);
+
 	interface Listener
 	{
 		void chargesUsed(ChargeType type, int charges);
@@ -62,6 +71,7 @@ class ChargeCounter
 	private static class TickEvents
 	{
 		final Set<Integer> spotAnims = new HashSet<>();
+		final Set<Integer> animations = new HashSet<>();
 		boolean animation;
 		int damagingHits;
 	}
@@ -100,9 +110,11 @@ class ChargeCounter
 		events(tick).spotAnims.addAll(spotAnims);
 	}
 
-	void animation(int tick)
+	void animation(int tick, int animationId)
 	{
-		events(tick).animation = true;
+		TickEvents events = events(tick);
+		events.animation = true;
+		events.animations.add(animationId);
 	}
 
 	/**
@@ -149,6 +161,21 @@ class ChargeCounter
 		if (events.spotAnims.stream().anyMatch(REVENANT_BOW_SPOTANIMS::contains))
 		{
 			listener.chargesUsed(ChargeType.WILDERNESS_WEAPON, 1);
+		}
+
+		// The weapon may be switched in the same tick, before or after the attack: either counts
+		Map.Entry<Integer, Gear> before = gearByTick.lowerEntry(tick);
+		int previousWeapon = before != null ? before.getValue().getWeapon() : -1;
+		if (events.animations.contains(AnimationID.SCYTHE_OF_VITUR_ATTACK)
+			&& (SCYTHES.contains(gear.getWeapon()) || SCYTHES.contains(previousWeapon)))
+		{
+			listener.chargesUsed(ChargeType.SCYTHE_OF_VITUR, 1);
+		}
+
+		if (events.spotAnims.contains(SpotanimID.TUMEKENS_SHADOW_CASTING)
+			&& (gear.getWeapon() == ItemID.TUMEKENS_SHADOW || previousWeapon == ItemID.TUMEKENS_SHADOW))
+		{
+			listener.chargesUsed(ChargeType.TUMEKENS_SHADOW, 1);
 		}
 
 		// Hits land at least a tick after the attack, so judge them by attacks from earlier ticks
