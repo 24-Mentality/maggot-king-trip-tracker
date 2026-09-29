@@ -377,6 +377,19 @@ public interface MaggotKingTripTrackerConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "diagnosticLogEverywhere",
+		name = "Log everywhere",
+		description = "With diagnostic mode on, record everywhere instead of only around tracked bosses, to collect"
+			+ " data for bosses that aren't supported yet. The log grows quickly; turn it off after the run.",
+		section = developerSection,
+		position = 1
+	)
+	default boolean diagnosticLogEverywhere()
+	{
+		return false;
+	}
+
+	@ConfigItem(
 		keyName = "selectedBoss",
 		name = "",
 		description = "The boss shown in the side panel",

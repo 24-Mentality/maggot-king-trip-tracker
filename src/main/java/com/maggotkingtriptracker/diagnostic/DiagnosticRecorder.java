@@ -40,6 +40,7 @@ import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.gameval.VarPlayerID;
 import net.runelite.api.gameval.VarbitID;
+import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.ItemStack;
@@ -53,7 +54,9 @@ import net.runelite.client.util.Filepath;
  * Recording is active while diagnostic mode is enabled and the player is in a boss's area or the region just
  * outside it, or for {@link #CLICK_WINDOW_TICKS} ticks after clicking a loot source (e.g. the Maggot King's corpse),
  * an egg, a tarnished item, or an NPC that handles death recovery, and for {@link #DEATH_WINDOW_TICKS} ticks after
- * dying in a boss's area.
+ * dying in a boss's area. With "log everywhere" on, it records everywhere, to find the regions, NPCs and messages of
+ * bosses that aren't tracked yet. When enabled, and at each login, it also lists the saved Loot Tracker and Chat
+ * Commands record keys of the bosses planned next.
  */
 public class DiagnosticRecorder
 {
@@ -84,17 +87,28 @@ public class DiagnosticRecorder
 	private final Set<Integer> bossNpcs = new HashSet<>();
 	private final DiagnosticLogWriter writer;
 
+	/**
+	 * NPCs whose name contains one of these are logged everywhere while logging everywhere: the Nightmare,
+	 * her totems, and the NPCs that return items after a death.
+	 */
+	private static final String[] EVERYWHERE_NPC_NAMES = {"Nightmare", "Totem", "Sister Senga", "Shura"};
+	private static final String LOOT_TRACKER_GROUP = "loottracker";
+	private static final String KILL_COUNT_GROUP = "killcount";
+
+	private final ConfigManager configManager;
 	private boolean enabled;
+	private boolean everywhere;
 	private boolean inLair;
 	private boolean nearLair;
 	private int templateRegionId = -1;
 	private int clickWindowEndTick = -1;
 	private final Map<Integer, Map<Integer, Integer>> containerSnapshots = new HashMap<>();
 
-	public DiagnosticRecorder(Client client, ItemManager itemManager, BossRegistry registry,
+	public DiagnosticRecorder(Client client, ItemManager itemManager, BossRegistry registry, ConfigManager configManager,
 		Callable<Filepath> directorySupplier)
 	{
 		this.client = client;
+		this.configManager = configManager;
 		this.itemManager = itemManager;
 		this.registry = registry;
 		for (BossDefinition boss : registry.all())
@@ -134,12 +148,71 @@ public class DiagnosticRecorder
 		this.enabled = enabled;
 		if (enabled)
 		{
-			record("SESSION", "diagnostic mode enabled; boss template regions " + registry.allRegions());
-			if (inLair)
+			record("SESSION", "diagnostic mode enabled; boss template regions " + registry.allRegions()
+				+ (everywhere ? "; logging everywhere" : ""));
+			if (inLair || everywhere)
+			{
+				recordContainerSnapshots();
+			}
+			recordRecordKeys();
+		}
+	}
+
+	/**
+	 * Record everywhere, not only around tracked bosses. Only has an effect while diagnostic mode is on.
+	 */
+	public void setLogEverywhere(boolean everywhere)
+	{
+		if (this.everywhere == everywhere)
+		{
+			return;
+		}
+		this.everywhere = everywhere;
+		if (enabled)
+		{
+			record("SESSION", everywhere ? "logging everywhere" : "logging only around tracked bosses");
+			if (everywhere && client.getGameState() == GameState.LOGGED_IN)
 			{
 				recordContainerSnapshots();
 			}
 		}
+	}
+
+	/**
+	 * The logged-in account's saved records for the bosses planned next, with their kill counts, so their exact
+	 * keys are known before they are implemented.
+	 */
+	private void recordRecordKeys()
+	{
+		if (!enabled || client.getGameState() != GameState.LOGGED_IN)
+		{
+			return;
+		}
+		String profile = configManager.getRSProfileKey();
+		if (profile == null)
+		{
+			return;
+		}
+		int found = 0;
+		for (String key : configManager.getRSProfileConfigurationKeys(LOOT_TRACKER_GROUP, profile, "drops_"))
+		{
+			if (RecordKeys.isPlannedBoss(key))
+			{
+				Integer kills = RecordKeys.lootTrackerKills(configManager.getRSProfileConfiguration(LOOT_TRACKER_GROUP, key));
+				record("RECORDKEY", "group=" + LOOT_TRACKER_GROUP + " key=\"" + key + "\" kills=" + kills);
+				found++;
+			}
+		}
+		for (String key : configManager.getRSProfileConfigurationKeys(KILL_COUNT_GROUP, profile, ""))
+		{
+			if (RecordKeys.isPlannedBoss(key))
+			{
+				record("RECORDKEY", "group=" + KILL_COUNT_GROUP + " key=\"" + key + "\" value="
+					+ configManager.getRSProfileConfiguration(KILL_COUNT_GROUP, key));
+				found++;
+			}
+		}
+		record("RECORDKEY", found + " record keys found for the Nightmare, Nex and Theatre of Blood (profile " + profile + ")");
 	}
 
 	@Subscribe
@@ -191,6 +264,10 @@ public class DiagnosticRecorder
 		if (isRecording())
 		{
 			record("GAMESTATE", state.name());
+		}
+		if (state == GameState.LOGGED_IN)
+		{
+			recordRecordKeys();
 		}
 
 		if (state == GameState.LOGIN_SCREEN || state == GameState.HOPPING)
@@ -469,7 +546,7 @@ public class DiagnosticRecorder
 
 	private void recordGroundItem(String what, TileItem item, LocalPoint localPoint)
 	{
-		if (!enabled || !(inLair || nearLair))
+		if (!enabled || !(inLair || nearLair || everywhere))
 		{
 			return;
 		}
@@ -483,7 +560,7 @@ public class DiagnosticRecorder
 	private void recordEncounterNpc(String what, NPC npc)
 	{
 		int id = npc.getId();
-		if (isRecording() && encounterNpcs.contains(id))
+		if (isRecording() && (encounterNpcs.contains(id) || (everywhere && hasEverywhereName(npc))))
 		{
 			record("NPC", what + " id=" + id + " name=\"" + npc.getName() + "\" index=" + npc.getIndex());
 		}
@@ -491,7 +568,24 @@ public class DiagnosticRecorder
 
 	private boolean isRecording()
 	{
-		return enabled && (inLair || nearLair || client.getTickCount() <= clickWindowEndTick);
+		return enabled && (everywhere || inLair || nearLair || client.getTickCount() <= clickWindowEndTick);
+	}
+
+	private static boolean hasEverywhereName(NPC npc)
+	{
+		String name = npc.getName();
+		if (name == null)
+		{
+			return false;
+		}
+		for (String part : EVERYWHERE_NPC_NAMES)
+		{
+			if (name.contains(part))
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private void recordContainerSnapshots()

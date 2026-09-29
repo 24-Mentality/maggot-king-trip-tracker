@@ -105,11 +105,17 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 	protected void startUp() throws Exception
 	{
 		BossRegistry registry = BossRegistry.standard();
-		DiagnosticRecorder recorder = new DiagnosticRecorder(client, itemManager, registry, this::getPluginDirectory);
+		DiagnosticRecorder recorder = new DiagnosticRecorder(client, itemManager, registry, configManager,
+			this::getPluginDirectory);
 		diagnosticRecorder = recorder;
 		eventBus.register(recorder);
 		boolean diagnosticMode = config.diagnosticMode();
-		clientThread.invokeLater(() -> recorder.setEnabled(diagnosticMode));
+		boolean everywhere = config.diagnosticLogEverywhere();
+		clientThread.invokeLater(() ->
+		{
+			recorder.setLogEverywhere(everywhere);
+			recorder.setEnabled(diagnosticMode);
+		});
 
 		executor = Executors.newSingleThreadScheduledExecutor(r ->
 		{
@@ -204,6 +210,12 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 			boolean diagnosticMode = config.diagnosticMode();
 			DiagnosticRecorder recorder = diagnosticRecorder;
 			clientThread.invokeLater(() -> recorder.setEnabled(diagnosticMode));
+		}
+		else if ("diagnosticLogEverywhere".equals(event.getKey()))
+		{
+			boolean everywhere = config.diagnosticLogEverywhere();
+			DiagnosticRecorder recorder = diagnosticRecorder;
+			clientThread.invokeLater(() -> recorder.setLogEverywhere(everywhere));
 		}
 		else if ("showCurrentValue".equals(event.getKey()) || "luckCardStyle".equals(event.getKey()))
 		{

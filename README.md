@@ -120,8 +120,9 @@ its original name so existing history carries over). When a file from an older v
 upgraded, the old file is kept next to it as `history-<account>.json.v1-backup-<date>`.
 
 **Diagnostic mode** (Configuration → Boss Trip Tracker → Developer) records raw boss related
-game events to `diagnostic.log` in the same folder, for development. Leave it off during
-normal play.
+game events to `diagnostic.log` in the same folder, for development. **Log everywhere**
+records everywhere rather than only around supported bosses, for collecting data on new
+ones. Leave both off during normal play.
 
 ## License
 
