@@ -41,6 +41,10 @@ class LuckCard extends JPanel
 	private final JLabel byNow = statLabel();
 	private final JLabel next = statLabel();
 	private final JLabel odds = statLabel();
+	/**
+	 * Theatre of Blood only.
+	 */
+	private final JLabel teamDry = statLabel();
 	private final ProgressBar progress = new ProgressBar();
 	private final JPanel body = new JPanel(new BorderLayout(0, 3));
 	private final JLabel eye = new JLabel();
@@ -99,6 +103,7 @@ class LuckCard extends JPanel
 		statRows.setOpaque(false);
 		statRows.add(stats, BorderLayout.NORTH);
 		statRows.add(odds, BorderLayout.CENTER);
+		statRows.add(teamDry, BorderLayout.SOUTH);
 
 		progress.setBackground(BAR_BACKGROUND);
 		progress.setForeground(ColorScheme.BRAND_ORANGE);
@@ -250,6 +255,13 @@ class LuckCard extends JPanel
 		}
 		set(odds, "50% / 90% of players by", half + " / " + ninety + " kc", null, "Kills after a unique by which 50%"
 			+ " and 90% of players get the next one: " + half + " and " + ninety + ".");
+
+		teamDry.setVisible(dryness.getTeamDryStreak() != null);
+		if (dryness.getTeamDryStreak() != null)
+		{
+			set(teamDry, "Team dry streak", String.format(Locale.ROOT, "%,d kc", dryness.getTeamDryStreak()), null,
+				UiFormat.teamDryStreakHelp(dryness.isTeamDryStreakFromGame()));
+		}
 
 		progress.setMaximumValue(onRate);
 		progress.setValue(Math.min(since, onRate));

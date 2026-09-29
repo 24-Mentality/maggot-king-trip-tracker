@@ -394,11 +394,15 @@ public class ViewBuilder
 			since = Math.max(since, allTimeView.getKillCount());
 		}
 
+		Integer teamDryStreak = boss.hasTeamDryStreak() ? teamDryStreak(boss, history) : null;
+
 		return DrynessView.builder()
 			.luckKills(luckKills)
 			.killsSinceUnique(since)
 			.sinceFromEnteredKc(streak.isFromEnteredKc() && !fromGame)
 			.sinceFromGameCount(streak.isFromEnteredKc() && fromGame)
+			.teamDryStreak(teamDryStreak)
+			.teamDryStreakFromGame(history.getGameTeamDryStreak() != null)
 			.sinceWholeKillCount(wholeKillCount)
 			.longestDryStreak(DryStreak.longest(uniqueKcs, lastUniqueKc, since))
 			.chanceThisDry(Math.pow(1 - anyRate, since))
@@ -417,6 +421,36 @@ public class ViewBuilder
 			.enteredLastUniqueKc(history.getLastUniqueKc())
 			.allTime(allTimeView)
 			.build();
+	}
+
+	/**
+	 * Raids since anyone in the team got a unique, every mode included as the game counts them: the game's own count
+	 * from the last raid it was seen in, plus raids completed since (a unique, yours or a teammate's, resets it).
+	 * Without the game's count, it's counted from the raids tracked.
+	 */
+	private static int teamDryStreak(BossDefinition boss, BossHistory history)
+	{
+		List<Kill> raids = new ArrayList<>();
+		for (Trip trip : history.getTrips())
+		{
+			raids.addAll(trip.getKills());
+		}
+		raids.sort(Comparator.comparingLong(Kill::getEndedAt));
+
+		Integer fromGame = history.getGameTeamDryStreak();
+		Long seenAt = history.getGameTeamDryStreakAt();
+		int count = fromGame != null ? fromGame : 0;
+		for (Kill raid : raids)
+		{
+			if (fromGame != null && seenAt != null && raid.getEndedAt() <= seenAt)
+			{
+				continue;
+			}
+			boolean unique = (raid.getTeamUniques() != null && !raid.getTeamUniques().isEmpty())
+				|| raid.getLoot().stream().anyMatch(e -> boss.isUnique(e.getItemId()));
+			count = unique ? 0 : count + 1;
+		}
+		return count;
 	}
 
 	/**

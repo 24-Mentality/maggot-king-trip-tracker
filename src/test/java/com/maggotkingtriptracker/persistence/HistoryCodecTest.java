@@ -170,4 +170,21 @@ public class HistoryCodecTest
 		assertTrue(kill.getTeamUniques().isEmpty());
 		assertEquals(TripEndReason.TELEPORT, nightmare.getTrips().get(0).getEndReason());
 	}
+
+	@Test
+	public void schemaFourFilesGainTheTeamDryStreakEmpty()
+	{
+		HistoryCodec.Decoded decoded = HistoryCodec.decode(gson, "{\"schemaVersion\":4,\"bosses\":{\"theatre_of_blood\":{"
+			+ "\"gameDryStreak\":7,\"gameDryStreakKc\":6,\"trips\":[{\"id\":\"r\",\"startedAt\":1,\"endedAt\":2,"
+			+ "\"endReason\":\"COMPLETED\",\"kills\":[{\"killCount\":6,\"variant\":\"normal\",\"partySize\":4,"
+			+ "\"teamUniques\":[22486]}]}]}}}");
+		assertEquals(4, decoded.getSourceVersion());
+		assertTrue(decoded.isMigrated());
+		BossHistory tob = decoded.getHistory().getBosses().get("theatre_of_blood");
+		assertEquals(Integer.valueOf(7), tob.getGameDryStreak());
+		assertNull(tob.getGameTeamDryStreak());
+		assertNull(tob.getGameTeamDryStreakAt());
+		assertEquals(TripEndReason.COMPLETED, tob.getTrips().get(0).getEndReason());
+		assertEquals(Integer.valueOf(22486), tob.getTrips().get(0).getKills().get(0).getTeamUniques().get(0));
+	}
 }

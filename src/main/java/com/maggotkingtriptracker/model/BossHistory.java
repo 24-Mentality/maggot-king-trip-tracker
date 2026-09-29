@@ -28,6 +28,13 @@ public class BossHistory
 	private Integer gameDryStreak;
 	private Integer gameDryStreakKc;
 	/**
+	 * The game's count of raids since you last saw a unique for anyone in the team ("You have completed 7 raids
+	 * since you've seen any purple."), and when the raid it was seen in was completed; null if never seen. Added in
+	 * schema 5.
+	 */
+	private Integer gameTeamDryStreak;
+	private Long gameTeamDryStreakAt;
+	/**
 	 * Every egg popped, anywhere (Maggot King only).
 	 */
 	private List<EggPop> eggPops = new ArrayList<>();

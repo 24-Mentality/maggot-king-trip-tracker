@@ -123,6 +123,22 @@ final class UiFormat
 		return "<html><div style='width:180px'>" + html(text).replace("\n", "<br>") + "</div></html>";
 	}
 
+	/**
+	 * Plain-text help for the Theatre of Blood's team dry streak.
+	 *
+	 * @param fromGame whether it starts from the game's own count
+	 */
+	static String teamDryStreakHelp(boolean fromGame)
+	{
+		return "Raids since you last saw a purple from anyone in your team. This isn't your personal dry streak: a"
+			+ " teammate's purple resets it too, and Entry Mode raids count."
+			+ (fromGame
+			? " It starts from the game's own count (\"You have completed 7 raids since you've seen any purple.\" when"
+				+ " you enter the vault), plus raids since."
+			: " Counted from the raids this plugin has tracked until the game's own count shows up when you next enter"
+				+ " the vault.");
+	}
+
 	static String html(String text)
 	{
 		return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");

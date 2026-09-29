@@ -277,6 +277,18 @@ public final class TheatreOfBloodBoss extends BossDefinition
 	}
 
 	@Override
+	public Integer gameTeamDryStreak(String text)
+	{
+		return TobMessages.teamDryStreak(text);
+	}
+
+	@Override
+	public boolean hasTeamDryStreak()
+	{
+		return true;
+	}
+
+	@Override
 	public long getWipeFee()
 	{
 		return WIPE_FEE;
@@ -314,11 +326,7 @@ public final class TheatreOfBloodBoss extends BossDefinition
 		{
 			parts.add(team == 1 ? "solo" : "team of " + team);
 		}
-		int deaths = trip.getDeaths().size();
-		if (deaths > 0)
-		{
-			parts.add(deaths + (deaths == 1 ? " death" : " deaths"));
-		}
+		// Deaths are in the card's Deaths cell: with them this line wouldn't fit the sidebar
 		return String.join(" · ", parts);
 	}
 

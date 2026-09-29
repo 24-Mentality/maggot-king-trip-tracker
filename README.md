@@ -106,6 +106,10 @@ in Ver Sinhaza (by the vault's teleport crystal, a teleport, a wipe or logging o
   the team size, which assumes equal contribution and no deaths. Entry Mode raids count for
   profit but not luck. For past raids from RuneLite's records, **Typical team size for past
   raids** (default 4) is used. The chips show All, Normal or Hard.
+- **Team dry streak** (Luck card and Lifetime tab): raids since you last saw a purple from
+  anyone in your team, starting from the game's own count ("You have completed 7 raids since
+  you've seen any purple." when you enter the vault). It isn't your personal dry streak: a
+  teammate's purple resets it, and Entry Mode raids count.
 - The clock doesn't pause while idle during a raid; the time between rooms is part of it.
 
 For Phosani's Nightmare: a trip runs from drinking from the Pool of Nightmares until you

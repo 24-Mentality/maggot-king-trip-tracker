@@ -66,6 +66,8 @@ public class TobMessagesTest
 	{
 		assertEquals(Integer.valueOf(7), TobMessages.dryStreak(text("You are on a personal dry streak of <col=cf3f21>7</col>. ")));
 		assertNull(TobMessages.dryStreak(text("You have completed <col=cf3f21>7</col> raids since you've seen any purple.")));
+		assertEquals(Integer.valueOf(7), TobMessages.teamDryStreak(text("You have completed <col=cf3f21>7</col> raids since you've seen any purple.")));
+		assertNull(TobMessages.teamDryStreak(text("You are on a personal dry streak of <col=cf3f21>7</col>. ")));
 	}
 
 	private static String text(String message)

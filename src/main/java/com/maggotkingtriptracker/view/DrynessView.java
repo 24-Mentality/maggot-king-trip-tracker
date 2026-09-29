@@ -58,6 +58,16 @@ public class DrynessView
 	 */
 	boolean sinceFromGameCount;
 	/**
+	 * Raids since anyone in the team got a unique (Theatre of Blood); null for bosses without one. Not your own dry
+	 * streak: a teammate's unique resets it.
+	 */
+	Integer teamDryStreak;
+	/**
+	 * The team dry streak starts from the game's own count; otherwise it's counted from the raids this plugin
+	 * tracked.
+	 */
+	boolean teamDryStreakFromGame;
+	/**
 	 * No unique has ever been received (RuneLite's all-time record included), so the dry streak is the whole kill
 	 * count from Chat Commands.
 	 */

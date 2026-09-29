@@ -377,6 +377,22 @@ public abstract class BossDefinition
 	}
 
 	/**
+	 * @return the game's own count of raids since you last saw a unique for anyone in the team, or null
+	 */
+	public Integer gameTeamDryStreak(String text)
+	{
+		return null;
+	}
+
+	/**
+	 * Show a team dry streak (raids since anyone in the team got a unique) next to your own.
+	 */
+	public boolean hasTeamDryStreak()
+	{
+		return false;
+	}
+
+	/**
 	 * Whether a Loot Tracker event is this raid's reward, which can be claimed after the raid has ended.
 	 */
 	public boolean isRaidLootEvent(String name, LootRecordType type)
@@ -421,7 +437,7 @@ public abstract class BossDefinition
 	}
 
 	/**
-	 * A short description of a trip for the History card (e.g. "Normal · team of 4 · 1 death"); null to show the
+	 * A short description of a trip for the History card (e.g. "Normal · team of 4"); null to show the
 	 * kill count.
 	 */
 	public String tripDetail(Trip trip)

@@ -561,6 +561,20 @@ public class TripTracker
 			}
 			mine.getEggPops().sort(Comparator.comparingLong(EggPop::getAt));
 
+			// The game's own dry streak counts: keep the most recent
+			if (theirs.getGameDryStreakKc() != null
+				&& (mine.getGameDryStreakKc() == null || theirs.getGameDryStreakKc() > mine.getGameDryStreakKc()))
+			{
+				mine.setGameDryStreak(theirs.getGameDryStreak());
+				mine.setGameDryStreakKc(theirs.getGameDryStreakKc());
+			}
+			if (theirs.getGameTeamDryStreakAt() != null
+				&& (mine.getGameTeamDryStreakAt() == null || theirs.getGameTeamDryStreakAt() > mine.getGameTeamDryStreakAt()))
+			{
+				mine.setGameTeamDryStreak(theirs.getGameTeamDryStreak());
+				mine.setGameTeamDryStreakAt(theirs.getGameTeamDryStreakAt());
+			}
+
 			// Tallies can't be told apart, so keep the larger count rather than adding (re-importing is safe)
 			theirs.getPolishOutcomes().forEach((tarnished, outcomes) ->
 			{
@@ -1172,6 +1186,19 @@ public class TripTracker
 			{
 				bossHistory.setGameDryStreak(dryStreak);
 				bossHistory.setGameDryStreakKc(killCount);
+				historyChanged();
+				requestSave();
+			}
+			return true;
+		}
+		Integer teamDryStreak = boss.gameTeamDryStreak(text);
+		if (teamDryStreak != null)
+		{
+			BossHistory bossHistory = writableHistory(boss);
+			if (bossHistory != null && lootKill != null && raid.isCompleted())
+			{
+				bossHistory.setGameTeamDryStreak(teamDryStreak);
+				bossHistory.setGameTeamDryStreakAt(lootKill.getEndedAt());
 				historyChanged();
 				requestSave();
 			}

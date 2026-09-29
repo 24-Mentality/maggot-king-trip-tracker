@@ -87,6 +87,19 @@ public class PanelFitTest
 			}
 			panel.selectTab(0);
 
+			// The Theatre of Blood: a raid's History card and the team dry streak row, on both luck cards
+			panel.update(worstCaseState(PanelState.Status.IN_TRIP, false, true));
+			for (int tab = 0; tab < 3; tab++)
+			{
+				panel.selectTab(tab);
+				check(panel, "raid tab " + tab, problems);
+			}
+			panel.selectTab(0);
+			panel.update(worstCaseState(PanelState.Status.IN_TRIP, false, true).toBuilder()
+				.luckCardStyle(LuckCardStyle.CLASSIC)
+				.build());
+			check(panel, "raid classic luck card", problems);
+
 			// The classic Luck card, hidden by default
 			PanelState classic = worstCaseState(PanelState.Status.IN_TRIP, false).toBuilder()
 				.luckCardStyle(LuckCardStyle.CLASSIC)
@@ -217,13 +230,23 @@ public class PanelFitTest
 
 	private static PanelState worstCaseState(PanelState.Status status, boolean paused)
 	{
+		return worstCaseState(status, paused, false);
+	}
+
+	/**
+	 * @param raid a Theatre of Blood raid: the History card's raid detail and the team dry streak row
+	 */
+	private static PanelState worstCaseState(PanelState.Status status, boolean paused, boolean raid)
+	{
 		TripView trip = TripView.builder()
 			.id("trip")
 			.startedAt(1_790_000_000_000L)
 			.endedAt(1_790_045_000_000L)
-			.endReason(TripEndReason.TELEPORT)
-			.activeMs((12 * 3600 + 34 * 60 + 56) * 1000L)
+			// A long wiped raid: every part of the History card's line shows
+			.endReason(raid ? TripEndReason.WIPED : TripEndReason.TELEPORT)
+			.activeMs(raid ? (59 * 60 + 59) * 1000L : (12 * 3600 + 34 * 60 + 56) * 1000L)
 			.kills(999)
+			.detail(raid ? "Normal · team of 5" : null)
 			.bossStat(new StatView(BOSS.getProfitCell().getLabel(), "999 / 999", BOSS.getProfitCell().getHelp()))
 			.deaths(99)
 			.pet(true)
@@ -275,6 +298,7 @@ public class PanelFitTest
 			.currentKc(12_345)
 			.lastUniqueKc(11_111)
 			.firstTrackedKc(2_565)
+			.teamDryStreak(raid ? 12_345 : null)
 			.allTime(DrynessView.AllTime.builder()
 				.lootKills(12_345)
 				.killCount(12_345)

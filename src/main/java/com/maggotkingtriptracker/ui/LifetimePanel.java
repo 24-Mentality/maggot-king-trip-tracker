@@ -193,6 +193,11 @@ class LifetimePanel extends JPanel
 				: dryness.isSinceFromGameCount() ? "unique (from the game's own dry streak count)"
 				: "tracked unique") + ", and the chance of going that long without one at 1/"
 				+ UiFormat.oneIn(dryness.getAnyUniqueRate()) + "."});
+		if (dryness.getTeamDryStreak() != null)
+		{
+			rows.add(new String[]{"Team dry streak: " + String.format(Locale.ROOT, "%,d", dryness.getTeamDryStreak()),
+				UiFormat.teamDryStreakHelp(dryness.isTeamDryStreakFromGame())});
+		}
 		for (DrynessView.Drop unique : dryness.getUniques())
 		{
 			List<String> kcs = new ArrayList<>();

@@ -108,6 +108,28 @@ public class TheatreOfBloodViewTest
 	}
 
 	@Test
+	public void teamDryStreakCountsEveryRaidSinceAnyonesPurple()
+	{
+		// Without the game's count: the 3 raids tracked, Entry included
+		DrynessView dryness = builder.lifetime(boss, history, TheatreOfBloodBoss.NORMAL, null, false, 0).getDryness();
+		assertEquals(Integer.valueOf(3), dryness.getTeamDryStreak());
+		assertFalse(dryness.isTeamDryStreakFromGame());
+
+		// "You have completed 7 raids since you've seen any purple." in the vault of the second raid: 7, plus one since
+		history.setGameTeamDryStreak(7);
+		history.setGameTeamDryStreakAt(2_000L);
+		dryness = builder.lifetime(boss, history, null, null, false, 0).getDryness();
+		assertEquals(Integer.valueOf(8), dryness.getTeamDryStreak());
+		assertTrue(dryness.isTeamDryStreakFromGame());
+
+		// A teammate's purple in the last raid resets it, though your own dry streak goes on
+		history.getTrips().get(2).getKills().get(0).getTeamUniques().add(ItemID.SCYTHE_OF_VITUR_UNCHARGED);
+		dryness = builder.lifetime(boss, history, null, null, false, 0).getDryness();
+		assertEquals(Integer.valueOf(0), dryness.getTeamDryStreak());
+		assertEquals(2, dryness.getKillsSinceUnique());
+	}
+
+	@Test
 	public void historyCardDescribesTheRaid()
 	{
 		TripView view = builder.trip(boss, history.getTrips().get(0));

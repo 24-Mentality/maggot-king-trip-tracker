@@ -1,5 +1,6 @@
 package com.maggotkingtriptracker.ui;
 
+import com.maggotkingtriptracker.model.TripEndReason;
 import com.maggotkingtriptracker.view.TripView;
 import java.awt.BorderLayout;
 import java.awt.Cursor;
@@ -50,7 +51,8 @@ class TripCard extends JPanel
 		JLabel summary = new JLabel((trip.getDetail() != null ? trip.getDetail()
 			: trip.getKills() + (trip.getKills() == 1 ? " kill" : " kills"))
 			+ " · " + UiFormat.duration(trip.getActiveMs())
-			+ " · " + CurrentTripPanel.endReason(trip.getEndReason()));
+			// A completed raid is the usual end, so only other ends are named
+			+ (trip.getEndReason() == TripEndReason.COMPLETED ? "" : " · " + CurrentTripPanel.endReason(trip.getEndReason())));
 		summary.setFont(FontManager.getRunescapeSmallFont());
 		summary.setForeground(UiFormat.MUTED_TEXT);
 

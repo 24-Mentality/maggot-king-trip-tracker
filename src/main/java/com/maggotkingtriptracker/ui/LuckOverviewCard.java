@@ -50,6 +50,8 @@ class LuckOverviewCard extends JPanel
 	private final JLabel due = statLabel();
 	private final JLabel rate = statLabel();
 	private final JLabel longest = statLabel();
+	private final JLabel teamDry = statLabel();
+	private final JPanel stats = new JPanel(new GridLayout(3, 1, 0, 0));
 	private final JPanel drops = new JPanel();
 	private final JPanel dropRow = new JPanel();
 	private final List<JLabel> counts = new ArrayList<>();
@@ -86,7 +88,6 @@ class LuckOverviewCard extends JPanel
 		titleLeft.add(tier, BorderLayout.CENTER);
 		// Two rows of two as on the share card. The sidebar is too narrow for its columns ("Since last unique" alone
 		// takes over half the width), so each row sizes its cells to their contents
-		JPanel stats = new JPanel(new GridLayout(3, 1, 0, 0));
 		stats.setOpaque(false);
 		stats.add(row(uniques, due));
 		stats.add(row(since, rate));
@@ -211,6 +212,26 @@ class LuckOverviewCard extends JPanel
 			"The longest gap between two of your uniques, by kill count, counting the uniques this plugin tracked and"
 				+ " the kill count you entered for your last unique from before tracking (or the current streak, if"
 				+ " that is longer). Earlier uniques aren't known.");
+		// Theatre of Blood only: a row of its own, shown when the boss has a team dry streak
+		boolean team = dryness.getTeamDryStreak() != null;
+		if (team != (teamDry.getParent() == stats))
+		{
+			if (team)
+			{
+				stats.add(teamDry);
+			}
+			else
+			{
+				stats.remove(teamDry);
+			}
+			stats.setLayout(new GridLayout(team ? 4 : 3, 1, 0, 0));
+			stats.revalidate();
+		}
+		if (team)
+		{
+			set(teamDry, "Team dry streak", String.format(Locale.ROOT, "%,d kc", dryness.getTeamDryStreak()), null,
+				UiFormat.teamDryStreakHelp(dryness.isTeamDryStreakFromGame()));
+		}
 		int dueIn = LuckSummary.dueInKills(dryness);
 		if (dueIn > 0)
 		{

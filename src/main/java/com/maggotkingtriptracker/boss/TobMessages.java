@@ -44,6 +44,10 @@ public final class TobMessages
 	 * On entering the vault: "You are on a personal dry streak of 7."
 	 */
 	private static final Pattern DRY_STREAK = Pattern.compile("^You are on a personal dry streak of ([\\d,]+)\\.?");
+	/**
+	 * Right after it: "You have completed 7 raids since you've seen any purple." Anyone's purple counts.
+	 */
+	private static final Pattern TEAM_DRY_STREAK = Pattern.compile("^You have completed ([\\d,]+) raids? since you've seen any purple");
 
 	private TobMessages()
 	{
@@ -121,6 +125,15 @@ public final class TobMessages
 	public static Integer dryStreak(String text)
 	{
 		Matcher m = DRY_STREAK.matcher(text);
+		return m.find() ? Integer.valueOf(m.group(1).replace(",", "")) : null;
+	}
+
+	/**
+	 * @return the game's count of raids since you last saw a purple (anyone's), or null
+	 */
+	public static Integer teamDryStreak(String text)
+	{
+		Matcher m = TEAM_DRY_STREAK.matcher(text);
 		return m.find() ? Integer.valueOf(m.group(1).replace(",", "")) : null;
 	}
 

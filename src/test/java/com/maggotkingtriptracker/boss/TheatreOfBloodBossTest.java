@@ -115,7 +115,7 @@ public class TheatreOfBloodBossTest
 		trip.getDeaths().add(new DeathRecord());
 
 		assertEquals("1 / 2", boss.getProfitCell().valueOf(trip));
-		assertEquals("Normal · team of 4 · 1 death", boss.tripDetail(trip));
+		assertEquals("Normal · team of 4", boss.tripDetail(trip));
 		// Your own purple counts for the team even if the broadcast was missed
 		kill.getTeamUniques().clear();
 		assertEquals("1 / 1", boss.getProfitCell().valueOf(trip));
