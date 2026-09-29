@@ -1,5 +1,6 @@
 package com.maggotkingtriptracker.diagnostic;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.maggotkingtriptracker.boss.BossDefinition;
 import com.maggotkingtriptracker.boss.BossRegistry;
@@ -91,7 +92,32 @@ public class DiagnosticRecorder
 	 * NPCs whose name contains one of these are logged everywhere while logging everywhere: the Nightmare,
 	 * her totems, and the NPCs that return items after a death.
 	 */
-	private static final String[] EVERYWHERE_NPC_NAMES = {"Nightmare", "Totem", "Sister Senga", "Shura"};
+	private static final String[] EVERYWHERE_NPC_NAMES = {"Nightmare", "Totem", "Sister Senga", "Shura",
+		// Theatre of Blood room bosses
+		"Maiden of Sugadinti", "Pestilent Bloat", "Nylocas Vasilias", "Sotetseg", "Xarpus", "Verzik Vitur"};
+
+	/**
+	 * Theatre of Blood state, for learning how raids, teams and loot look: party status and slots (team size),
+	 * supply chest points, the vault chests, and whether loot is due. Logged by name when they change.
+	 */
+	static final Map<Integer, String> TOB_VARBITS = ImmutableMap.<Integer, String>builder()
+		.put(VarbitID.TOB_CLIENT_PARTYSTATUS, "partystatus")
+		.put(VarbitID.TOB_CLIENT_PARTYSLOT, "partyslot")
+		.put(VarbitID.TOB_CLIENT_P0, "p0")
+		.put(VarbitID.TOB_CLIENT_P1, "p1")
+		.put(VarbitID.TOB_CLIENT_P2, "p2")
+		.put(VarbitID.TOB_CLIENT_P3, "p3")
+		.put(VarbitID.TOB_CLIENT_P4, "p4")
+		.put(VarbitID.TOB_MIDWAYCHEST_POINTS, "supplychest_points")
+		.put(VarbitID.TOB_TREASUREROOM_CHEST_0, "vaultchest0")
+		.put(VarbitID.TOB_TREASUREROOM_CHEST_1, "vaultchest1")
+		.put(VarbitID.TOB_TREASUREROOM_CHEST_2, "vaultchest2")
+		.put(VarbitID.TOB_TREASUREROOM_CHEST_3, "vaultchest3")
+		.put(VarbitID.TOB_TREASUREROOM_CHEST_4, "vaultchest4")
+		.put(VarbitID.TOB_SHOULD_HAVE_LOOT, "should_have_loot")
+		.put(VarbitID.TOB_DAMAGE_TAKEN, "damage_taken")
+		.put(VarbitID.TOB_PROGRESS, "progress")
+		.build();
 	private static final String LOOT_TRACKER_GROUP = "loottracker";
 	private static final String KILL_COUNT_GROUP = "killcount";
 
@@ -155,6 +181,10 @@ public class DiagnosticRecorder
 			{
 				recordContainerSnapshots();
 			}
+			if (everywhere && client.getGameState() == GameState.LOGGED_IN)
+			{
+				recordTobSnapshot();
+			}
 			recordRecordKeys();
 		}
 	}
@@ -175,6 +205,7 @@ public class DiagnosticRecorder
 			if (everywhere && client.getGameState() == GameState.LOGGED_IN)
 			{
 				recordContainerSnapshots();
+				recordTobSnapshot();
 			}
 		}
 	}
@@ -275,6 +306,7 @@ public class DiagnosticRecorder
 			{
 				// Turned on before logging in: note what's carried so later changes can be followed
 				recordContainerSnapshots();
+				recordTobSnapshot();
 			}
 		}
 		else if (state == GameState.LOGIN_SCREEN || state == GameState.HOPPING)
@@ -394,6 +426,11 @@ public class DiagnosticRecorder
 		{
 			record("SPEC", "energy=" + event.getValue());
 			return;
+		}
+		String tob = TOB_VARBITS.get(event.getVarbitId());
+		if (tob != null)
+		{
+			record("TOB", tob + "=" + event.getValue());
 		}
 
 	}
@@ -576,6 +613,19 @@ public class DiagnosticRecorder
 		{
 			record("NPC", what + " id=" + id + " name=\"" + npc.getName() + "\" index=" + npc.getIndex());
 		}
+	}
+
+	/**
+	 * The Theatre of Blood varbits as they are now, so later changes have a starting point.
+	 */
+	private void recordTobSnapshot()
+	{
+		StringBuilder sb = new StringBuilder("snapshot");
+		for (Map.Entry<Integer, String> e : TOB_VARBITS.entrySet())
+		{
+			sb.append(' ').append(e.getValue()).append('=').append(client.getVarbitValue(e.getKey()));
+		}
+		record("TOB", sb.toString());
 	}
 
 	private boolean isRecording()

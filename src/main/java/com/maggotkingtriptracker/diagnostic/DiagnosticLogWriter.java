@@ -6,6 +6,8 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -24,7 +26,11 @@ import net.runelite.client.util.Filepath;
 class DiagnosticLogWriter
 {
 	static final String FILE_NAME = "diagnostic.log";
-	private static final String ROTATED_FILE_NAME = "diagnostic.log.1";
+	/**
+	 * Rotated files kept: diagnostic.log.1 (newest) to .3. Each stays under 10 MB, small enough to share on its own,
+	 * and together they hold a whole raid with "log everywhere" on.
+	 */
+	static final int ROTATED_FILES = 3;
 	private static final long MAX_FILE_BYTES = 10L * 1024 * 1024;
 	private static final DateTimeFormatter TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
@@ -92,7 +98,7 @@ class DiagnosticLogWriter
 		catch (Exception e)
 		{
 			pending.clear();
-			log.warn("Unable to write Maggot King diagnostic log", e);
+			log.warn("Unable to write the diagnostic log", e);
 		}
 	}
 
@@ -113,9 +119,37 @@ class DiagnosticLogWriter
 
 	private void rotateIfNeeded(Filepath logFile) throws IOException
 	{
-		if (logFile.exists() && logFile.size() > MAX_FILE_BYTES)
+		if (!logFile.exists() || logFile.size() <= MAX_FILE_BYTES)
 		{
-			logFile.moveTo(directory.joinSegment(ROTATED_FILE_NAME), StandardCopyOption.REPLACE_EXISTING);
+			return;
 		}
+		for (String[] move : rotationMoves())
+		{
+			Filepath from = directory.joinSegment(move[0]);
+			if (from.exists())
+			{
+				from.moveTo(directory.joinSegment(move[1]), StandardCopyOption.REPLACE_EXISTING);
+			}
+		}
+	}
+
+	/**
+	 * The renames for one rotation, oldest first so nothing is overwritten before it has moved:
+	 * .2 to .3, .1 to .2, then the log to .1. Whatever was in .3 is replaced.
+	 */
+	static List<String[]> rotationMoves()
+	{
+		List<String[]> moves = new ArrayList<>();
+		for (int n = ROTATED_FILES - 1; n >= 1; n--)
+		{
+			moves.add(new String[]{rotatedName(n), rotatedName(n + 1)});
+		}
+		moves.add(new String[]{FILE_NAME, rotatedName(1)});
+		return moves;
+	}
+
+	static String rotatedName(int n)
+	{
+		return FILE_NAME + "." + n;
 	}
 }
