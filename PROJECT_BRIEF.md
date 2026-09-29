@@ -358,7 +358,6 @@ These come from diagnostic.log and take precedence over the assumptions above.
   missed (it recorded 14). Counting them gives 117, still about 30% over, so
   blood fury at the Nightmare is not solved; the Maggot King's 17 still
   matches.
-
 - More Checks at Phosani's (2026-09-28, 23:13-23:26, including a Scythe-only
   kill and two deaths): Shadow 17 of 17 and 38 of 38; Scythe 26 of 26, 61 of
   61, and 66 vs 65 on the Scythe-only kill (one attack in 350 checked in
