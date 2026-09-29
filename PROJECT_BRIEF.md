@@ -195,6 +195,12 @@ RuneLite does not accept new high-end PvM helper plugins.
     that flips their Show toggle. "Only during a trip" is on by default.
     Nothing about the boss or its mechanics is ever drawn.
 
+14. Milestone D (2026-09-28): the regular Nightmare wasn't in the diagnostic
+    runs, so Phosani's is built first (the user's choice) as a variant of one
+    Nightmare boss, with the chips [All | Phosani's | Regular]. Regular kills
+    aren't recognised and its all-time record is left out until a regular
+    kill has been logged.
+
 ## Observed in-game (diagnostic test trips, 2026-09-27)
 These come from diagnostic.log and take precedence over the assumptions above.
 - Lair template region is always 11645; the real instance region changes per
@@ -297,3 +303,29 @@ These come from diagnostic.log and take precedence over the assumptions above.
   record (uniques received vs expected), separate from the dry streak. The
   trip row's live kill timer (Current / Last) and PB (this trip's fastest)
   passed.
+- Phosani's Nightmare (diagnostic log 2026-09-28, 2 kills and a death, KC
+  128 and 129): the Sisterhood Sanctuary is region 15256 (15255 on the way
+  in). "Drink-from" on the Pool of Nightmares (object 29710) gives the MESBOX
+  "The Nightmare pulls you into Phosani's dream as you drink from the pool."
+  and puts you in instanced template region 15515. Kill messages:
+  "Your Phosani's Nightmare kill count is: <col=ff0000>129</col>." then
+  "Team size: <col=ff0000>Solo</col> Fight duration: <col=ff0000>5:34.20</col>.
+  Personal best: 5:02.40". Loot lands on the floor at the kill tick
+  (ownership 1) and the Loot Tracker's event (name "Phosani's Nightmare",
+  type NPC) lists all of it. After a kill: "The Nightmare begins to wake..."
+  and she reawakens in the same dream. The fight clock starts 8 ticks after
+  "The Nightmare has awoken!" / "The Nightmare has reawoken!" and ends at the
+  last phase ("Phosani's Nightmare P4 boss complete!"), 9 ticks before the
+  kill-count message; per-phase "Duration" messages add up to it. Leaving:
+  "Pass-through" the Energy Barrier (object 37730), "You pull yourself out of
+  the dream.", back to 15256. Death: "Oh dear, you are dead!", respawn in
+  15256, "Sister Senga has retrieved some of your items...", Collect (NPC
+  9472, third option), Unlock, then "Payment has been taken from your bank:
+  60,000 x Coins" (the fee comes from the bank, not the inventory). Boss NPC
+  ids change by phase (9416, 9418, 9420, 9423, 11153, 11154 seen); totems
+  9434-9444; Shura 9414 in the sanctuary. Record keys on the main account:
+  loottracker "drops_NPC_Phosani's Nightmare", killcount "phosani's
+  nightmare"; on another account also "drops_NPC_The Nightmare" and
+  "nightmare". The main also has "drops_NPC_Nex" / "nex" and
+  "drops_EVENT_Theatre of Blood", "drops_NPC_Verzik Vitur", "theatre of
+  blood", "theatre of blood entry mode" (for Milestones E and F).

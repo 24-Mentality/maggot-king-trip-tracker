@@ -48,7 +48,7 @@ final class ShareCardRenderer
 	 */
 	BufferedImage render(ShareCard card, IntFunction<Image> icons)
 	{
-		int height = PAD + header() + GAP + luck() + GAP + stats() + GAP + trips(card) + GAP + footer() + PAD;
+		int height = PAD + header() + GAP + luck(card) + GAP + stats() + GAP + trips(card) + GAP + footer() + PAD;
 		BufferedImage image = new BufferedImage(WIDTH * SCALE, height * SCALE, BufferedImage.TYPE_INT_RGB);
 		Graphics2D g = image.createGraphics();
 		try
@@ -103,14 +103,22 @@ final class ShareCardRenderer
 		return y + h;
 	}
 
-	private static int luck()
+	/**
+	 * Unique icons go in fixed-width cells, wrapping onto more rows for bosses with many uniques (the Nightmare).
+	 */
+	private static final int DROP_CELL = 64;
+	private static final int DROP_ROW = 26;
+	private static final int DROPS_PER_ROW = (WIDTH - 2 * PAD - 2 * INNER) / DROP_CELL;
+
+	private static int luck(ShareCard card)
 	{
-		return 112;
+		int rows = Math.max(1, (card.getDrops().size() + DROPS_PER_ROW - 1) / DROPS_PER_ROW);
+		return 112 + (rows - 1) * DROP_ROW;
 	}
 
 	private int drawLuck(Graphics2D g, ShareCard card, IntFunction<Image> icons, int y)
 	{
-		int h = luck();
+		int h = luck(card);
 		card(g, y, h);
 		int left = PAD + INNER;
 		int right = WIDTH - PAD - INNER;
@@ -138,13 +146,14 @@ final class ShareCardRenderer
 		pair(g, "Longest dry streak", String.format(Locale.ROOT, "%,d kc", card.getLongestDryStreak()), left, y + 72);
 
 		// One icon and count per unique, then the pet
-		int x = left;
-		for (ShareCard.Drop drop : card.getDrops())
+		for (int i = 0; i < card.getDrops().size(); i++)
 		{
-			drawIcon(g, icons.apply(drop.getItemId()), x, y + 82, 27, 24);
+			ShareCard.Drop drop = card.getDrops().get(i);
+			int x = left + (i % DROPS_PER_ROW) * DROP_CELL;
+			int rowY = y + 82 + (i / DROPS_PER_ROW) * DROP_ROW;
+			drawIcon(g, icons.apply(drop.getItemId()), x, rowY, 27, 24);
 			String count = "x" + drop.getCount();
-			text(g, bold, drop.getCount() > 0 ? UiFormat.UNIQUE_BORDER : UiFormat.MUTED_TEXT, count, x + 29, y + 100);
-			x += 29 + width(g, bold, count) + 12;
+			text(g, bold, drop.getCount() > 0 ? UiFormat.UNIQUE_BORDER : UiFormat.MUTED_TEXT, count, x + 29, rowY + 18);
 		}
 		return y + h;
 	}

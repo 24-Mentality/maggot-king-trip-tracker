@@ -56,9 +56,45 @@ public abstract class BossDefinition
 	public abstract Set<Integer> getBossNpcIds();
 
 	/**
-	 * NPC whose name is used in the kill-count message and by the Loot Tracker.
+	 * NPC whose name is used in the kill-count message and by the Loot Tracker, unless {@link #getKillNames()} lists
+	 * the names.
 	 */
 	public abstract int getNameNpcId();
+
+	/**
+	 * Names in the kill-count message ("Your &lt;name&gt; kill count is"), each to the variant its kills belong to
+	 * (null for none). Empty means the name of {@link #getNameNpcId()}, with no variant.
+	 */
+	public Map<String, String> getKillNames()
+	{
+		return Collections.emptyMap();
+	}
+
+	/**
+	 * The game's fight clock starts when the boss spawns (Maggot King). Otherwise see {@link #fightStartDelayMs}.
+	 */
+	public boolean isFightStartOnSpawn()
+	{
+		return true;
+	}
+
+	/**
+	 * @param text a game message without colour tags
+	 * @return how long after this message the game's fight clock starts, or null if it doesn't start a fight
+	 */
+	public Long fightStartDelayMs(String text)
+	{
+		return null;
+	}
+
+	/**
+	 * @param text a game message without colour tags, seen shortly after clicking a grave helper
+	 * @return the fee paid to get items back after a death, or null if the message isn't a payment
+	 */
+	public Long reclaimFee(String text)
+	{
+		return null;
+	}
 
 	// ---- Loot ----
 
@@ -193,6 +229,15 @@ public abstract class BossDefinition
 	 * Drops whose value is only known once polished. Empty turns polish tracking off.
 	 */
 	public Set<Integer> getTarnishedItems()
+	{
+		return Collections.emptySet();
+	}
+
+	/**
+	 * Items thrown from your equipment onto the floor and usually picked back up (the Nightmare's blisterwood
+	 * stakes): handled like dropped items, so only the ones left behind count, as "Dropped".
+	 */
+	public Set<Integer> getRecoverableItems()
 	{
 		return Collections.emptySet();
 	}

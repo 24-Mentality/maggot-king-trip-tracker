@@ -1,7 +1,13 @@
 package com.maggotkingtriptracker.ui;
 
 import static org.junit.Assert.assertTrue;
+import com.maggotkingtriptracker.boss.DropKind;
+import com.maggotkingtriptracker.boss.ExpectedDrop;
+import com.maggotkingtriptracker.boss.KillContext;
 import com.maggotkingtriptracker.boss.MaggotKingBoss;
+import com.maggotkingtriptracker.boss.NightmareBoss;
+import java.util.ArrayList;
+import java.util.List;
 import com.maggotkingtriptracker.view.DrynessView;
 import java.awt.Color;
 import java.awt.Component;
@@ -29,6 +35,35 @@ public class LuckOverviewPreviewTest
 	@Test
 	public void preview() throws Exception
 	{
+		render(dryness(), new MaggotKingBoss(), "build/luck-overview-preview.png");
+	}
+
+	@Test
+	public void nightmarePreview() throws Exception
+	{
+		NightmareBoss nightmare = new NightmareBoss();
+		List<DrynessView.Drop> uniques = new ArrayList<>();
+		for (ExpectedDrop drop : nightmare.getDrops())
+		{
+			if (drop.getKind() == DropKind.UNIQUE)
+			{
+				uniques.add(new DrynessView.Drop(drop.getItemId(), "Unique", drop.chance(KillContext.DEFAULT), 0.2,
+					uniques.size() == 4 ? 1 : 0, Collections.<Integer>emptyList()));
+			}
+		}
+		DrynessView base = dryness();
+		DrynessView dryness = base.toBuilder()
+			.anyUniqueRate(nightmare.anyUniqueChance(KillContext.DEFAULT))
+			.killsSinceUnique(37)
+			.longestDryStreak(212)
+			.allTime(base.getAllTime().toBuilder().lootKills(129).uniquesReceived(1).expectedUniques(1.16).uniques(uniques).build())
+			.build();
+		render(dryness, nightmare, "build/luck-overview-nightmare.png");
+	}
+
+	private static void render(DrynessView dryness, com.maggotkingtriptracker.boss.BossDefinition boss, String file)
+		throws Exception
+	{
 		SwingUtilities.invokeAndWait(() ->
 		{
 			LuckOverviewCard card = new LuckOverviewCard(null, () ->
@@ -36,7 +71,7 @@ public class LuckOverviewPreviewTest
 			}, () ->
 			{
 			});
-			card.update(dryness(), new MaggotKingBoss());
+			card.update(dryness, boss);
 			placeholderIcons(card);
 			card.setSize(WIDTH, card.getPreferredSize().height);
 			layout(card);
@@ -49,7 +84,7 @@ public class LuckOverviewPreviewTest
 			g.dispose();
 			try
 			{
-				File out = new File("build/luck-overview-preview.png");
+				File out = new File(file);
 				out.getParentFile().mkdirs();
 				ImageIO.write(image, "PNG", out);
 			}

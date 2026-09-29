@@ -42,4 +42,15 @@ public class ChatPatternsTest
 		assertFalse(ChatPatterns.isPetMessage("The eggs pop as you try to take them."));
 		assertTrue(ChatPatterns.isDeathMessage("Oh dear, you are dead!"));
 	}
+
+	@Test
+	public void phosanisKillMessages()
+	{
+		ChatPatterns.KillCount kc = ChatPatterns.killCount("Your Phosani's Nightmare kill count is: <col=ff0000>129</col>.");
+		assertEquals("Phosani's Nightmare", kc.getName());
+		assertEquals(129, kc.getCount());
+		// The team size comes first, so the duration isn't at the start of the message
+		assertEquals(Long.valueOf(334_200), ChatPatterns.fightDurationMs(
+			"Team size: <col=ff0000>Solo</col> Fight duration: <col=ff0000>5:34.20</col>. Personal best: 5:02.40"));
+	}
 }

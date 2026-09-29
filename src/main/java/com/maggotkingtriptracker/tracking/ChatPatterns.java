@@ -2,6 +2,7 @@ package com.maggotkingtriptracker.tracking;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.Value;
 import net.runelite.client.util.Text;
 
 /**
@@ -10,7 +11,10 @@ import net.runelite.client.util.Text;
 public final class ChatPatterns
 {
 	private static final Pattern KILL_COUNT = Pattern.compile("^Your (.+) kill count is: ([\\d,]+)\\.?$");
-	private static final Pattern FIGHT_DURATION = Pattern.compile("^Fight duration: (?:(\\d+):)?(\\d+):(\\d+(?:\\.\\d+)?)");
+	/**
+	 * Anywhere in the message: Phosani's Nightmare puts the team size first ("Team size: Solo Fight duration: ...").
+	 */
+	private static final Pattern FIGHT_DURATION = Pattern.compile("Fight duration: (?:(\\d+):)?(\\d+):(\\d+(?:\\.\\d+)?)");
 
 	public static final String DEATH = "Oh dear, you are dead!";
 	public static final String PET_FOLLOWER = "You have a funny feeling like you're being followed.";
@@ -26,12 +30,28 @@ public final class ChatPatterns
 	 */
 	public static Integer killCount(String message, String bossName)
 	{
+		KillCount kc = killCount(message);
+		return kc == null || !kc.getName().equalsIgnoreCase(bossName) ? null : kc.getCount();
+	}
+
+	/**
+	 * @return the boss name and kill count of a kill-count message, or null if it isn't one
+	 */
+	public static KillCount killCount(String message)
+	{
 		Matcher m = KILL_COUNT.matcher(Text.removeTags(message));
-		if (!m.matches() || !m.group(1).equalsIgnoreCase(bossName))
+		if (!m.matches())
 		{
 			return null;
 		}
-		return Integer.parseInt(m.group(2).replace(",", ""));
+		return new KillCount(m.group(1), Integer.parseInt(m.group(2).replace(",", "")));
+	}
+
+	@Value
+	public static class KillCount
+	{
+		String name;
+		int count;
 	}
 
 	/**

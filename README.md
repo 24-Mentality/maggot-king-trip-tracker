@@ -10,7 +10,8 @@
 Tracks loot, supplies used and net profit for each boss trip, with persistent per-account
 history in a side panel. Formerly **Maggot King Trip Tracker**.
 
-**Supported bosses:** the Maggot King in Vampyrium. More bosses are planned.
+**Supported bosses:** the Maggot King in Vampyrium, and Phosani's Nightmare. The regular
+Nightmare is next; its kills aren't tracked yet. More bosses are planned.
 
 ## Requirements
 
@@ -83,6 +84,13 @@ The panel opens on the Trip tab automatically when you enter a tracked boss's ar
 (Configuration → Display → **Open panel on entry**; on by default).
 
 ## How trips are counted
+
+For Phosani's Nightmare: a trip runs from drinking from the Pool of Nightmares until you
+leave the dream (through the barrier, which works like walking out of the Maggot King's lair,
+by teleport, or by dying). Several kills per trip are normal. Loot comes from the Loot
+Tracker's event (it lands on the floor), the kill timer counts like the game's fight clock
+from when the Nightmare awakens, and Sister Senga's fee is recorded from the bank payment
+message after you collect your items. Luck uses Phosani's rates (any unique about 1/111).
 
 For the Maggot King:
 

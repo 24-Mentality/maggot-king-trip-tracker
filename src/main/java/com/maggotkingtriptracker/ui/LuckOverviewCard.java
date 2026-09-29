@@ -36,6 +36,10 @@ class LuckOverviewCard extends JPanel
 	private static final Color HEADER_BORDER = new Color(57, 57, 57);
 	private static final int ICON_WIDTH = 27;
 	private static final int ICON_HEIGHT = 24;
+	/**
+	 * Uniques plus the pet that fit on one row beside the source note.
+	 */
+	private static final int MAX_IN_ROW = 4;
 
 	private final ItemManager itemManager;
 	private final JLabel title = new JLabel("Luck Status:");
@@ -47,6 +51,7 @@ class LuckOverviewCard extends JPanel
 	private final JLabel rate = statLabel();
 	private final JLabel longest = statLabel();
 	private final JPanel drops = new JPanel();
+	private final JPanel dropRow = new JPanel();
 	private final List<JLabel> counts = new ArrayList<>();
 	private final JPanel body = new JPanel(new BorderLayout(0, 4));
 	private final JLabel eye = new JLabel();
@@ -87,11 +92,10 @@ class LuckOverviewCard extends JPanel
 		stats.add(row(since, rate));
 		stats.add(longest);
 
-		// A box, not a flow: a flow would silently wrap a count that doesn't fit out of sight
-		drops.setLayout(new BoxLayout(drops, BoxLayout.X_AXIS));
+		// Laid out in buildDrops as a box or a grid, never a flow: a flow would silently wrap a count out of sight
 		drops.setOpaque(false);
 		// The source note moves down beside the icons: next to the tier it would push LUCKY AS RUCK out
-		JPanel dropRow = new JPanel(new BorderLayout(4, 0));
+		dropRow.setLayout(new BorderLayout(4, 0));
 		dropRow.setOpaque(false);
 		dropRow.setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 0));
 		dropRow.add(drops, BorderLayout.CENTER);
@@ -232,6 +236,13 @@ class LuckOverviewCard extends JPanel
 	{
 		drops.removeAll();
 		counts.clear();
+		// A row for a few uniques (the Maggot King); a grid of three across for many (the Nightmare)
+		boolean grid = shown.size() > MAX_IN_ROW;
+		drops.setLayout(grid ? new GridLayout(0, 3, 0, 2) : new BoxLayout(drops, BoxLayout.X_AXIS));
+		// Beside a row of icons the source note fits; under a grid it gets its own line so the grid has the width
+		dropRow.remove(source);
+		source.setHorizontalAlignment(grid ? SwingConstants.RIGHT : SwingConstants.LEADING);
+		dropRow.add(source, grid ? BorderLayout.SOUTH : BorderLayout.EAST);
 		for (DrynessView.Drop drop : shown)
 		{
 			JLabel icon = new JLabel();
@@ -252,8 +263,19 @@ class LuckOverviewCard extends JPanel
 			count.setFont(FontManager.getRunescapeBoldFont());
 			count.setBorder(BorderFactory.createEmptyBorder(0, 2, 0, 7));
 			counts.add(count);
-			drops.add(icon);
-			drops.add(count);
+			if (grid)
+			{
+				JPanel cell = new JPanel(new BorderLayout());
+				cell.setOpaque(false);
+				cell.add(icon, BorderLayout.WEST);
+				cell.add(count, BorderLayout.CENTER);
+				drops.add(cell);
+			}
+			else
+			{
+				drops.add(icon);
+				drops.add(count);
+			}
 		}
 		// New icon and count labels need the right-click menu too
 		LuckCard.inheritPopupMenu(drops);

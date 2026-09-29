@@ -88,6 +88,7 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemStack;
 import net.runelite.client.plugins.loottracker.LootReceived;
 import net.runelite.client.util.QuantityFormatter;
+import net.runelite.client.util.Text;
 import net.runelite.http.api.loottracker.LootRecordType;
 
 /**
@@ -982,15 +983,38 @@ public class TripTracker
 			petMessage(tick);
 			return;
 		}
+		String text = Text.removeTags(message);
+		if (pendingDeath != null && tick <= graveWindowEndTick)
+		{
+			// Some reclaim fees come out of the bank, so only the message shows them (Sister Senga)
+			Long fee = deathBoss.reclaimFee(text);
+			if (fee != null)
+			{
+				pendingDeath.setReclaimFee(pendingDeath.getReclaimFee() + fee);
+				historyChanged();
+				requestSave();
+				return;
+			}
+		}
 		if (!inArea || currentTrip == null)
 		{
 			return;
 		}
 
-		Integer killCount = ChatPatterns.killCount(message, bossName(tripBoss));
-		if (killCount != null)
+		Long fightDelay = tripBoss.fightStartDelayMs(text);
+		if (fightDelay != null)
 		{
-			recordKill(killCount, tick, now);
+			fightStartedAt = now + fightDelay;
+			bossSpawnedAt = fightStartedAt;
+			bossDiedAt = null;
+			viewDirty = true;
+			return;
+		}
+
+		ChatPatterns.KillCount killCount = ChatPatterns.killCount(message);
+		if (killCount != null && isKillName(tripBoss, killCount.getName()))
+		{
+			recordKill(killCount.getCount(), variantForKillName(tripBoss, killCount.getName()), tick, now);
 			return;
 		}
 
@@ -1012,7 +1036,9 @@ public class TripTracker
 	 */
 	private void petMessage(int tick)
 	{
-		if (inArea && currentTrip != null && lootKill != null && tick - lastCorpseClickTick <= CORPSE_WINDOW_TICKS)
+		// Right after the corpse click, or for bosses without a corpse, right after the kill
+		int lootTick = currentTrip != null && tripBoss.getLootTriggerNpcs().isEmpty() ? lastKillTick : lastCorpseClickTick;
+		if (inArea && currentTrip != null && lootKill != null && tick - lootTick <= CORPSE_WINDOW_TICKS)
 		{
 			lootKill.setPet(true);
 			int petItem = tripBoss.getPet() == null ? -1 : tripBoss.getPet().getItemId();
@@ -1021,7 +1047,7 @@ public class TripTracker
 			{
 				lootKill.getLoot().add(new ItemEntry(petItem, 1, 0));
 			}
-			alertPet(tripBoss.getDisplayName() + " pet from the corpse!");
+			alertPet(tripBoss.getDisplayName() + (tripBoss.getLootTriggerNpcs().isEmpty() ? " pet!" : " pet from the corpse!"));
 			viewDirty = true;
 			requestSave();
 		}
@@ -1074,7 +1100,8 @@ public class TripTracker
 	@Subscribe
 	public void onNpcSpawned(NpcSpawned event)
 	{
-		if (bossNpcIds.contains(event.getNpc().getId()))
+		BossDefinition boss = registry.forBossNpc(event.getNpc().getId());
+		if (boss != null && boss.isFightStartOnSpawn())
 		{
 			bossSpawnedAt = System.currentTimeMillis();
 			bossDiedAt = null;
@@ -1095,7 +1122,7 @@ public class TripTracker
 		int tick = client.getTickCount();
 		GroundKind kind;
 		Kill kill = null;
-		if (recentClicks.has(OPTION_DROP, item.getId(), tick))
+		if (recentClicks.has(OPTION_DROP, item.getId(), tick) || tripBoss.getRecoverableItems().contains(item.getId()))
 		{
 			kind = GroundKind.OWN_DROP;
 		}
@@ -1325,10 +1352,11 @@ public class TripTracker
 
 	// ---- Kills and loot ----
 
-	private void recordKill(int killCount, int tick, long now)
+	private void recordKill(int killCount, String variant, int tick, long now)
 	{
 		Kill kill = new Kill();
 		kill.setKillCount(killCount);
+		kill.setVariant(variant);
 		kill.setEndedAt(now);
 		if (bossSpawnedAt != null)
 		{
@@ -1497,6 +1525,18 @@ public class TripTracker
 
 		boolean trackingTrip = inArea && currentTrip != null && !dead;
 		recordDrops(removed, tick, trackingTrip);
+		if (trackingTrip)
+		{
+			// Thrown and usually picked back up: like a drop, only what's left behind counts
+			for (int itemId : tripBoss.getRecoverableItems())
+			{
+				Long quantity = removed.remove(itemId);
+				if (quantity != null)
+				{
+					pendingDrops.merge(itemId, quantity, Long::sum);
+				}
+			}
+		}
 
 		eggTracker.itemsRemoved(removed, tick, now);
 		polishTracker.gained(gained, tick);
@@ -1733,6 +1773,37 @@ public class TripTracker
 	private String bossName(BossDefinition boss)
 	{
 		return bossNames.computeIfAbsent(boss.getId(), id -> client.getNpcDefinition(boss.getNameNpcId()).getName());
+	}
+
+	/**
+	 * Whether a kill-count message's name is this boss's (one of its variants', or its NPC name).
+	 */
+	private boolean isKillName(BossDefinition boss, String name)
+	{
+		if (boss.getKillNames().isEmpty())
+		{
+			return name.equalsIgnoreCase(bossName(boss));
+		}
+		for (String killName : boss.getKillNames().keySet())
+		{
+			if (killName.equalsIgnoreCase(name))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static String variantForKillName(BossDefinition boss, String name)
+	{
+		for (Map.Entry<String, String> e : boss.getKillNames().entrySet())
+		{
+			if (e.getKey().equalsIgnoreCase(name))
+			{
+				return e.getValue();
+			}
+		}
+		return null;
 	}
 
 	private static Trip findTrip(BossHistory boss, String id)

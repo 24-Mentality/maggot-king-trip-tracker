@@ -4,7 +4,11 @@ import static org.junit.Assert.assertTrue;
 import com.maggotkingtriptracker.CanvasSection;
 import com.maggotkingtriptracker.LuckCardStyle;
 import com.maggotkingtriptracker.boss.BossDefinition;
+import com.maggotkingtriptracker.boss.DropKind;
+import com.maggotkingtriptracker.boss.ExpectedDrop;
+import com.maggotkingtriptracker.boss.KillContext;
 import com.maggotkingtriptracker.boss.MaggotKingBoss;
+import com.maggotkingtriptracker.boss.NightmareBoss;
 import com.maggotkingtriptracker.model.TripEndReason;
 import com.maggotkingtriptracker.view.BossOption;
 import com.maggotkingtriptracker.view.DrynessView;
@@ -73,6 +77,15 @@ public class PanelFitTest
 			summary.setProfitCollapsed(true);
 			check(panel, "profit collapsed", problems);
 			summary.setProfitCollapsed(false);
+
+			// The Nightmare: eight uniques and the pet on the luck card, variant chips under the dropdown
+			panel.update(nightmareState(worstCaseState(PanelState.Status.IN_TRIP, false)));
+			for (int tab = 0; tab < 3; tab++)
+			{
+				panel.selectTab(tab);
+				check(panel, "nightmare tab " + tab, problems);
+			}
+			panel.selectTab(0);
 
 			// The classic Luck card, hidden by default
 			PanelState classic = worstCaseState(PanelState.Status.IN_TRIP, false).toBuilder()
@@ -172,6 +185,34 @@ public class PanelFitTest
 				findLabels(child, where, problems);
 			}
 		}
+	}
+
+	private static PanelState nightmareState(PanelState state)
+	{
+		BossDefinition nightmare = new NightmareBoss();
+		List<DrynessView.Drop> uniques = new ArrayList<>();
+		for (ExpectedDrop drop : nightmare.getDrops())
+		{
+			if (drop.getKind() == DropKind.UNIQUE)
+			{
+				uniques.add(new DrynessView.Drop(drop.getItemId(), "Inquisitor's great helm", drop.chance(KillContext.DEFAULT),
+					12.34, 99, Collections.<Integer>emptyList()));
+			}
+		}
+		DrynessView dryness = state.getLifetime().getDryness().toBuilder()
+			.uniques(uniques)
+			.eggTiers(Collections.<DrynessView.EggTier>emptyList())
+			.allTime(state.getLifetime().getDryness().getAllTime().toBuilder().uniques(uniques).build())
+			.build();
+		List<BossOption> bosses = Arrays.asList(
+			new BossOption(BOSS.getId(), BOSS.getDisplayName(), BOSS.getIconItemId(), false),
+			new BossOption(nightmare.getId(), nightmare.getDisplayName(), nightmare.getIconItemId(), true));
+		return state.toBuilder()
+			.boss(nightmare)
+			.bosses(bosses)
+			.variant(NightmareBoss.PHOSANI)
+			.lifetime(state.getLifetime().toBuilder().dryness(dryness).choiceSummary("").polish(Collections.<PolishView>emptyList()).build())
+			.build();
 	}
 
 	private static PanelState worstCaseState(PanelState.Status status, boolean paused)

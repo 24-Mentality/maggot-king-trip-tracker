@@ -19,7 +19,7 @@ public final class BossRegistry
 
 	public static BossRegistry standard()
 	{
-		return new BossRegistry(ImmutableList.of(new MaggotKingBoss()));
+		return new BossRegistry(ImmutableList.of(new MaggotKingBoss(), new NightmareBoss()));
 	}
 
 	public List<BossDefinition> all()
@@ -55,6 +55,21 @@ public final class BossRegistry
 		for (BossDefinition boss : bosses)
 		{
 			if (boss.getRegions().contains(templateRegionId))
+			{
+				return boss;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * @return the boss with this NPC id (any of its forms), or null
+	 */
+	public BossDefinition forBossNpc(int npcId)
+	{
+		for (BossDefinition boss : bosses)
+		{
+			if (boss.getBossNpcIds().contains(npcId))
 			{
 				return boss;
 			}

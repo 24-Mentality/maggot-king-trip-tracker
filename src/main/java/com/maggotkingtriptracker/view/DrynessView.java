@@ -9,7 +9,7 @@ import lombok.Value;
  * records. Rates and expected counts are worked out here so the panel doesn't need the drop tables.
  */
 @Value
-@Builder
+@Builder(toBuilder = true)
 public class DrynessView
 {
 	/**
@@ -101,7 +101,7 @@ public class DrynessView
 	AllTime allTime;
 
 	@Value
-	@Builder
+	@Builder(toBuilder = true)
 	public static class AllTime
 	{
 		/**

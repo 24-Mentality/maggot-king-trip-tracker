@@ -4,7 +4,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import com.maggotkingtriptracker.boss.BossDefinition;
+import com.maggotkingtriptracker.boss.DropKind;
+import com.maggotkingtriptracker.boss.ExpectedDrop;
+import com.maggotkingtriptracker.boss.KillContext;
 import com.maggotkingtriptracker.boss.MaggotKingBoss;
+import com.maggotkingtriptracker.boss.NightmareBoss;
 import com.maggotkingtriptracker.model.LuckTier;
 import com.maggotkingtriptracker.view.DrynessView;
 import com.maggotkingtriptracker.view.LifetimeView;
@@ -102,6 +106,37 @@ public class ShareCardTest
 				tierRight + 6 <= sourceLeft);
 		}
 		g.dispose();
+	}
+
+	@Test
+	public void manyUniquesWrapOntoMoreRows() throws Exception
+	{
+		NightmareBoss nightmare = new NightmareBoss();
+		List<DrynessView.Drop> uniques = new ArrayList<>();
+		for (ExpectedDrop drop : nightmare.getDrops())
+		{
+			if (drop.getKind() == DropKind.UNIQUE)
+			{
+				uniques.add(new DrynessView.Drop(drop.getItemId(), "Unique", drop.chance(KillContext.DEFAULT), 0.2, 0,
+					Collections.<Integer>emptyList()));
+			}
+		}
+		PanelState base = state(5);
+		DrynessView dryness = base.getLifetime().getDryness().toBuilder()
+			.anyUniqueRate(nightmare.anyUniqueChance(KillContext.DEFAULT))
+			.allTime(base.getLifetime().getDryness().getAllTime().toBuilder().uniques(uniques).build())
+			.build();
+		PanelState state = base.toBuilder()
+			.boss(nightmare)
+			.lifetime(base.getLifetime().toBuilder().dryness(dryness).build())
+			.build();
+
+		ShareCardRenderer renderer = new ShareCardRenderer(ZoneId.of("UTC"));
+		BufferedImage maggotKing = renderer.render(ShareCard.from(base, true, NOW), ShareCardTest::placeholderIcon);
+		BufferedImage image = renderer.render(ShareCard.from(state, true, NOW), ShareCardTest::placeholderIcon);
+		// Eight uniques and the pet: two rows of icons instead of one
+		assertEquals(maggotKing.getHeight() + 26 * ShareCardRenderer.SCALE, image.getHeight());
+		ImageIO.write(image, "PNG", new File("build/share-card-nightmare.png"));
 	}
 
 	private static Image placeholderIcon(int itemId)
