@@ -94,6 +94,14 @@ class AllTimeRecords
 			Collections.unmodifiableMap(new LinkedHashMap<>(killCounts)));
 	}
 
+	/**
+	 * @return a kill count Chat Commands saved, or null if there is none (or no key)
+	 */
+	Integer killCount(String key)
+	{
+		return key == null ? null : configManager.getRSProfileConfiguration(KILL_COUNT_GROUP, key, Integer.class);
+	}
+
 	static AllTimeCounts combine(AllTimeCounts a, AllTimeCounts b)
 	{
 		if (a == null || b == null)

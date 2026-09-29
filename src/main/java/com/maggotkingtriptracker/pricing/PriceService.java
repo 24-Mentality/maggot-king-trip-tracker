@@ -23,6 +23,7 @@ public class PriceService
 	private final Map<String, FullDose> fullDoseCache = new HashMap<>();
 	private final Map<Integer, Boolean> meleeWeaponCache = new HashMap<>();
 	private final Map<Integer, Boolean> foodCache = new HashMap<>();
+	private final Map<Integer, Boolean> equipableCache = new HashMap<>();
 
 	public PriceService(ItemManager itemManager)
 	{
@@ -77,6 +78,18 @@ public class PriceService
 			}
 			int melee = Math.max(equipment.getAstab(), Math.max(equipment.getAslash(), equipment.getAcrush()));
 			return melee > 0 && melee >= equipment.getArange() && melee >= equipment.getAmagic();
+		});
+	}
+
+	/**
+	 * Gear that can be worn, such as a salve amulet dropped mid-raid (never a supply cost when dropped).
+	 */
+	public boolean isEquipable(int itemId)
+	{
+		return equipableCache.computeIfAbsent(itemId, id ->
+		{
+			ItemStats stats = itemManager.getItemStats(id);
+			return stats != null && stats.isEquipable();
 		});
 	}
 

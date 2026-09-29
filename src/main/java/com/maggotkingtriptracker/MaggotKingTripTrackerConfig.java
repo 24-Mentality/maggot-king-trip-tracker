@@ -115,7 +115,8 @@ public interface MaggotKingTripTrackerConfig extends Config
 		keyName = "idlePauseSeconds",
 		name = "Idle pause after",
 		description = "During a trip, stop the trip and goal clocks after this long without dealing damage (the idle"
-			+ " time isn't counted). They restart on your next hit. 0 turns it off.",
+			+ " time isn't counted). They restart on your next hit. 0 turns it off. Raids never pause: the time"
+			+ " between rooms is part of the raid.",
 		section = tripsSection,
 		position = 4
 	)
@@ -151,6 +152,20 @@ public interface MaggotKingTripTrackerConfig extends Config
 	default boolean autoResumeOnAttack()
 	{
 		return true;
+	}
+
+	@ConfigItem(
+		keyName = "tobPastTeamSize",
+		name = "Typical team size for past raids",
+		description = "Theatre of Blood raids from RuneLite's all-time records don't say the team size; luck assumes"
+			+ " this one. Raids this plugin tracks use their own team size.",
+		section = tripsSection,
+		position = 7
+	)
+	@Range(min = 1, max = 5)
+	default int tobPastTeamSize()
+	{
+		return 4;
 	}
 
 	@ConfigItem(

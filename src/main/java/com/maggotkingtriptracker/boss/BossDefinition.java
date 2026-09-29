@@ -318,6 +318,14 @@ public abstract class BossDefinition
 	}
 
 	/**
+	 * A room of the raid was cleared ("Wave '...' complete!").
+	 */
+	public boolean isRaidRoomComplete(String text)
+	{
+		return false;
+	}
+
+	/**
 	 * @return the completion-count message's mode and count, or null
 	 */
 	public RaidCompletion raidCompletion(String text)

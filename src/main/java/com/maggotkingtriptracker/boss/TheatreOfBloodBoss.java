@@ -228,6 +228,12 @@ public final class TheatreOfBloodBoss extends BossDefinition
 	}
 
 	@Override
+	public boolean isRaidRoomComplete(String text)
+	{
+		return TobMessages.isRoomComplete(text);
+	}
+
+	@Override
 	public RaidCompletion raidCompletion(String text)
 	{
 		return TobMessages.completion(text);

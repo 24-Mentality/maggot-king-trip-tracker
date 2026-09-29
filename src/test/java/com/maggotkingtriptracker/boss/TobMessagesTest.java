@@ -22,6 +22,8 @@ public class TobMessagesTest
 		// Assumed wording for the other modes
 		assertEquals("hard", TobMessages.mode(text("You enter the Theatre of Blood (Hard Mode)...")));
 		assertEquals("entry", TobMessages.mode(text("Wave 'Xarpus' (Entry Mode) complete!<br>Duration: 1:00.00")));
+		assertTrue(TobMessages.isRoomComplete(text("Wave 'Sotetseg' (Normal Mode) complete!<br>Duration: <col=ff0000>2:10.20</col>")));
+		assertFalse(TobMessages.isRoomComplete(text("You enter the Theatre of Blood (Normal Mode)...")));
 		// A teammate entering first isn't you entering
 		assertNull(TobMessages.mode(text("PLAYER1 has entered the Theatre of Blood (Normal Mode). Step inside to join him...")));
 	}

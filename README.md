@@ -10,14 +10,15 @@
 Tracks loot, supplies used and net profit for each boss trip, with persistent per-account
 history in a side panel. Formerly **Maggot King Trip Tracker**.
 
-**Supported bosses:** the Maggot King in Vampyrium, and Phosani's Nightmare. The regular
-Nightmare is next; its kills aren't tracked yet. More bosses are planned.
+**Supported bosses:** the Maggot King in Vampyrium, Phosani's Nightmare, and the Theatre of
+Blood (Entry, Normal and Hard Mode). The regular Nightmare's kills aren't tracked yet. More
+bosses are planned.
 
 ## Requirements
 
-- The core RuneLite **Loot Tracker** plugin must be enabled. This plugin reads Maggot King
-  loot from the Loot Tracker's loot events. If no loot event arrives, it falls back to
-  inventory changes after you open the corpse.
+- The core RuneLite **Loot Tracker** plugin must be enabled. This plugin reads loot from the
+  Loot Tracker's loot events (for the Maggot King, if no loot event arrives, it falls back to
+  inventory changes after you open the corpse).
 
 ## Side panel
 
@@ -85,6 +86,28 @@ The panel opens on the Trip tab automatically when you enter a tracked boss's ar
 
 ## How trips are counted
 
+For the Theatre of Blood: a trip is one raid, from entering the Theatre until you're back
+in Ver Sinhaza (by the vault's teleport crystal, a teleport, a wipe or logging out).
+
+- A completed raid counts from the game's completion-count message, with its mode, the team
+  size at the start and the game's total completion time (which is also the raid's PB).
+- Loot is the reward from your chest, from the Loot Tracker's event. If you leave the vault
+  without claiming it, it's added when you claim it from the chest by the Ver Sinhaza bank
+  (the game loses it if you log out first).
+- Anything you get inside the raid is free: supply chest purchases and items you pick up.
+  Only what you use beyond that is a cost, per dose for potions, so a brew bought from the
+  chest costs nothing whether you drink it or not. Dropped gear (the salve amulet after
+  Bloat) is never a cost; dropped potions and food count as used.
+- Dying in a room costs nothing, and your deaths per raid are shown. If the raid ends in a
+  wipe, the 100,000 coin reclaim fee is added.
+- Purples are shown as yours / the team's. The team's come from the game's broadcast, which
+  names only the item here; who got it is never stored.
+- Luck: your chance per raid is the team's purple chance (1/9.1 Normal, 1/7.7 Hard) divided by
+  the team size, which assumes equal contribution and no deaths. Entry Mode raids count for
+  profit but not luck. For past raids from RuneLite's records, **Typical team size for past
+  raids** (default 4) is used. The chips show All, Normal or Hard.
+- The clock doesn't pause while idle during a raid; the time between rooms is part of it.
+
 For Phosani's Nightmare: a trip runs from drinking from the Pool of Nightmares until you
 leave the dream (through the barrier, which works like walking out of the Maggot King's lair,
 by teleport, or by dying). Several kills per trip are normal. Loot comes from the Loot
@@ -117,7 +140,9 @@ For the Maggot King:
   Ayak (a demon tear, or 2 death and a chaos rune, a cast: **Eye of Ayak charged with**) and
   the Toxic blowpipe (2 Zulrah's scales every 3 shots, plus the darts lost: an Ava's
   assembler or Dizana's quiver saves 80%, an accumulator 72%, an attractor 60%; the dart
-  priced is set by **Blowpipe darts**). This applies at every supported boss.
+  priced is set by **Blowpipe darts**) and the Crystal halberd (one per attack; crystal
+  shards are untradeable, so it shows the count at 0 gp). This applies at every supported
+  boss.
 - Items you drop in the lair and don't pick up again are a "Dropped" cost. Zero-value items
   such as empty vials are ignored.
 - Gravestone moves paid to the aranei scout are recorded as death costs.

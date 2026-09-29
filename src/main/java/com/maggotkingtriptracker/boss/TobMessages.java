@@ -64,6 +64,14 @@ public final class TobMessages
 	}
 
 	/**
+	 * A room completed: "Wave 'Xarpus' (Normal Mode) complete!..."
+	 */
+	public static boolean isRoomComplete(String text)
+	{
+		return WAVE.matcher(text).find();
+	}
+
+	/**
 	 * @return the mode and completion count from the completion-count message, or null
 	 */
 	public static RaidCompletion completion(String text)

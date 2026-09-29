@@ -228,6 +228,17 @@ RuneLite does not accept new high-end PvM helper plugins.
     streak) is the whole kill count from Chat Commands, not the kills since
     tracking began.
 
+18. Theatre of Blood (Milestone E step 2, 2026-09-29; the user's OK on the
+    plan): a trip is one raid, no idle pause during raids, and room deaths
+    cost nothing (a wipe adds the 100,000 fee). Kill counts put Normal and
+    Hard completions on one scale (Entry has none) for the dry streak; the
+    Loot Tracker's shared record is counted by those modes' Chat Commands
+    kill counts. Without an entered last-unique KC, the game's own "personal
+    dry streak" message places the last purple (it also counts Entry raids).
+    Team purples come from the game's broadcast only (item, never the name):
+    the vault chest varbits only show your own chest. Diagnostic mode no
+    longer logs player chat or players' names in menu targets.
+
 ## Observed in-game (diagnostic test trips, 2026-09-27)
 These come from diagnostic.log and take precedence over the assumptions above.
 - Lair template region is always 11645; the real instance region changes per
