@@ -10,6 +10,10 @@ import lombok.Value;
 public class LifetimeView
 {
 	int trips;
+	/**
+	 * When the first tracked trip began (this plugin only knows trips since it was installed); 0 without trips.
+	 */
+	long trackedSince;
 	int kills;
 	/**
 	 * Kills per loot choice, e.g. "Stomach 10 · Eggs 2"; empty for bosses without choices.

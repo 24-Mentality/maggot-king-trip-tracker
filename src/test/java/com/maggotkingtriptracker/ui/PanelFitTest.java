@@ -297,7 +297,7 @@ public class PanelFitTest
 			.petsFromEggs(9)
 			.currentKc(12_345)
 			.lastUniqueKc(11_111)
-			.firstTrackedKc(2_565)
+			.firstTrackedKc(12_345)
 			.teamDryStreak(raid ? 12_345 : null)
 			.allTime(DrynessView.AllTime.builder()
 				.lootKills(12_345)
@@ -316,6 +316,8 @@ public class PanelFitTest
 
 		LifetimeView lifetime = LifetimeView.builder()
 			.trips(9_999)
+			// "Tracked since 30 Sep 2026 (KC 12,345)" at its longest
+			.trackedSince(1_790_750_000_000L)
 			.kills(99_999)
 			.choiceSummary("Stomach 99999 · Eggs 99999")
 			.deaths(9_999)

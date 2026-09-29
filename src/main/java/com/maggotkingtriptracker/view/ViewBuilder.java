@@ -247,6 +247,7 @@ public class ViewBuilder
 
 		return LifetimeView.builder()
 			.trips(trips.size())
+			.trackedSince(trips.stream().mapToLong(Trip::getStartedAt).min().orElse(0))
 			.kills(kills)
 			.choiceSummary(String.join(" · ", choices))
 			.deaths(deaths)

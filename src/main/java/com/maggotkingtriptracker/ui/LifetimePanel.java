@@ -15,6 +15,7 @@ import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -51,6 +52,7 @@ class LifetimePanel extends JPanel
 	private final StatCell deaths = new StatCell("Deaths", false);
 	private final JLabel details = new JLabel();
 	private final JLabel todayValue = new JLabel();
+	private final JLabel trackedNote = new JLabel();
 	private final JPanel lootHolder = holder();
 	private final JPanel suppliesHolder = holder();
 	private final JLabel trackedSwitch = switchLabel("Tracked");
@@ -93,7 +95,7 @@ class LifetimePanel extends JPanel
 
 		JPanel footer = new JPanel(new GridLayout(0, 1, 0, 0));
 		footer.setOpaque(false);
-		for (JLabel label : new JLabel[]{details, todayValue})
+		for (JLabel label : new JLabel[]{trackedNote, details, todayValue})
 		{
 			label.setFont(FontManager.getRunescapeSmallFont());
 			label.setForeground(UiFormat.MUTED_TEXT);
@@ -104,6 +106,10 @@ class LifetimePanel extends JPanel
 		card.add(footer, BorderLayout.SOUTH);
 		add(card);
 
+		add(title("Drop chances"));
+		dropChances.setAlignmentX(LEFT_ALIGNMENT);
+		add(dropChances);
+
 		lootSwitch.setOpaque(false);
 		lootSwitch.add(trackedSwitch);
 		lootSwitch.add(allTimeSwitch);
@@ -111,10 +117,6 @@ class LifetimePanel extends JPanel
 		allTimeSwitch.addMouseListener(selectLoot(false));
 		add(lootHolder);
 		add(suppliesHolder);
-
-		add(title("Drop chances"));
-		dropChances.setAlignmentX(LEFT_ALIGNMENT);
-		add(dropChances);
 
 		for (InfoCard infoCard : new InfoCard[]{eggCard, polishCard})
 		{
@@ -225,6 +227,9 @@ class LifetimePanel extends JPanel
 		gpPerHour.setValue(UiFormat.gp(rate), UiFormat.profitColor(rate), UiFormat.fullGp(rate) + " per hour in the " + area);
 		deaths.setValue(String.valueOf(view.getDeaths()));
 
+		trackedNote.setText(trackedSince(view));
+		trackedNote.setToolTipText(UiFormat.tooltip(trackedHelp(view, "These totals")));
+
 		String pets = view.getPets() > 0 ? "Pets " + view.getPets() : "";
 		details.setText(view.getChoiceSummary().isEmpty() ? pets
 			: view.getChoiceSummary() + (pets.isEmpty() ? "" : " · " + pets));
@@ -328,6 +333,7 @@ class LifetimePanel extends JPanel
 		shownSupplies = key;
 
 		List<SectionStat> stats = new ArrayList<>();
+		stats.add(trackedStat(view));
 		stats.add(SectionStat.of("Total", UiFormat.gp(view.getSupplyCost()),
 			"Everything used up across the trips this plugin tracked (RuneLite doesn't record supplies, so there's no"
 				+ " all-time count). Dropped items and death costs are counted separately under Costs."));
@@ -339,10 +345,44 @@ class LifetimePanel extends JPanel
 		suppliesHolder.add(section(new ItemSection(itemManager, "All supplies", view.getSupplies(), "No supplies tracked yet", stats)));
 		if (!view.getDropped().isEmpty())
 		{
-			List<SectionStat> droppedStats = Collections.singletonList(SectionStat.of("Total", UiFormat.gp(view.getDroppedCost()),
+			List<SectionStat> droppedStats = Arrays.asList(trackedStat(view), SectionStat.of("Total", UiFormat.gp(view.getDroppedCost()),
 				"Items dropped and left behind across all trips, at GE price."));
 			suppliesHolder.add(section(new ItemSection(itemManager, "All dropped", view.getDropped(), null, droppedStats)));
 		}
+	}
+
+	/**
+	 * "Tracked since 27 Sep 2026 (KC 2,565)": this plugin only knows the kills since it was installed.
+	 */
+	private static String trackedSince(LifetimeView view)
+	{
+		if (view.getTrackedSince() <= 0)
+		{
+			return "Nothing tracked yet";
+		}
+		Integer firstKc = view.getDryness().getFirstTrackedKc();
+		return "Tracked since " + UiFormat.date(view.getTrackedSince())
+			+ (firstKc != null ? String.format(Locale.ROOT, " (KC %,d)", firstKc) : "");
+	}
+
+	private static String trackedHelp(LifetimeView view, String what)
+	{
+		Integer firstKc = view.getDryness().getFirstTrackedKc();
+		return what + " only count kills this plugin recorded after it was installed"
+			+ (view.getTrackedSince() > 0 ? ", starting " + UiFormat.date(view.getTrackedSince())
+			+ (firstKc != null ? String.format(Locale.ROOT, " at KC %,d", firstKc) : "") : "")
+			+ ". Earlier kills aren't included.";
+	}
+
+	/**
+	 * The same note as a section stat, for the cards that only have tracked trips (supplies, dropped items).
+	 */
+	private static SectionStat trackedStat(LifetimeView view)
+	{
+		Integer firstKc = view.getDryness().getFirstTrackedKc();
+		String value = view.getTrackedSince() <= 0 ? "-" : firstKc != null ? String.format(Locale.ROOT, "KC %,d", firstKc)
+			: UiFormat.date(view.getTrackedSince());
+		return SectionStat.of("From", value, trackedHelp(view, "These"));
 	}
 
 	private static ItemSection section(ItemSection section)

@@ -54,13 +54,9 @@ class CurrentTripPanel extends JPanel
 		goalSpacer.setAlignmentX(LEFT_ALIGNMENT);
 		goalSpacer.setBorder(BorderFactory.createEmptyBorder(0, 0, 2, 0));
 
-		// This trip first (goal, times and profit, then its loot and supplies), then all-time luck, which collapses
-		// to its title row with the eye icon. Drop chances are on the Lifetime tab
+		// The goal and luck (all-time; collapses to its title row with the eye icon), then this trip: its times and
+		// profit, then its loot and supplies. Drop chances are on the Lifetime tab
 		add(goalCard);
-		add(goalSpacer);
-		add(status);
-		add(summary);
-		add(detailsHolder);
 		luckHolder.setOpaque(false);
 		luckHolder.setAlignmentX(LEFT_ALIGNMENT);
 		luckHolder.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
@@ -74,6 +70,10 @@ class CurrentTripPanel extends JPanel
 		cards.add(luckCard);
 		luckHolder.add(cards, BorderLayout.CENTER);
 		add(luckHolder);
+		add(goalSpacer);
+		add(status);
+		add(summary);
+		add(detailsHolder);
 
 		// Right-click a card to put its numbers on the overlay
 		CanvasMenu.attach(goalCard, CanvasSection.GOAL, actions);
