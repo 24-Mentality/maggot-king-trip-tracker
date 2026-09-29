@@ -190,6 +190,7 @@ class LifetimePanel extends JPanel
 		rows.add(new String[]{"Since unique: " + String.format(Locale.ROOT, "%,d", dryness.getKillsSinceUnique())
 			+ " (" + percent(dryness.getChanceThisDry()) + " this dry)",
 			capitalised + " since your last " + (dryness.isSinceFromEnteredKc() ? "unique (the kill count you entered)"
+				: dryness.isSinceFromGameCount() ? "unique (from the game's own dry streak count)"
 				: "tracked unique") + ", and the chance of going that long without one at 1/"
 				+ UiFormat.oneIn(dryness.getAnyUniqueRate()) + "."});
 		for (DrynessView.Drop unique : dryness.getUniques())

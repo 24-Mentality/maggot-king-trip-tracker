@@ -47,7 +47,8 @@ class TripCard extends JPanel
 		net.setForeground(UiFormat.profitColor(trip.getNetProfit()));
 		net.setToolTipText(UiFormat.fullGp(trip.getNetProfit()));
 
-		JLabel summary = new JLabel(trip.getKills() + (trip.getKills() == 1 ? " kill" : " kills")
+		JLabel summary = new JLabel((trip.getDetail() != null ? trip.getDetail()
+			: trip.getKills() + (trip.getKills() == 1 ? " kill" : " kills"))
 			+ " · " + UiFormat.duration(trip.getActiveMs())
 			+ " · " + CurrentTripPanel.endReason(trip.getEndReason()));
 		summary.setFont(FontManager.getRunescapeSmallFont());

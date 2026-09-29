@@ -202,6 +202,8 @@ class LuckOverviewCard extends JPanel
 		set(since, "Dry streak", String.format(Locale.ROOT, "%,d kc", dryness.getKillsSinceUnique()), null,
 			(dryness.isSinceWholeKillCount()
 				? "You haven't had a unique yet (RuneLite's Loot Tracker has none either), so this is your whole kill count"
+				: dryness.isSinceFromGameCount()
+				? "From the game's own dry streak count, which also counts Entry Mode raids"
 				: "Kills since your last unique" + (dryness.isSinceFromEnteredKc() && dryness.getLastUniqueKc() != null
 				? String.format(Locale.ROOT, " (KC %,d, as you entered it)", dryness.getLastUniqueKc()) : ""))
 				+ ". Right-click to set the kill count of your last unique.");

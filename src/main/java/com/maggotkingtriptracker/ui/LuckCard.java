@@ -209,6 +209,10 @@ class LuckCard extends JPanel
 		{
 			sinceWhat = "your first kill: you haven't had a unique yet (RuneLite's Loot Tracker has none either)";
 		}
+		else if (dryness.isSinceFromGameCount())
+		{
+			sinceWhat = "where the game's own dry streak count places your last unique (it counts Entry Mode raids too)";
+		}
 		else if (dryness.isSinceFromEnteredKc())
 		{
 			sinceWhat = "the kill count you entered for your last unique (KC " + String.format(Locale.ROOT, "%,d", lastKc)

@@ -20,6 +20,11 @@ public class TripView
 	Long segmentStartedAt;
 	int kills;
 	/**
+	 * A boss's short description of the trip for the History card (e.g. "Normal · team of 4 · 1 death"); null to
+	 * show the kill count.
+	 */
+	String detail;
+	/**
 	 * The boss-specific third cell of the profit card (for the Maggot King, Stom / Eggs).
 	 */
 	StatView bossStat;

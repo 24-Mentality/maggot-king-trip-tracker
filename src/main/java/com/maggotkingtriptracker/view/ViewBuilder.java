@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.ToDoubleFunction;
 import net.runelite.client.util.QuantityFormatter;
 
 /**
@@ -42,6 +43,10 @@ public class ViewBuilder
 
 	private final PriceService prices;
 	private Set<Integer> runeIds = Collections.emptySet();
+	/**
+	 * The "Typical team size for past raids" setting, for all-time raid records that don't say the team size.
+	 */
+	private int pastTeamSize = 4;
 
 	public ViewBuilder(PriceService prices)
 	{
@@ -54,6 +59,11 @@ public class ViewBuilder
 	public void setRuneIds(Set<Integer> runeIds)
 	{
 		this.runeIds = runeIds;
+	}
+
+	public void setPastTeamSize(int pastTeamSize)
+	{
+		this.pastTeamSize = Math.max(1, pastTeamSize);
 	}
 
 	/**
@@ -102,6 +112,7 @@ public class ViewBuilder
 			.activeMs(trip.getActiveMs())
 			.segmentStartedAt(trip.getSegmentStartedAt())
 			.kills(trip.getKills().size())
+			.detail(boss.tripDetail(trip))
 			.bossStat(new StatView(stat.getLabel(), stat.valueOf(trip), stat.getHelp()))
 			.deaths(trip.getDeaths().size())
 			.pet(pet)
@@ -259,12 +270,17 @@ public class ViewBuilder
 				{
 					continue;
 				}
-				kills.add(kill);
+				// The dry streak goes by kill count, so only kills on the boss's kill-count scale (not Entry Mode raids)
+				boolean onKcScale = boss.countsTowardKillCount(kill);
+				if (onKcScale)
+				{
+					kills.add(kill);
+				}
 				if (kill.isPet())
 				{
 					petsFromKills++;
 				}
-				if (kill.getKillCount() != null)
+				if (onKcScale && kill.getKillCount() != null)
 				{
 					currentKc = currentKc == null ? kill.getKillCount() : Math.max(currentKc, kill.getKillCount());
 					if (firstTrackedKc == null)
@@ -355,9 +371,16 @@ public class ViewBuilder
 		}
 
 		double anyRate = averageRate(expectedAny, luckKills, boss.anyUniqueChance(KillContext.DEFAULT));
+		// Without an entered kill count, the game's own dry streak (Theatre of Blood) places your last unique
+		Integer lastUniqueKc = history.getLastUniqueKc();
+		boolean fromGame = lastUniqueKc == null && history.getGameDryStreak() != null && history.getGameDryStreakKc() != null;
+		if (fromGame)
+		{
+			lastUniqueKc = Math.max(0, history.getGameDryStreakKc() - history.getGameDryStreak());
+		}
 		DryStreak.Result streak = DryStreak.compute(kills, boss::countsForLuck,
 			kill -> kill.getLoot().stream().anyMatch(e -> boss.isUnique(e.getItemId())),
-			history.getLastUniqueKc(), allTime == null ? null : allTime.getKillCount());
+			lastUniqueKc, allTime == null ? null : allTime.getKillCount());
 		DrynessView.AllTime allTimeView = allTime(boss, uniqueDrops, allTime, kills, currentKc,
 			petsFromKills + petsFromEggs, eggPetExpected);
 
@@ -365,7 +388,7 @@ public class ViewBuilder
 		// whole kill count, not just the kills since tracking began
 		int since = streak.getSince();
 		boolean wholeKillCount = allTimeView != null && allTimeView.getKillCount() != null
-			&& allTimeView.getUniquesReceived() == 0 && uniquesReceived == 0 && history.getLastUniqueKc() == null;
+			&& allTimeView.getUniquesReceived() == 0 && uniquesReceived == 0 && lastUniqueKc == null;
 		if (wholeKillCount)
 		{
 			since = Math.max(since, allTimeView.getKillCount());
@@ -374,9 +397,10 @@ public class ViewBuilder
 		return DrynessView.builder()
 			.luckKills(luckKills)
 			.killsSinceUnique(since)
-			.sinceFromEnteredKc(streak.isFromEnteredKc())
+			.sinceFromEnteredKc(streak.isFromEnteredKc() && !fromGame)
+			.sinceFromGameCount(streak.isFromEnteredKc() && fromGame)
 			.sinceWholeKillCount(wholeKillCount)
-			.longestDryStreak(DryStreak.longest(uniqueKcs, history.getLastUniqueKc(), since))
+			.longestDryStreak(DryStreak.longest(uniqueKcs, lastUniqueKc, since))
 			.chanceThisDry(Math.pow(1 - anyRate, since))
 			.anyUniqueRate(anyRate)
 			.uniquesReceived(uniquesReceived)
@@ -406,17 +430,35 @@ public class ViewBuilder
 			return null;
 		}
 
-		// The Loot Tracker saves its record some seconds after a drop. Tracked loot kills since its last save aren't
-		// in it yet, so add them, or a unique would only show up after the save
+		// Past kills at the rates of their mode and a typical team, since the records don't say which. A record shared
+		// by several modes (the Theatre of Blood) is counted by each mode's kill count, at that mode's rate
+		Map<KillContext, Integer> pastKills = new LinkedHashMap<>();
 		int kills = counts.getLootKills();
+		if (counts.getVariantKillCounts().isEmpty())
+		{
+			pastKills.put(boss.pastKillContext(null, pastTeamSize), kills);
+		}
+		else
+		{
+			counts.getVariantKillCounts().forEach((mode, count) -> pastKills.put(boss.pastKillContext(mode, pastTeamSize), count));
+		}
+
+		// The Loot Tracker saves its record some seconds after a drop. Tracked loot kills since its last save aren't
+		// in it yet, so add them, or a unique would only show up after the save. Kill counts by mode come from Chat
+		// Commands, which already has them
 		Map<Integer, Integer> unsaved = new LinkedHashMap<>();
+		List<Kill> unsavedKills = new ArrayList<>();
 		if (counts.getLastRecordedAt() > 0)
 		{
 			for (Kill kill : trackedKills)
 			{
 				if (kill.getEndedAt() > counts.getLastRecordedAt() && boss.countsForLuck(kill))
 				{
-					kills++;
+					if (counts.getVariantKillCounts().isEmpty())
+					{
+						kills++;
+						unsavedKills.add(kill);
+					}
 					for (ItemEntry entry : kill.getLoot())
 					{
 						unsaved.merge(entry.getItemId(), (int) entry.getQuantity(), Integer::sum);
@@ -426,25 +468,26 @@ public class ViewBuilder
 		}
 
 		int received = 0;
+		double expectedAny = expected(pastKills, unsavedKills, boss::anyUniqueChance);
 		List<DrynessView.Drop> uniques = new ArrayList<>();
 		for (ExpectedDrop drop : uniqueDrops)
 		{
-			double rate = drop.chance(KillContext.DEFAULT);
+			double expected = expected(pastKills, unsavedKills, drop::chance);
 			int got = counts.dropped(drop.getItemId()) + unsaved.getOrDefault(drop.getItemId(), 0);
 			received += got;
-			uniques.add(new DrynessView.Drop(drop.getItemId(), prices.name(drop.getItemId()), rate, kills * rate, got,
-				Collections.emptyList()));
+			uniques.add(new DrynessView.Drop(drop.getItemId(), prices.name(drop.getItemId()),
+				averageRate(expected, kills, drop.chance(KillContext.DEFAULT)), expected, got, Collections.emptyList()));
 		}
 
 		ExpectedDrop petDrop = boss.getPet();
 		DrynessView.Drop pet = null;
 		if (petDrop != null)
 		{
-			double rate = petDrop.chance(KillContext.DEFAULT);
+			double expected = expected(pastKills, unsavedKills, petDrop::chance);
 			// The Loot Tracker doesn't record every pet, so take the larger count
-			pet = new DrynessView.Drop(petDrop.getItemId(), prices.name(petDrop.getItemId()), rate,
-				kills * rate + eggPetExpected, Math.max(counts.dropped(petDrop.getItemId()), trackedPets),
-				Collections.emptyList());
+			pet = new DrynessView.Drop(petDrop.getItemId(), prices.name(petDrop.getItemId()),
+				averageRate(expected, kills, petDrop.chance(KillContext.DEFAULT)), expected + eggPetExpected,
+				Math.max(counts.dropped(petDrop.getItemId()), trackedPets), Collections.emptyList());
 		}
 
 		return DrynessView.AllTime.builder()
@@ -454,10 +497,25 @@ public class ViewBuilder
 				: trackedKc == null ? counts.getKillCount() : Integer.valueOf(Math.max(counts.getKillCount(), trackedKc)))
 			.firstRecordedAt(counts.getFirstRecordedAt())
 			.uniquesReceived(received)
-			.expectedUniques(kills * boss.anyUniqueChance(KillContext.DEFAULT))
+			.expectedUniques(expectedAny)
 			.uniques(uniques)
 			.pet(pet)
 			.build();
+	}
+
+	private static double expected(Map<KillContext, Integer> pastKills, List<Kill> unsavedKills,
+		ToDoubleFunction<KillContext> chance)
+	{
+		double expected = 0;
+		for (Map.Entry<KillContext, Integer> e : pastKills.entrySet())
+		{
+			expected += e.getValue() * chance.applyAsDouble(e.getKey());
+		}
+		for (Kill kill : unsavedKills)
+		{
+			expected += chance.applyAsDouble(KillContext.of(kill));
+		}
+		return expected;
 	}
 
 	/**

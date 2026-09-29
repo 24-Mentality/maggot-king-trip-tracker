@@ -53,6 +53,11 @@ public class DrynessView
 	 */
 	boolean sinceFromEnteredKc;
 	/**
+	 * The dry streak starts from where the game's own count ("You are on a personal dry streak of 7.", Theatre of
+	 * Blood) places your last unique. That count includes Entry Mode raids.
+	 */
+	boolean sinceFromGameCount;
+	/**
 	 * No unique has ever been received (RuneLite's all-time record included), so the dry streak is the whole kill
 	 * count from Chat Commands.
 	 */
