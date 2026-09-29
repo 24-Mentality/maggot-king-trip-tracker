@@ -50,8 +50,8 @@ public enum ChargeType
 	TRIDENT_OF_THE_SEAS(ItemID.TOTS_CHARGED, 1, new Component(ItemID.DEATHRUNE, 1), new Component(ItemID.CHAOSRUNE, 1),
 		new Component(ItemID.FIRERUNE, 5), new Component(ItemID.COINS, 10)),
 	/**
-	 * One charge per cast, charged with a demon tear a charge (OSRS Wiki). Counted from its casting graphic
-	 * (unverified).
+	 * One charge per cast, charged with a demon tear a charge (OSRS Wiki). Counted from its casting graphic (105 of
+	 * 105 against a Check).
 	 */
 	EYE_OF_AYAK(ItemID.EYE_OF_AYAK, 1, new Component(ItemID.DEMON_TEAR, 1)),
 	/**
@@ -60,7 +60,7 @@ public enum ChargeType
 	EYE_OF_AYAK_RUNES(ItemID.EYE_OF_AYAK, 1, new Component(ItemID.DEATHRUNE, 2), new Component(ItemID.CHAOSRUNE, 1)),
 	/**
 	 * Zulrah's scales: a 1/3 chance per shot to use none, so 2 scales every 3 shots (OSRS Wiki). Counted from its attack
-	 * animation (unverified).
+	 * animation, one per shot (5 of 5 against a Check).
 	 */
 	TOXIC_BLOWPIPE_SCALES(ItemID.TOXIC_BLOWPIPE_LOADED, 3, new Component(ItemID.SNAKEBOSS_SCALE, 2)),
 	/**

@@ -1003,6 +1003,13 @@ public class TripTracker
 			petMessage(tick);
 			return;
 		}
+		Boolean thrall = ChatPatterns.thrall(message);
+		if (thrall != null)
+		{
+			// A thrall's hitsplats look like the player's own; blood fury counting leaves them out
+			chargeCounter.thrallChanged(tick, thrall);
+			return;
+		}
 		String text = Text.removeTags(message);
 		if (pendingDeath != null && tick <= graveWindowEndTick)
 		{

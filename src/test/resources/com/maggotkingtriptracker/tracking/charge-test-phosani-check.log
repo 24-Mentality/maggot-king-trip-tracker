@@ -8,6 +8,7 @@ tick=49 region=15515 inLair=true GRAPHIC spotanims=[1873]
 tick=49 region=15515 inLair=true ANIM id=8973 target=none weapon=22325 shield=-1 amulet=24780 autocast=0 spec=300
 tick=50 region=15515 inLair=true GRAPHIC spotanims=[3288]
 tick=50 region=15515 inLair=true ANIM id=8970 target=none weapon=22325 shield=-1 amulet=24780 autocast=0 spec=300
+tick=54 region=15515 inLair=true CHAT type=GAMEMESSAGE name="" sender="null" message="@mes_hl_mag@You resurrect a greater ghostly thrall.</col>"
 tick=56 region=15515 inLair=true ANIM id=8056 target=npc:9418 weapon=22325 shield=-1 amulet=24780 autocast=0 spec=300
 tick=57 region=15515 inLair=true HITSPLAT type=18 amount=16 target=npc:9418 weapon=22325 shield=-1 amulet=24780
 tick=57 region=15515 inLair=true HITSPLAT type=18 amount=15 target=npc:9418 weapon=22325 shield=-1 amulet=24780
@@ -101,12 +102,14 @@ tick=141 region=15515 inLair=true HITSPLAT type=22 amount=6 target=npc:9444 weap
 tick=142 region=15515 inLair=true HITSPLAT type=22 amount=61 target=npc:9444 weapon=27275 shield=-1 amulet=12002
 tick=147 region=15515 inLair=true GRAPHIC spotanims=[2125]
 tick=147 region=15515 inLair=true ANIM id=9493 target=npc:9438 weapon=27275 shield=-1 amulet=12002 autocast=0 spec=500
+tick=151 region=15515 inLair=true CHAT type=GAMEMESSAGE name="" sender="null" message="@mes_hl_mag@Your greater ghostly thrall returns to the grave.</col>"
 tick=151 region=15515 inLair=true GRAPHIC spotanims=[1873]
 tick=151 region=15515 inLair=true ANIM id=8973 target=none weapon=27275 shield=-1 amulet=12002 autocast=0 spec=500
 tick=152 region=15515 inLair=true HITSPLAT type=22 amount=1 target=npc:9438 weapon=27275 shield=-1 amulet=12002
 tick=153 region=15515 inLair=true GRAPHIC spotanims=[2125]
 tick=153 region=15515 inLair=true ANIM id=9493 target=npc:9438 weapon=27275 shield=-1 amulet=12002 autocast=0 spec=500
 tick=153 region=15515 inLair=true HITSPLAT type=22 amount=58 target=npc:9438 weapon=27275 shield=-1 amulet=12002
+tick=156 region=15515 inLair=true CHAT type=GAMEMESSAGE name="" sender="null" message="@mes_hl_mag@You resurrect a greater ghostly thrall.</col>"
 tick=156 region=15515 inLair=true GRAPHIC spotanims=[3288]
 tick=156 region=15515 inLair=true ANIM id=8970 target=none weapon=27275 shield=-1 amulet=12002 autocast=0 spec=500
 tick=156 region=15515 inLair=true HITSPLAT type=22 amount=1 target=npc:9438 weapon=27275 shield=-1 amulet=12002
@@ -183,6 +186,7 @@ tick=262 region=15515 inLair=true ANIM id=8970 target=none weapon=33716 shield=-
 tick=265 region=15515 inLair=true GRAPHIC spotanims=[3288, 3989]
 tick=265 region=15515 inLair=true ANIM id=7617 target=npc:9470 weapon=33716 shield=-1 amulet=12002 autocast=0 spec=850
 tick=265 region=15515 inLair=true EQUIPMENT -Blisterwood stake (33716) x1
+tick=267 region=15515 inLair=true CHAT type=GAMEMESSAGE name="" sender="null" message="@mes_hl_mag@Your greater ghostly thrall returns to the grave.</col>"
 tick=268 region=15515 inLair=true HITSPLAT type=16 amount=10 target=npc:9470 weapon=33716 shield=-1 amulet=12002
 tick=269 region=15515 inLair=true GRAPHIC spotanims=[3989]
 tick=269 region=15515 inLair=true ANIM id=7617 target=npc:9470 weapon=33716 shield=-1 amulet=12002 autocast=0 spec=850
@@ -204,6 +208,7 @@ tick=288 region=15515 inLair=true ANIM id=8973 target=npc:9417 weapon=33631 shie
 tick=289 region=15515 inLair=true GRAPHIC spotanims=[1873, 3908]
 tick=290 region=15515 inLair=true HITSPLAT type=18 amount=53 target=npc:9417 weapon=33631 shield=-1 amulet=24780
 tick=291 region=15515 inLair=true EQUIPMENT +Scythe of Vitur (22325) x1, -Crimson kisten (33631) x1
+tick=293 region=15515 inLair=true CHAT type=GAMEMESSAGE name="" sender="null" message="@mes_hl_mag@You resurrect a greater ghostly thrall.</col>"
 tick=293 region=15515 inLair=true ANIM id=8056 target=npc:9417 weapon=22325 shield=-1 amulet=24780 autocast=0 spec=0
 tick=293 region=15515 inLair=true HITSPLAT type=18 amount=1 target=npc:9417 weapon=22325 shield=-1 amulet=24780
 tick=294 region=15515 inLair=true GRAPHIC spotanims=[1765]
@@ -315,11 +320,13 @@ tick=398 region=15515 inLair=true ANIM id=9493 target=npc:9441 weapon=27275 shie
 tick=403 region=15515 inLair=true GRAPHIC spotanims=[2125]
 tick=403 region=15515 inLair=true ANIM id=9493 target=npc:9441 weapon=27275 shield=-1 amulet=12002 autocast=0 spec=200
 tick=403 region=15515 inLair=true HITSPLAT type=22 amount=88 target=npc:9441 weapon=27275 shield=-1 amulet=12002
+tick=404 region=15515 inLair=true CHAT type=GAMEMESSAGE name="" sender="null" message="@mes_hl_mag@Your greater ghostly thrall returns to the grave.</col>"
 tick=406 region=15515 inLair=true GRAPHIC spotanims=[1873]
 tick=406 region=15515 inLair=true ANIM id=8973 target=npc:9441 weapon=27275 shield=-1 amulet=12002 autocast=0 spec=200
 tick=408 region=15515 inLair=true HITSPLAT type=22 amount=46 target=npc:9441 weapon=27275 shield=-1 amulet=12002
 tick=409 region=15515 inLair=true GRAPHIC spotanims=[2125]
 tick=409 region=15515 inLair=true ANIM id=9493 target=npc:9441 weapon=27275 shield=-1 amulet=12002 autocast=0 spec=200
+tick=411 region=15515 inLair=true CHAT type=GAMEMESSAGE name="" sender="null" message="@mes_hl_mag@You resurrect a greater ghostly thrall.</col>"
 tick=411 region=15515 inLair=true HITSPLAT type=22 amount=6 target=npc:9441 weapon=27275 shield=-1 amulet=12002
 tick=413 region=15515 inLair=true HITSPLAT type=22 amount=20 target=npc:9441 weapon=27275 shield=-1 amulet=12002
 tick=414 region=15515 inLair=true GRAPHIC spotanims=[2125]
@@ -429,6 +436,7 @@ tick=514 region=15515 inLair=true EQUIPMENT +Ancestral robe bottom (21024) x1, -
 tick=515 region=15515 inLair=true EQUIPMENT +Ancestral hat (21018) x1, -Inquisitor's great helm (24419) x1, -Ultor ring (28307) x1, +Magus ring (28313) x1
 tick=517 region=15515 inLair=true GRAPHIC spotanims=[2125]
 tick=517 region=15515 inLair=true ANIM id=9493 target=npc:9435 weapon=27275 shield=-1 amulet=12002 autocast=0 spec=350
+tick=522 region=15515 inLair=true CHAT type=GAMEMESSAGE name="" sender="null" message="@mes_hl_mag@Your greater ghostly thrall returns to the grave.</col>"
 tick=523 region=15515 inLair=true GRAPHIC spotanims=[2125]
 tick=523 region=15515 inLair=true ANIM id=9493 target=npc:9435 weapon=27275 shield=-1 amulet=12002 autocast=0 spec=350
 tick=523 region=15515 inLair=true HITSPLAT type=22 amount=10 target=npc:9435 weapon=27275 shield=-1 amulet=12002
@@ -440,6 +448,7 @@ tick=529 region=15515 inLair=true ANIM id=8973 target=npc:9435 weapon=27275 shie
 tick=532 region=15515 inLair=true HITSPLAT type=22 amount=12 target=npc:9435 weapon=27275 shield=-1 amulet=12002
 tick=533 region=15515 inLair=true GRAPHIC spotanims=[2125]
 tick=533 region=15515 inLair=true ANIM id=9493 target=npc:9435 weapon=27275 shield=-1 amulet=12002 autocast=0 spec=350
+tick=534 region=15515 inLair=true CHAT type=GAMEMESSAGE name="" sender="null" message="@mes_hl_mag@You resurrect a greater ghostly thrall.</col>"
 tick=535 region=15515 inLair=true HITSPLAT type=22 amount=1 target=npc:9435 weapon=27275 shield=-1 amulet=12002
 tick=537 region=15515 inLair=true HITSPLAT type=22 amount=28 target=npc:9435 weapon=27275 shield=-1 amulet=12002
 tick=538 region=15515 inLair=true GRAPHIC spotanims=[2125]
@@ -533,6 +542,7 @@ tick=642 region=15515 inLair=true HITSPLAT type=16 amount=35 target=npc:11154 we
 tick=642 region=15515 inLair=true HITSPLAT type=12 amount=0 target=npc:11154 weapon=22325 shield=-1 amulet=24780
 tick=642 region=15515 inLair=true HITSPLAT type=16 amount=1 target=npc:11154 weapon=22325 shield=-1 amulet=24780
 tick=643 region=15515 inLair=true HITSPLAT type=12 amount=0 target=npc:11154 weapon=22325 shield=-1 amulet=24780
+tick=645 region=15515 inLair=true CHAT type=GAMEMESSAGE name="" sender="null" message="@mes_hl_mag@Your greater ghostly thrall returns to the grave.</col>"
 tick=646 region=15515 inLair=true ANIM id=8056 target=npc:11154 weapon=22325 shield=-1 amulet=24780 autocast=0 spec=450
 tick=647 region=15515 inLair=true HITSPLAT type=12 amount=0 target=npc:11154 weapon=22325 shield=-1 amulet=24780
 tick=647 region=15515 inLair=true HITSPLAT type=12 amount=0 target=npc:11154 weapon=22325 shield=-1 amulet=24780

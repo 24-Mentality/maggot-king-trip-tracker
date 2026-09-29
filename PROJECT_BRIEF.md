@@ -205,7 +205,11 @@ RuneLite does not accept new high-end PvM helper plugins.
     Check readings, so every damaging melee hit (cyan included) keeps
     counting, and the supply tooltip says the count is approximate there (up
     to about a third high). The user chose this over an unproven rule or
-    not counting it.
+    not counting it. Solved 2026-09-29: the extra hits were the user's
+    greater ghost thrall, whose hitsplats look like the player's own. Small
+    hits (up to a thrall's max hit, 3) that don't land the tick after a melee
+    attack are left out while a thrall is out; the tooltip now says the count
+    is within about 6% there.
 
 16. Charged gear from the wiki's Phosani's strategies page (2026-09-28): the
     Sanguinesti staff, Trident of the swamp / seas, Eye of Ayak and (at the
@@ -390,8 +394,25 @@ These come from diagnostic.log and take precedence over the assumptions above.
   has 4,100 charges remaining." (same tick as the cast that used the charge):
   52 used, exactly the VFX_AYAK_PLAYER_NORMAL_SPOTANIM (3366) casting
   graphics. Its attack animation (12397) only showed on 21 of those casts.
-  Blowpipe Check: "Darts: Dragon dart x 503. Scales: 1,308 (7.9%)." (no
-  second reading). Its attack animation (5061) showed 5 times for 7 shots at
-  sleepwalkers, so shots are counted from hitsplats while it's wielded. The
+  Blowpipe Check: "Darts: Dragon dart x 503. Scales: 1,308 (7.9%)." The
   user wears an Imbued Saradomin or Infernal cape with it, so every dart is
-  lost (no Ava's device).
+  lost (no Ava's device). (The 7 hitsplats vs 5 animations seen here turned
+  out to be the thrall; see the next entry.)
+- Second round of Checks after that kill (2026-09-29, log kept as
+  charge-test-check2.log, which replaces charge-test-ayak.log): blowpipe
+  503 -> 498 darts and 1,308 -> 1,303 scales = 5 shots = 5 attack
+  animations (5061); the 2 extra hitsplats on sleepwalkers (10 damage, they
+  die to any hit) were the greater ghost thrall, so shots are counted from
+  the animation again. Eye of Ayak 4,152 -> 4,047 = 105, exactly its cast
+  graphics. Scythe 1,289 -> 1,215 = 74 against 73 counted (75 attacks, 2 all
+  blocks). Blood fury 9,540 -> 9,525 = 15 against 14.
+- Thralls: "You resurrect a greater ghostly thrall." and "Your greater
+  ghostly thrall returns to the grave." (GAMEMESSAGE, prefixed with the
+  "@mes_hl_mag@" colour marker). A thrall's hitsplats are DAMAGE_ME /
+  DAMAGE_ME_CYAN like the player's own, 1-3 damage on a 4-tick rhythm.
+  Leaving them out of blood fury gives 95 / 51 / 137 / 14 for Checks of
+  90 / 52 / 130 / 15 at the Nightmare, and the Maggot King's 17 is unchanged
+  (no thrall there). The other thralls' messages are assumed to match.
+- The Nightmare's totems show the player's damage as DAMAGE_ME_YELLOW (22) /
+  DAMAGE_MAX_ME_YELLOW (46); a scythe attack that only hit a totem uses a
+  charge like any other, so every "ME" damage colour counts.

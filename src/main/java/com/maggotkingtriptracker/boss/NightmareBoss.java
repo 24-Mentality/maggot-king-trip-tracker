@@ -202,10 +202,10 @@ public final class NightmareBoss extends BossDefinition
 	@Override
 	public String getChargeNote(ChargeType type)
 	{
-		// Four in-game Check readings (2026-09-28) used 52, 73, 90 and 130 charges where every damaging melee hit
-		// counts 59, 99, 117 and 171; no simple rule matched all four
+		// Leaving out the thrall's hits, four Check readings (2026-09-28/29) that used 90, 52, 130 and 15 charges
+		// count 95, 51, 137 and 14
 		return type == ChargeType.BLOOD_FURY
-			? "Approximate at the Nightmare: can read up to about a third high. Checked against the amulet's Check;"
+			? "Approximate at the Nightmare: within about 6% of the amulet's Check in testing;"
 				+ " at the Maggot King it's exact."
 			: null;
 	}

@@ -23,7 +23,9 @@ import net.runelite.api.gameval.SpotanimID;
  * <li>Tumeken's shadow: its casting graphic on the player while the shadow is worn.</li>
  * <li>Blood fury: each damaging hitsplat the player deals while wearing the amulet, if the player's last
  * attack before the hit was with a melee weapon. That excludes ranged and magic hits still in flight
- * after switching to melee.</li>
+ * after switching to melee. While a thrall is out, hits of up to a thrall's max hit that don't land the tick
+ * after a melee attack are the thrall's: its hitsplats look like the player's own.</li>
+ * <li>Toxic blowpipe: its attack animation (hitsplats can't be used: a thrall's look the same).</li>
  * </ul>
  * Events are grouped by game tick and evaluated with the gear worn at the end of that tick, because gear
  * switches in the same tick can arrive after the attack. Validated against the game's Check messages.
@@ -47,10 +49,13 @@ class ChargeCounter
 	);
 
 	/**
-	 * The Nightmare's shield phases show your damage in cyan.
+	 * Damage the player dealt, in every colour: the Nightmare shows it in cyan during shield phases and in yellow on
+	 * the totems.
 	 */
 	static final Set<Integer> DAMAGE_HITSPLATS = ImmutableSet.of(HitsplatID.DAMAGE_ME, HitsplatID.DAMAGE_MAX_ME,
-		HitsplatID.DAMAGE_ME_CYAN, HitsplatID.DAMAGE_MAX_ME_CYAN);
+		HitsplatID.DAMAGE_ME_CYAN, HitsplatID.DAMAGE_MAX_ME_CYAN, HitsplatID.DAMAGE_ME_ORANGE, HitsplatID.DAMAGE_MAX_ME_ORANGE,
+		HitsplatID.DAMAGE_ME_YELLOW, HitsplatID.DAMAGE_MAX_ME_YELLOW, HitsplatID.DAMAGE_ME_WHITE, HitsplatID.DAMAGE_MAX_ME_WHITE,
+		HitsplatID.DAMAGE_ME_POISE, HitsplatID.DAMAGE_MAX_ME_POISE);
 
 
 	static final Set<Integer> SANGUINESTI_STAVES = ImmutableSet.of(ItemID.SANGUINESTI_STAFF, ItemID.SANGUINESTI_STAFF_OR);
@@ -62,6 +67,8 @@ class ChargeCounter
 	static final Set<Integer> AYAK_SPOTANIMS = ImmutableSet.of(
 		SpotanimID.VFX_AYAK_PLAYER_NORMAL_SPOTANIM, SpotanimID.VFX_AYAK_PLAYER_SPECIAL_SPOTANIM);
 	static final Set<Integer> BLOWPIPES = ImmutableSet.of(ItemID.TOXIC_BLOWPIPE_LOADED, ItemID.TOXIC_BLOWPIPE_LOADED_ORNAMENT);
+	static final Set<Integer> BLOWPIPE_ANIMATIONS = ImmutableSet.of(AnimationID.SNAKEBOSS_BLOWPIPE_ATTACK,
+		AnimationID.SNAKEBOSS_BLOWPIPE_ATTACK_ORNAMENT, AnimationID.TOXIC_BLOWPIPE_SPECIAL_UPDATED);
 	/**
 	 * Capes that save 80% of blowpipe darts: Ava's assembler, Dizana's quiver and their max capes.
 	 */
@@ -76,6 +83,16 @@ class ChargeCounter
 	 */
 	static final Set<Integer> DART_SAVE_72 = ImmutableSet.of(ItemID.ANMA_50_REWARD, ItemID.SKILLCAPE_MAX_ANMA);
 	static final Set<Integer> DART_SAVE_60 = ImmutableSet.of(ItemID.ANMA_30_REWARD);
+
+	/**
+	 * A greater thrall's max hit (OSRS Wiki); lesser and superior thralls hit less.
+	 */
+	static final int THRALL_MAX_HIT = 3;
+	/**
+	 * A thrall lasts 0.6 seconds per Magic level (OSRS Wiki), so no more than this many ticks even with a boost.
+	 * Covers a thrall whose "returns to the grave" message was missed.
+	 */
+	static final int THRALL_MAX_TICKS = 130;
 
 	/**
 	 * Charged scythes, ornamented ones included.
@@ -117,11 +134,15 @@ class ChargeCounter
 		final Set<Integer> spotAnims = new HashSet<>();
 		final Set<Integer> animations = new HashSet<>();
 		boolean animation;
-		/**
-		 * Any hitsplat the player dealt, misses included.
-		 */
-		boolean anyHit;
 		int damagingHits;
+		/**
+		 * Damaging hits no bigger than a thrall's max hit.
+		 */
+		int smallDamagingHits;
+		/**
+		 * Set when a thrall was raised (true) or returned to the grave (false) this tick.
+		 */
+		Boolean thrall;
 	}
 
 	private final IntPredicate isMeleeWeapon;
@@ -132,6 +153,11 @@ class ChargeCounter
 	private final TreeMap<Integer, Gear> gearByTick = new TreeMap<>();
 	private final TreeMap<Integer, TickEvents> pending = new TreeMap<>();
 	private Boolean lastAttackMelee;
+	private Integer lastMeleeAttackTick;
+	/**
+	 * The tick the current thrall was raised, or null with no thrall out.
+	 */
+	private Integer thrallRaisedTick;
 
 	ChargeCounter(IntPredicate isMeleeWeapon)
 	{
@@ -143,7 +169,9 @@ class ChargeCounter
 		gearByTick.clear();
 		pending.clear();
 		lastAttackMelee = null;
+		lastMeleeAttackTick = null;
 		pendingScytheTick = null;
+		thrallRaisedTick = null;
 	}
 
 	/**
@@ -175,11 +203,23 @@ class ChargeCounter
 	 */
 	void hitsplat(int tick, int type, int amount)
 	{
-		events(tick).anyHit = true;
 		if (amount > 0 && DAMAGE_HITSPLATS.contains(type))
 		{
-			events(tick).damagingHits++;
+			TickEvents events = events(tick);
+			events.damagingHits++;
+			if (amount <= THRALL_MAX_HIT)
+			{
+				events.smallDamagingHits++;
+			}
 		}
+	}
+
+	/**
+	 * A thrall was raised ({@code out}) or returned to the grave, from the game message.
+	 */
+	void thrallChanged(int tick, boolean out)
+	{
+		events(tick).thrall = out;
 	}
 
 	/**
@@ -205,6 +245,15 @@ class ChargeCounter
 	{
 		Map.Entry<Integer, Gear> gearEntry = gearByTick.floorEntry(tick);
 		Gear gear = gearEntry != null ? gearEntry.getValue() : Gear.NONE;
+
+		if (events.thrall != null)
+		{
+			thrallRaisedTick = events.thrall ? tick : null;
+		}
+		if (thrallRaisedTick != null && tick - thrallRaisedTick > THRALL_MAX_TICKS)
+		{
+			thrallRaisedTick = null;
+		}
 
 		boolean fireCast = events.spotAnims.stream().anyMatch(FIRE_CAST_SPOTANIMS::contains);
 		if (fireCast && gear.getShield() == ItemID.TOME_OF_FIRE)
@@ -263,9 +312,9 @@ class ChargeCounter
 		{
 			listener.chargesUsed(ChargeType.EYE_OF_AYAK, 1);
 		}
-		// The blowpipe's animation only plays when it starts shooting, not on every shot (5 animations for 7 shots in
-		// the log), but every shot lands a hitsplat, a hit or a miss. Unverified against a Check
-		if (events.anyHit && worn(BLOWPIPES, gear, previousWeapon))
+		// One animation per shot: 5 animations for the 5 darts and 5 scales a pair of Checks showed (2026-09-29). Two
+		// more hitsplats in that log were the thrall's
+		if (events.animations.stream().anyMatch(BLOWPIPE_ANIMATIONS::contains) && worn(BLOWPIPES, gear, previousWeapon))
 		{
 			listener.chargesUsed(ChargeType.TOXIC_BLOWPIPE_SCALES, 1);
 			listener.chargesUsed(DART_SAVE_80.contains(gear.getCape()) ? ChargeType.TOXIC_BLOWPIPE_DARTS_80
@@ -274,17 +323,28 @@ class ChargeCounter
 				: ChargeType.TOXIC_BLOWPIPE_DARTS_0, 1);
 		}
 
-		// Hits land at least a tick after the attack, so judge them by attacks from earlier ticks
-		// At the Nightmare this counts 13-36% more than the Check messages show (four readings on 2026-09-28), and
-		// the supply tooltip says so; the Maggot King's count matched exactly
-		if (events.damagingHits > 0 && Boolean.TRUE.equals(lastAttackMelee) && gear.getAmulet() == ItemID.BLOOD_AMULET)
+		// Hits land at least a tick after the attack, so judge them by attacks from earlier ticks. Some attacks hit
+		// more than once over several ticks (the elder maul at the Maggot King), so later hits count too, except
+		// small ones while a thrall is out. Checked against the Maggot King (exact) and five Nightmare readings
+		// (within 3 charges each)
+		int furyHits = events.damagingHits;
+		boolean hitTickOfMeleeAttack = lastMeleeAttackTick != null && tick == lastMeleeAttackTick + 1;
+		if (thrallRaisedTick != null && !hitTickOfMeleeAttack)
 		{
-			listener.chargesUsed(ChargeType.BLOOD_FURY, events.damagingHits);
+			furyHits -= events.smallDamagingHits;
+		}
+		if (furyHits > 0 && Boolean.TRUE.equals(lastAttackMelee) && gear.getAmulet() == ItemID.BLOOD_AMULET)
+		{
+			listener.chargesUsed(ChargeType.BLOOD_FURY, furyHits);
 		}
 
 		if (events.animation)
 		{
 			lastAttackMelee = isMeleeWeapon.test(gear.getWeapon());
+			if (lastAttackMelee)
+			{
+				lastMeleeAttackTick = tick;
+			}
 		}
 	}
 

@@ -53,4 +53,13 @@ public class ChatPatternsTest
 		assertEquals(Long.valueOf(334_200), ChatPatterns.fightDurationMs(
 			"Team size: <col=ff0000>Solo</col> Fight duration: <col=ff0000>5:34.20</col>. Personal best: 5:02.40"));
 	}
+
+	@Test
+	public void thrallMessages()
+	{
+		// Raw text from the diagnostic log, colour marker included
+		assertEquals(Boolean.TRUE, ChatPatterns.thrall("@mes_hl_mag@You resurrect a greater ghostly thrall.</col>"));
+		assertEquals(Boolean.FALSE, ChatPatterns.thrall("@mes_hl_mag@Your greater ghostly thrall returns to the grave.</col>"));
+		assertNull(ChatPatterns.thrall("The south west totem is fully charged."));
+	}
 }

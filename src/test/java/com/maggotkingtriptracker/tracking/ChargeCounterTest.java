@@ -24,6 +24,8 @@ public class ChargeCounterTest
 		ItemID.NIGHTMARE_STAFF_HARMONISED, ItemID.WILD_CAVE_WEBWEAVER_CHARGED, ItemID.ELDER_MAUL,
 		ItemID.SCYTHE_OF_VITUR, ItemID.TUMEKENS_SHADOW, ItemID.CRIMSON_KISTEN, ItemID.HALLOWFELL, ItemID.BLISTERWOOD_STAKE,
 		ItemID.EYE_OF_AYAK, ItemID.TOXIC_BLOWPIPE_LOADED);
+	private static final Set<Integer> MELEE = ImmutableSet.of(ItemID.ELDER_MAUL, ItemID.SCYTHE_OF_VITUR, ItemID.HALLOWFELL,
+		ItemID.CRIMSON_KISTEN);
 	private static final Set<Integer> AMULETS = ImmutableSet.of(ItemID.BLOOD_AMULET, 34428);
 
 	private static final Pattern TICK = Pattern.compile("^tick=(\\d+) \\S+ \\S+ (\\w+) (.*)$");
@@ -31,6 +33,7 @@ public class ChargeCounterTest
 	private static final Pattern ITEM = Pattern.compile("(?:^|\\[|, )([+-]?)[^,\\[]*?\\((\\d+)\\) x\\d+");
 	private static final Pattern SPOTANIMS = Pattern.compile("spotanims=\\[([\\d, ]*)\\]");
 	private static final Pattern HITSPLAT = Pattern.compile("type=(\\d+) amount=(\\d+) target=npc");
+	private static final Pattern MESSAGE = Pattern.compile("message=\"(.*)\"$");
 	private static final Pattern ANIM = Pattern.compile("^id=(\\d+)");
 
 	/**
@@ -61,27 +64,56 @@ public class ChargeCounterTest
 	}
 
 	/**
-	 * Phosani's Nightmare between an Eye of Ayak Check (4,152) and the game's "4,100 charges remaining" message, which
-	 * comes in the same tick as the cast that used the charge (2026-09-29).
+	 * Phosani's Nightmare between two rounds of in-game Checks (2026-09-29), with a greater ghost thrall out:
+	 * <ul>
+	 * <li>Eye of Ayak 4,152 -> 4,047, and "4,100 charges remaining" at tick 2671, in the same tick as the cast that
+	 * used the charge</li>
+	 * <li>Toxic blowpipe 503 -> 498 dragon darts and 1,308 -> 1,303 scales, with no Ava's device: 5 shots. The
+	 * thrall's hits on the sleepwalkers look like two more</li>
+	 * <li>Scythe of Vitur 1,289 -> 1,215 (74); 75 attacks, 2 missing with every hit</li>
+	 * <li>Blood fury 9,540 -> 9,525 (15)</li>
+	 * </ul>
 	 */
 	@Test
-	public void replayedEyeOfAyakMatchesCheckMessages() throws Exception
+	public void replayedPhosanisChecksWithAThrall() throws Exception
 	{
-		Map<ChargeType, Integer> used = replay("charge-test-ayak.log");
+		Map<ChargeType, Integer> used = replay("charge-test-check2.log");
 
-		assertEquals(Integer.valueOf(52), used.get(ChargeType.EYE_OF_AYAK));
+		assertEquals(Integer.valueOf(105), used.get(ChargeType.EYE_OF_AYAK));
+		assertEquals(Integer.valueOf(52), replay("charge-test-check2.log", 2671).get(ChargeType.EYE_OF_AYAK));
+		assertEquals(Integer.valueOf(5), used.get(ChargeType.TOXIC_BLOWPIPE_SCALES));
+		assertEquals(Integer.valueOf(5), used.get(ChargeType.TOXIC_BLOWPIPE_DARTS_0));
+		// One short of the Check
+		assertEquals(Integer.valueOf(73), used.get(ChargeType.SCYTHE_OF_VITUR));
+		assertEquals(Integer.valueOf(14), used.get(ChargeType.BLOOD_FURY));
+	}
+
+	/**
+	 * Blood fury at Phosani's Nightmare with a thrall out, against the amulet's Check: 9,989 -> 9,899 (90) in
+	 * charge-test-phosani-check.log, then 9,826 -> 9,774 (52) -> 9,644 (130) in charge-test-blood-fury.log
+	 * (2026-09-28). Counting every damaging hit gave 114, 57 and 164: the thrall's small hits look like the
+	 * player's own.
+	 */
+	@Test
+	public void replayedBloodFuryLeavesOutTheThrall() throws Exception
+	{
+		assertEquals(Integer.valueOf(95), replay("charge-test-phosani-check.log").get(ChargeType.BLOOD_FURY));
+		int toSecondCheck = replay("charge-test-blood-fury.log", 1750).get(ChargeType.BLOOD_FURY);
+		assertEquals(51, toSecondCheck);
+		assertEquals(137, replay("charge-test-blood-fury.log").get(ChargeType.BLOOD_FURY) - toSecondCheck);
 	}
 
 	/**
 	 * Two Phosani's Nightmare kills and a death (2026-09-28), switching between the scythe, Tumeken's shadow and
-	 * other weapons: no attack is lost to the switches. 132 scythe attacks, 8 of them missing with every hit.
+	 * other weapons: no attack is lost to the switches. 132 scythe attacks, 7 of them missing with every hit (one more
+	 * only hit a totem, shown as a yellow hitsplat).
 	 */
 	@Test
 	public void replayedPhosanisTripSurvivesWeaponSwitches() throws Exception
 	{
 		Map<ChargeType, Integer> used = replay("charge-test-phosani.log");
 
-		assertEquals(Integer.valueOf(124), used.get(ChargeType.SCYTHE_OF_VITUR));
+		assertEquals(Integer.valueOf(125), used.get(ChargeType.SCYTHE_OF_VITUR));
 		assertEquals(Integer.valueOf(135), used.get(ChargeType.TUMEKENS_SHADOW));
 	}
 
@@ -160,25 +192,53 @@ public class ChargeCounterTest
 		Map<ChargeType, Integer> used = new EnumMap<>(ChargeType.class);
 		ChargeCounter counter = new ChargeCounter(id -> false);
 
-		// One shot per tick with a hitsplat (hit or miss) while the blowpipe is wielded; the animation only plays at the
-		// first shot
+		// One shot per attack animation; hitsplats don't count (a thrall's look the same)
 		counter.gearChanged(1, new ChargeCounter.Gear(ItemID.TOXIC_BLOWPIPE_LOADED, -1, -1, ItemID.DIZANAS_QUIVER_INFINITE));
 		counter.animation(1, AnimationID.SNAKEBOSS_BLOWPIPE_ATTACK);
 		counter.hitsplat(2, HitsplatID.DAMAGE_ME, 10);
-		counter.hitsplat(4, HitsplatID.BLOCK_ME, 0);
+		counter.hitsplat(4, HitsplatID.DAMAGE_ME, 2);
+		counter.animation(3, AnimationID.TOXIC_BLOWPIPE_SPECIAL_UPDATED);
 		counter.gearChanged(5, new ChargeCounter.Gear(ItemID.TOXIC_BLOWPIPE_LOADED, -1, -1, ItemID.ANMA_50_REWARD));
-		counter.hitsplat(6, HitsplatID.DAMAGE_ME, 10);
+		counter.animation(6, AnimationID.SNAKEBOSS_BLOWPIPE_ATTACK);
 		counter.gearChanged(7, new ChargeCounter.Gear(ItemID.TOXIC_BLOWPIPE_LOADED, -1, -1, ItemID.INFERNAL_CAPE));
-		counter.hitsplat(8, HitsplatID.DAMAGE_ME, 10);
-		// Hits with another weapon don't count
+		counter.animation(8, AnimationID.SNAKEBOSS_BLOWPIPE_ATTACK);
+		// Switched away in the same tick as the shot still counts; the animation with another weapon doesn't
+		counter.animation(10, AnimationID.SNAKEBOSS_BLOWPIPE_ATTACK);
 		counter.gearChanged(10, new ChargeCounter.Gear(ItemID.EYE_OF_AYAK, -1, -1, ItemID.INFERNAL_CAPE));
-		counter.hitsplat(12, HitsplatID.DAMAGE_ME, 30);
+		counter.animation(12, AnimationID.SNAKEBOSS_BLOWPIPE_ATTACK);
 		counter.process(20, (type, n) -> used.merge(type, n, Integer::sum));
 
-		assertEquals(Integer.valueOf(4), used.get(ChargeType.TOXIC_BLOWPIPE_SCALES));
+		assertEquals(Integer.valueOf(5), used.get(ChargeType.TOXIC_BLOWPIPE_SCALES));
 		assertEquals(Integer.valueOf(2), used.get(ChargeType.TOXIC_BLOWPIPE_DARTS_80));
 		assertEquals(Integer.valueOf(1), used.get(ChargeType.TOXIC_BLOWPIPE_DARTS_72));
-		assertEquals(Integer.valueOf(1), used.get(ChargeType.TOXIC_BLOWPIPE_DARTS_0));
+		assertEquals(Integer.valueOf(2), used.get(ChargeType.TOXIC_BLOWPIPE_DARTS_0));
+	}
+
+	@Test
+	public void thrallHitsUseNoBloodFuryCharge()
+	{
+		Map<ChargeType, Integer> used = new EnumMap<>(ChargeType.class);
+		ChargeCounter counter = new ChargeCounter(id -> id == ItemID.SCYTHE_OF_VITUR);
+
+		counter.gearChanged(1, new ChargeCounter.Gear(ItemID.SCYTHE_OF_VITUR, -1, ItemID.BLOOD_AMULET));
+		counter.thrallChanged(1, true);
+		counter.animation(2, AnimationID.SCYTHE_OF_VITUR_ATTACK);
+		// The scythe's hits land the next tick, small ones included
+		counter.hitsplat(3, HitsplatID.DAMAGE_ME, 30);
+		counter.hitsplat(3, HitsplatID.DAMAGE_ME_CYAN, 2);
+		// A thrall hit, and a big hit from the same attack a few ticks later
+		counter.hitsplat(5, HitsplatID.DAMAGE_ME, 3);
+		counter.hitsplat(6, HitsplatID.DAMAGE_ME, 25);
+		// Without the thrall, small hits count again
+		counter.thrallChanged(7, false);
+		counter.hitsplat(8, HitsplatID.DAMAGE_ME, 3);
+		// A thrall that outlives its longest duration is gone even if its message was missed
+		counter.thrallChanged(10, true);
+		counter.hitsplat(11, HitsplatID.DAMAGE_ME, 3);
+		counter.hitsplat(10 + ChargeCounter.THRALL_MAX_TICKS + 1, HitsplatID.DAMAGE_ME, 3);
+		counter.process(500, (type, n) -> used.merge(type, n, Integer::sum));
+
+		assertEquals(Integer.valueOf(5), used.get(ChargeType.BLOOD_FURY));
 	}
 
 	@Test
@@ -219,8 +279,16 @@ public class ChargeCounterTest
 
 	private Map<ChargeType, Integer> replay(String resource) throws Exception
 	{
+		return replay(resource, Integer.MAX_VALUE);
+	}
+
+	/**
+	 * Replays a diagnostic log up to and including {@code lastTick}.
+	 */
+	private Map<ChargeType, Integer> replay(String resource, int lastTick) throws Exception
+	{
 		Map<ChargeType, Integer> used = new EnumMap<>(ChargeType.class);
-		ChargeCounter counter = new ChargeCounter(id -> id == ItemID.ELDER_MAUL);
+		ChargeCounter counter = new ChargeCounter(MELEE::contains);
 		Set<Integer> worn = new HashSet<>();
 
 		try (BufferedReader reader = new BufferedReader(new InputStreamReader(
@@ -235,6 +303,10 @@ public class ChargeCounterTest
 					continue;
 				}
 				int tick = Integer.parseInt(m.group(1));
+				if (tick > lastTick)
+				{
+					break;
+				}
 				String category = m.group(2);
 				String details = m.group(3);
 
@@ -275,6 +347,14 @@ public class ChargeCounterTest
 							}
 						}
 						counter.spotAnimsChanged(tick, ids);
+						break;
+					case "CHAT":
+						Matcher c = MESSAGE.matcher(details);
+						Boolean thrall = c.find() ? ChatPatterns.thrall(c.group(1)) : null;
+						if (thrall != null)
+						{
+							counter.thrallChanged(tick, thrall);
+						}
 						break;
 					case "HITSPLAT":
 						Matcher h = HITSPLAT.matcher(details);
