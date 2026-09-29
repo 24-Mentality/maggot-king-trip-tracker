@@ -54,7 +54,7 @@ class TripDetails extends JPanel
 		}
 	}
 
-	private static String categoryHelp(String category)
+	static String categoryHelp(String category)
 	{
 		switch (category)
 		{

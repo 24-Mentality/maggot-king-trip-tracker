@@ -58,7 +58,7 @@ public class TrackerPanel extends PluginPanel
 		currentTab = new CurrentTripPanel(itemManager, actions, () -> promptGoal(actions), actions::togglePause,
 			() -> confirmResetGoal(actions), () -> promptLastUniqueKc(actions), () -> actions.setLastUniqueKc(null));
 		historyTab = new HistoryPanel(itemManager, trip -> confirmDelete(trip, actions::deleteTrip));
-		lifetimeTab = new LifetimePanel(actions, () -> confirmClear(actions::clearHistory));
+		lifetimeTab = new LifetimePanel(itemManager, actions, () -> confirmClear(actions::clearHistory));
 
 		ScrollableContent display = new ScrollableContent();
 		display.setBackground(ColorScheme.DARK_GRAY_COLOR);
@@ -140,7 +140,7 @@ public class TrackerPanel extends PluginPanel
 		variantChips.update(boss, state.getVariant());
 		readOnlyWarning.setVisible(state.isReadOnly());
 		currentTab.update(state, System.currentTimeMillis());
-		historyTab.update(state.getHistory());
+		historyTab.update(state.getHistory(), state.getLifetime());
 		lifetimeTab.update(state.getLifetime(), state.isReadOnly(), boss);
 	}
 

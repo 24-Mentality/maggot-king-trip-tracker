@@ -47,7 +47,7 @@ bosses are planned.
   without dealing damage they pause (the idle time isn't counted) and restart on your next
   hit. **Pause** stops them straight away; it resumes when you press it again or, with
   **Auto-resume when I attack** on, when you next damage the boss.
-- **Luck** (Trip tab): uniques received vs expected with a luck tier (LUCKY AS RUCK, Lucky,
+- **Luck** (Trip tab, below the trip's loot and supplies): uniques received vs expected with a luck tier (LUCKY AS RUCK, Lucky,
   On Rate, Dry, DRY AS RUCK), kills since your last unique, how far past the drop rate you
   are, the rate and a count of each unique and the pet, laid out like the share card. The eye
   icon collapses it to the title row, which keeps the tier. **Luck card** (Configuration →
@@ -64,15 +64,19 @@ bosses are planned.
   The profit card's eye icon collapses it to just net profit and net GP/hr (green or red).
   Loot shows kills, loot per kill, loot per hour and net profit; Supplies shows the cost of
   charges, runes, potions, food and anything else.
-- **History:** one card per completed trip. Click to expand it, right-click to delete it.
-- **Lifetime:** totals across all trips, the Open-stomach / Take-eggs split, a profit-per-trip
-  chart, and:
-  - **Dryness:** Open-stomach kills since your last unique and the chance of being that dry,
-    the kill counts of each Elder venator fang and Crimson kisten, and expected vs actual
-    uniques and pets.
-  - **Drop chances** (Trip tab): Expected / Received bars for any unique, each unique and the pet,
+- **History:** a profit-per-trip chart with the trip count and net for the selected chip, then
+  one card per completed trip. Click a card to expand it, right-click to delete it.
+- **Lifetime:** totals across all trips (net profit and GP/hr from tracked trips, where costs are
+  known), the Open-stomach / Take-eggs split, and:
+  - **All loot:** every drop, with a Tracked / All-time switch. All-time is RuneLite's Loot
+    Tracker record for the boss, at today's prices; Tracked is every trip this plugin tracked,
+    at the prices then.
+  - **All supplies:** everything used across tracked trips, by category (RuneLite doesn't record
+    supplies, so there's no all-time count), and anything dropped and left behind.
+  - **Drop chances:** Expected / Received bars for any unique, each unique and the pet,
     using your all-time kills and drops from RuneLite's Loot Tracker (and your kill count from
-    Chat Commands) when available, otherwise the kills this plugin tracked.
+    Chat Commands) when available, otherwise the kills this plugin tracked. The tooltips give
+    how dry you are and the kill counts of tracked uniques.
   - **Eggs popped:** eggs popped per tier (anywhere, not just in the lair), pets from eggs,
     and your total pet chance from the eggs popped so far.
   - **Polish results:** what each type of tarnished item has polished into.

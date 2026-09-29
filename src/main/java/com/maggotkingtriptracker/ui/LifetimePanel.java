@@ -6,10 +6,16 @@ import com.maggotkingtriptracker.view.DrynessView;
 import com.maggotkingtriptracker.view.ItemView;
 import com.maggotkingtriptracker.view.LifetimeView;
 import com.maggotkingtriptracker.view.PolishView;
+import com.maggotkingtriptracker.view.SupplyCategory;
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import javax.swing.BorderFactory;
@@ -17,14 +23,26 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.SwingConstants;
+import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 
+/**
+ * The Lifetime tab: totals, then what they're made of (all loot and supplies), then drop chances, the boss's own
+ * cards (eggs, polish results) and the data buttons.
+ */
 class LifetimePanel extends JPanel
 {
+	/**
+	 * Remembered for the session. All-time (RuneLite's Loot Tracker record) when there is one.
+	 */
+	private static boolean trackedLoot;
+
+	private final ItemManager itemManager;
 	private final StatCell trips = new StatCell("Trips", false);
 	private final StatCell kills = new StatCell("Kills", false);
-	private final StatCell time = new StatCell("Lair time", false);
+	private final StatCell time = new StatCell("Time", false);
 	private final StatCell averageKill = new StatCell("Avg kill", false);
 	private final StatCell loot = new StatCell("Loot", false);
 	private final StatCell costs = new StatCell("Costs", false);
@@ -33,9 +51,12 @@ class LifetimePanel extends JPanel
 	private final StatCell deaths = new StatCell("Deaths", false);
 	private final JLabel details = new JLabel();
 	private final JLabel todayValue = new JLabel();
-	private final JLabel chartTitle = new JLabel();
-	private final ProfitTrendChart chart = new ProfitTrendChart();
-	private final InfoCard drynessCard = new InfoCard("Dryness");
+	private final JPanel lootHolder = holder();
+	private final JPanel suppliesHolder = holder();
+	private final JLabel trackedSwitch = switchLabel("Tracked");
+	private final JLabel allTimeSwitch = switchLabel("All-time");
+	private final JPanel lootSwitch = new JPanel(new GridLayout(1, 2, 4, 0));
+	private final DropChancesCard dropChances;
 	private final InfoCard eggCard = new InfoCard("Eggs popped");
 	private final InfoCard polishCard = new InfoCard("Polish results");
 	private final JButton exportCsvButton = new JButton("Export CSV");
@@ -43,8 +64,18 @@ class LifetimePanel extends JPanel
 	private final JButton importJsonButton = new JButton("Import JSON");
 	private final JButton clearButton = new JButton("Clear all");
 
-	LifetimePanel(PanelActions actions, Runnable onClear)
+	private LifetimeView view;
+	private BossDefinition boss;
+	/**
+	 * What the item grids were last built from, so they're only rebuilt (losing hovered tooltips) on a change.
+	 */
+	private List<Object> shownLoot;
+	private List<Object> shownSupplies;
+
+	LifetimePanel(ItemManager itemManager, PanelActions actions, Runnable onClear)
 	{
+		this.itemManager = itemManager;
+		this.dropChances = new DropChancesCard(itemManager);
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		setBackground(ColorScheme.DARK_GRAY_COLOR);
 
@@ -73,28 +104,25 @@ class LifetimePanel extends JPanel
 		card.add(footer, BorderLayout.SOUTH);
 		add(card);
 
-		chartTitle.setFont(FontManager.getRunescapeBoldFont());
-		chartTitle.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-		chartTitle.setFont(FontManager.getRunescapeSmallFont());
-		chartTitle.setBorder(BorderFactory.createEmptyBorder(5, 0, 2, 0));
-		chartTitle.setAlignmentX(LEFT_ALIGNMENT);
-		add(chartTitle);
-		chart.setAlignmentX(LEFT_ALIGNMENT);
-		add(chart);
+		lootSwitch.setOpaque(false);
+		lootSwitch.add(trackedSwitch);
+		lootSwitch.add(allTimeSwitch);
+		trackedSwitch.addMouseListener(selectLoot(true));
+		allTimeSwitch.addMouseListener(selectLoot(false));
+		add(lootHolder);
+		add(suppliesHolder);
 
-		for (InfoCard infoCard : new InfoCard[]{drynessCard, eggCard, polishCard})
+		add(title("Drop chances"));
+		dropChances.setAlignmentX(LEFT_ALIGNMENT);
+		add(dropChances);
+
+		for (InfoCard infoCard : new InfoCard[]{eggCard, polishCard})
 		{
 			add(spacer());
 			add(infoCard);
 		}
 
-		JLabel dataTitle = new JLabel("Data");
-		dataTitle.setFont(FontManager.getRunescapeBoldFont());
-		dataTitle.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-		dataTitle.setBorder(BorderFactory.createEmptyBorder(5, 0, 2, 0));
-		dataTitle.setAlignmentX(LEFT_ALIGNMENT);
-		add(dataTitle);
-
+		add(title("Data"));
 		JPanel buttons = new JPanel(new GridLayout(0, 2, 4, 4));
 		buttons.setOpaque(false);
 		buttons.setAlignmentX(LEFT_ALIGNMENT);
@@ -113,6 +141,25 @@ class LifetimePanel extends JPanel
 		add(buttons);
 	}
 
+	private static JPanel holder()
+	{
+		JPanel holder = new JPanel();
+		holder.setLayout(new BoxLayout(holder, BoxLayout.Y_AXIS));
+		holder.setOpaque(false);
+		holder.setAlignmentX(LEFT_ALIGNMENT);
+		return holder;
+	}
+
+	private static JLabel title(String text)
+	{
+		JLabel title = new JLabel(text);
+		title.setFont(FontManager.getRunescapeBoldFont());
+		title.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+		title.setBorder(BorderFactory.createEmptyBorder(6, 0, 2, 0));
+		title.setAlignmentX(LEFT_ALIGNMENT);
+		return title;
+	}
+
 	private static JPanel spacer()
 	{
 		JPanel spacer = new JPanel();
@@ -120,6 +167,30 @@ class LifetimePanel extends JPanel
 		spacer.setAlignmentX(LEFT_ALIGNMENT);
 		spacer.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
 		return spacer;
+	}
+
+	private static JLabel switchLabel(String text)
+	{
+		JLabel label = new JLabel(text, SwingConstants.CENTER);
+		label.setFont(FontManager.getRunescapeSmallFont());
+		label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		return label;
+	}
+
+	private MouseAdapter selectLoot(boolean tracked)
+	{
+		return new MouseAdapter()
+		{
+			@Override
+			public void mousePressed(MouseEvent e)
+			{
+				trackedLoot = tracked;
+				shownLoot = null;
+				updateLoot();
+				revalidate();
+				repaint();
+			}
+		};
 	}
 
 	void update(LifetimeView view, boolean readOnly, BossDefinition boss)
@@ -130,15 +201,17 @@ class LifetimePanel extends JPanel
 			return;
 		}
 		setVisible(true);
+		this.view = view;
+		this.boss = boss;
 
 		String area = boss.getAreaNoun();
-		time.setCaption(Character.toUpperCase(area.charAt(0)) + area.substring(1) + " time");
 		eggCard.setVisible(!boss.getEggPetRates().isEmpty());
 		polishCard.setVisible(!boss.getTarnishedItems().isEmpty());
 
 		trips.setValue(String.valueOf(view.getTrips()));
 		kills.setValue(String.valueOf(view.getKills()));
-		time.setValue(UiFormat.duration(view.getActiveMs()));
+		time.setValue(UiFormat.duration(view.getActiveMs()), ColorScheme.LIGHT_GRAY_COLOR,
+			"Time spent in the " + area + " across all trips (idle time left out).");
 		averageKill.setValue(UiFormat.killTime(view.getAverageKillMs()));
 		loot.setValue(UiFormat.gp(view.getLootValue()), ColorScheme.LIGHT_GRAY_COLOR,
 			UiFormat.fullGp(view.getLootValue()) + " at recorded prices");
@@ -164,11 +237,10 @@ class LifetimePanel extends JPanel
 			todayValue.setToolTipText(UiFormat.fullGp(today));
 		}
 
-		int shown = Math.min(view.getNetPerTrip().size(), ProfitTrendChart.MAX_TRIPS);
-		chartTitle.setText(shown == 0 ? "Profit per trip" : "Profit per trip (last " + shown + ")");
-		chart.setValues(view.getNetPerTrip());
-
-		updateDryness(view.getDryness(), boss);
+		updateLoot();
+		updateSupplies();
+		dropChances.update(view.getDryness(), boss);
+		updateEggs(view.getDryness());
 		updatePolish(view.getPolish());
 
 		exportCsvButton.setEnabled(view.getTrips() > 0);
@@ -179,46 +251,114 @@ class LifetimePanel extends JPanel
 		repaint();
 	}
 
-	private void updateDryness(DrynessView dryness, BossDefinition boss)
+	/**
+	 * All loot: RuneLite's Loot Tracker record at today's prices, or the loot of every tracked trip at the prices
+	 * recorded then. Net profit stays on tracked trips (the totals above), as costs are only known for those.
+	 */
+	private void updateLoot()
 	{
-		String luckKills = boss.getLuckKillsName();
-		String capitalised = Character.toUpperCase(luckKills.charAt(0)) + luckKills.substring(1);
-		// One short fact per line so nothing wraps at sidebar width; details are in the hover text
-		List<String[]> rows = new ArrayList<>();
-		rows.add(new String[]{boss.getLuckKillsLabel() + ": " + String.format(Locale.ROOT, "%,d", dryness.getLuckKills()),
-			(capitalised + " tracked by this plugin. " + boss.getLuckNote()).trim()});
-		rows.add(new String[]{"Since unique: " + String.format(Locale.ROOT, "%,d", dryness.getKillsSinceUnique())
-			+ " (" + percent(dryness.getChanceThisDry()) + " this dry)",
-			capitalised + " since your last " + (dryness.isSinceFromEnteredKc() ? "unique (the kill count you entered)"
-				: dryness.isSinceFromGameCount() ? "unique (from the game's own dry streak count)"
-				: "tracked unique") + ", and the chance of going that long without one at 1/"
-				+ UiFormat.oneIn(dryness.getAnyUniqueRate()) + "."});
-		if (dryness.getTeamDryStreak() != null)
-		{
-			rows.add(new String[]{"Team dry streak: " + String.format(Locale.ROOT, "%,d", dryness.getTeamDryStreak()),
-				UiFormat.teamDryStreakHelp(dryness.isTeamDryStreakFromGame())});
-		}
-		for (DrynessView.Drop unique : dryness.getUniques())
-		{
-			List<String> kcs = new ArrayList<>();
-			for (Integer kc : unique.getKillCounts())
-			{
-				kcs.add(kc == null ? "?" : String.format(Locale.ROOT, "%,d", kc));
-			}
-			rows.add(new String[]{unique.getName() + ": " + unique.getKillCounts().size() + " / "
-				+ String.format(Locale.ROOT, "%.2f", unique.getExpected()),
-				"Received / expected from tracked kills (1/" + UiFormat.oneIn(unique.getRate()) + ")."
-					+ (kcs.isEmpty() ? "" : " Received at KC " + String.join(", ", kcs) + ".")});
-		}
-		DrynessView.Drop pet = dryness.getPet();
-		if (pet != null)
-		{
-			rows.add(new String[]{"Pet from kills: " + pet.getReceived() + " / "
-				+ String.format(Locale.ROOT, "%.3f", pet.getExpected()),
-				"Received / expected from tracked " + luckKills + " at 1/" + UiFormat.oneIn(pet.getRate()) + "."});
-		}
-		drynessCard.setRows(rows);
+		boolean hasAllTime = view.getAllTimeLoot() != null;
+		boolean allTime = hasAllTime && !trackedLoot;
+		style(trackedSwitch, !allTime);
+		style(allTimeSwitch, allTime);
+		allTimeSwitch.setVisible(hasAllTime);
+		allTimeSwitch.setToolTipText(UiFormat.tooltip("Everything RuneLite's Loot Tracker has recorded for this boss"
+			+ (view.getAllTimeSince() > 0 ? " since " + UiFormat.date(view.getAllTimeSince()) : "")
+			+ ", at today's prices (it doesn't keep prices)."));
+		trackedSwitch.setToolTipText(UiFormat.tooltip("Loot of every trip this plugin tracked, at the prices recorded then."));
 
+		List<ItemView> items = allTime ? view.getAllTimeLoot() : view.getLoot();
+		List<Object> key = new ArrayList<>(items);
+		key.add(allTime);
+		if (key.equals(shownLoot))
+		{
+			return;
+		}
+		shownLoot = key;
+
+		String killsName = boss.getLuckKillsName();
+		List<SectionStat> stats = new ArrayList<>();
+		if (allTime)
+		{
+			DrynessView.AllTime record = view.getDryness().getAllTime();
+			int recordKills = record == null ? 0 : record.getLootKills();
+			long value = view.getAllTimeLootValue();
+			stats.add(SectionStat.of("Total", UiFormat.gp(value),
+				UiFormat.fullGp(value) + " at today's prices: everything in RuneLite's Loot Tracker record."));
+			stats.add(SectionStat.of("GP/Kill", UiFormat.gp(recordKills > 0 ? value / recordKills : 0),
+				"Total divided by the " + String.format(Locale.ROOT, "%,d", recordKills) + " " + killsName + " in the record."));
+			stats.add(SectionStat.of("Kills", String.format(Locale.ROOT, "%,d", recordKills),
+				Character.toUpperCase(killsName.charAt(0)) + killsName.substring(1) + " in RuneLite's Loot Tracker record."));
+			if (view.getAllTimeSince() > 0)
+			{
+				stats.add(SectionStat.of("Since", UiFormat.date(view.getAllTimeSince()),
+					"When RuneLite's Loot Tracker started recording this boss on this account."));
+			}
+		}
+		else
+		{
+			long value = view.getLootValue();
+			stats.add(SectionStat.of("Total", UiFormat.gp(value),
+				UiFormat.fullGp(value) + " at the prices recorded when each drop came in."));
+			stats.add(SectionStat.of("GP/Kill", UiFormat.gp(view.getKills() > 0 ? value / view.getKills() : 0),
+				"Total divided by the " + view.getKills() + " kills tracked."));
+			stats.add(SectionStat.of("Kills", String.valueOf(view.getKills()), "Kills tracked by this plugin."));
+			stats.add(SectionStat.of("Loot GP/hr", UiFormat.gp(TripMath.gpPerHour(value, view.getActiveMs())),
+				"Loot per hour in the " + boss.getAreaNoun() + ", before costs."));
+		}
+
+		lootHolder.removeAll();
+		lootHolder.add(section(new ItemSection(itemManager, "All loot", items,
+			allTime ? "Nothing in the record yet" : "No loot tracked yet", stats, lootSwitch)));
+	}
+
+	/**
+	 * Every tracked trip's supplies and items left behind. RuneLite doesn't record supplies anywhere, so these only
+	 * go back to when the plugin started tracking.
+	 */
+	private void updateSupplies()
+	{
+		List<Object> key = new ArrayList<>(view.getSupplies());
+		key.add(view.getSupplyCategories());
+		key.addAll(view.getDropped());
+		if (key.equals(shownSupplies))
+		{
+			return;
+		}
+		shownSupplies = key;
+
+		List<SectionStat> stats = new ArrayList<>();
+		stats.add(SectionStat.of("Total", UiFormat.gp(view.getSupplyCost()),
+			"Everything used up across the trips this plugin tracked (RuneLite doesn't record supplies, so there's no"
+				+ " all-time count). Dropped items and death costs are counted separately under Costs."));
+		for (SupplyCategory category : view.getSupplyCategories())
+		{
+			stats.add(SectionStat.of(category.getName(), UiFormat.gp(category.getValue()), TripDetails.categoryHelp(category.getName())));
+		}
+		suppliesHolder.removeAll();
+		suppliesHolder.add(section(new ItemSection(itemManager, "All supplies", view.getSupplies(), "No supplies tracked yet", stats)));
+		if (!view.getDropped().isEmpty())
+		{
+			List<SectionStat> droppedStats = Collections.singletonList(SectionStat.of("Total", UiFormat.gp(view.getDroppedCost()),
+				"Items dropped and left behind across all trips, at GE price."));
+			suppliesHolder.add(section(new ItemSection(itemManager, "All dropped", view.getDropped(), null, droppedStats)));
+		}
+	}
+
+	private static ItemSection section(ItemSection section)
+	{
+		section.setAlignmentX(LEFT_ALIGNMENT);
+		return section;
+	}
+
+	private static void style(JLabel label, boolean selected)
+	{
+		label.setForeground(selected ? Color.WHITE : UiFormat.MUTED_TEXT);
+		label.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, selected ? ColorScheme.BRAND_ORANGE : ColorScheme.DARKER_GRAY_COLOR));
+	}
+
+	private void updateEggs(DrynessView dryness)
+	{
 		List<String[]> eggRows = new ArrayList<>();
 		int popped = 0;
 		for (DrynessView.EggTier tier : dryness.getEggTiers())
@@ -244,10 +384,10 @@ class LifetimePanel extends JPanel
 	{
 		// The type on one line, then one line per result
 		List<String> rows = new ArrayList<>();
-		for (PolishView view : polish)
+		for (PolishView polished : polish)
 		{
-			rows.add(view.getTarnishedName() + " (" + view.getTotal() + ")");
-			for (ItemView outcome : view.getOutcomes())
+			rows.add(polished.getTarnishedName() + " (" + polished.getTotal() + ")");
+			for (ItemView outcome : polished.getOutcomes())
 			{
 				rows.add("  " + outcome.getName() + " x" + outcome.getQuantity());
 			}

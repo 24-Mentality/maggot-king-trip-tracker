@@ -1,5 +1,6 @@
 package com.maggotkingtriptracker.view;
 
+import java.util.Collections;
 import java.util.List;
 import lombok.Builder;
 import lombok.Value;
@@ -32,6 +33,27 @@ public class LifetimeView
 	 */
 	List<Long> netPerTrip;
 	DrynessView dryness;
+	/**
+	 * Every tracked trip's loot, supplies and items left behind added together, at the prices recorded then.
+	 */
+	@Builder.Default
+	List<ItemView> loot = Collections.emptyList();
+	@Builder.Default
+	List<ItemView> supplies = Collections.emptyList();
+	@Builder.Default
+	List<SupplyCategory> supplyCategories = Collections.emptyList();
+	@Builder.Default
+	List<ItemView> dropped = Collections.emptyList();
+	/**
+	 * Everything RuneLite's Loot Tracker has recorded for this boss, at today's prices; null without a record (or
+	 * with a mode chip selected, when the record can't be split by mode).
+	 */
+	List<ItemView> allTimeLoot;
+	long allTimeLootValue;
+	/**
+	 * When the Loot Tracker's record starts; 0 if unknown.
+	 */
+	long allTimeSince;
 	/**
 	 * Tarnished items polished; empty for bosses without them.
 	 */

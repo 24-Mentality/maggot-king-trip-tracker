@@ -141,16 +141,21 @@ class DropChancesCard extends JPanel
 		List<String> names = new ArrayList<>();
 		List<Double> expected = new ArrayList<>();
 		List<Integer> received = new ArrayList<>();
+		// Extra facts per row for the tooltip: how dry you are, and the kill counts of tracked uniques
+		List<String> extras = new ArrayList<>();
 		DrynessView.AllTime allTime = dryness.getAllTime();
 		List<DrynessView.Drop> uniques = allTime != null ? allTime.getUniques() : dryness.getUniques();
 		names.add("Any unique (1/" + UiFormat.oneIn(dryness.getAnyUniqueRate()) + ")");
 		expected.add(allTime != null ? allTime.getExpectedUniques() : dryness.getExpectedUniques());
 		received.add(allTime != null ? allTime.getUniquesReceived() : dryness.getUniquesReceived());
+		extras.add(String.format(Locale.ROOT, " You're on a %,d kill dry streak: %s of players would have had a unique by now.",
+			dryness.getKillsSinceUnique(), percent(1 - dryness.getChanceThisDry())));
 		for (DrynessView.Drop unique : uniques)
 		{
 			names.add(unique.getName() + " (1/" + UiFormat.oneIn(unique.getRate()) + ")");
 			expected.add(unique.getExpected());
 			received.add(unique.getReceived());
+			extras.add(trackedKcs(unique.getItemId()));
 		}
 
 		boolean hasEggs = !dryness.getEggTiers().isEmpty();
@@ -172,6 +177,10 @@ class DropChancesCard extends JPanel
 			}
 		}
 		int petRow = pet != null ? names.size() - 1 : -1;
+		if (pet != null)
+		{
+			extras.add("");
+		}
 
 		String basis;
 		if (allTime != null)
@@ -217,10 +226,37 @@ class DropChancesCard extends JPanel
 				+ String.format(Locale.ROOT, "%.2f", expected.get(i)) + " expected from " + basis
 				+ (i == petRow && eggPetExpected > 0 ? String.format(Locale.ROOT, " plus eggs popped (%.3f)", eggPetExpected) : "")
 				+ ". " + String.format(Locale.ROOT, "%.0f%%", toNext * 100) + " of the way to the next expected drop."
-				+ (i == petRow && allTime != null ? " The Loot Tracker doesn't record pets, so pets are the ones this plugin saw." : "");
+				+ (i == petRow && allTime != null ? " The Loot Tracker doesn't record pets, so pets are the ones this plugin saw." : "")
+				+ extras.get(i);
 			row.panel.setToolTipText(UiFormat.tooltip(help));
 			row.bar.setToolTipText(UiFormat.tooltip(help));
 		}
+	}
+
+	/**
+	 * @return " Tracked at KC 2,601, 2,767." for a unique this plugin tracked, or an empty string
+	 */
+	private String trackedKcs(int itemId)
+	{
+		for (DrynessView.Drop tracked : dryness.getUniques())
+		{
+			if (tracked.getItemId() == itemId && !tracked.getKillCounts().isEmpty())
+			{
+				List<String> kcs = new ArrayList<>();
+				for (Integer kc : tracked.getKillCounts())
+				{
+					kcs.add(kc == null ? "?" : String.format(Locale.ROOT, "%,d", kc));
+				}
+				return " Tracked at KC " + String.join(", ", kcs) + ".";
+			}
+		}
+		return "";
+	}
+
+	private static String percent(double chance)
+	{
+		double pct = chance * 100;
+		return String.format(Locale.ROOT, pct < 1 ? "%.2f%%" : "%.1f%%", pct);
 	}
 
 	private MouseAdapter select(boolean received)

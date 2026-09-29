@@ -131,6 +131,30 @@ public class ViewBuilder
 			.build();
 	}
 
+	/**
+	 * The Loot Tracker's record as item lines at today's prices (it keeps quantities, not prices).
+	 */
+	private List<ItemView> allTimeLoot(BossDefinition boss, AllTimeCounts allTime)
+	{
+		if (allTime == null)
+		{
+			return null;
+		}
+		List<ItemEntry> entries = new ArrayList<>();
+		allTime.getDrops().forEach((itemId, quantity) -> entries.add(new ItemEntry(itemId, quantity, prices.price(itemId))));
+		return items(boss, entries);
+	}
+
+	private long allTimeLootValue(AllTimeCounts allTime)
+	{
+		long value = 0;
+		for (Map.Entry<Integer, Integer> e : allTime.getDrops().entrySet())
+		{
+			value += e.getValue() * prices.price(e.getKey());
+		}
+		return value;
+	}
+
 	private static Long lastKillMs(Trip trip)
 	{
 		for (int i = trip.getKills().size() - 1; i >= 0; i--)
@@ -171,6 +195,9 @@ public class ViewBuilder
 		long deathCost = 0;
 		long today = 0;
 		List<Long> netPerTrip = new ArrayList<>();
+		List<ItemEntry> allLoot = new ArrayList<>();
+		List<ItemEntry> allSupplies = new ArrayList<>();
+		List<ItemEntry> allDropped = new ArrayList<>();
 
 		for (Trip trip : trips)
 		{
@@ -181,8 +208,11 @@ public class ViewBuilder
 			supplies += TripMath.supplyCost(trip);
 			dropped += TripMath.droppedCost(trip);
 			deathCost += TripMath.deathCost(trip);
+			allSupplies.addAll(trip.getSupplies());
+			allDropped.addAll(trip.getDropped());
 			for (Kill kill : trip.getKills())
 			{
+				allLoot.addAll(kill.getLoot());
 				if (kill.isPet())
 				{
 					pets++;
@@ -232,6 +262,13 @@ public class ViewBuilder
 			.netPerTrip(netPerTrip)
 			.dryness(dryness(boss, history, trips, variant, allTime))
 			.polish(polish(boss, history))
+			.loot(items(boss, allLoot))
+			.supplies(items(boss, allSupplies))
+			.supplyCategories(supplyCategories(allSupplies))
+			.dropped(items(boss, allDropped))
+			.allTimeLoot(allTimeLoot(boss, allTime))
+			.allTimeLootValue(allTime == null ? 0 : allTimeLootValue(allTime))
+			.allTimeSince(allTime == null ? 0 : allTime.getFirstRecordedAt())
 			.build();
 	}
 

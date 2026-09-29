@@ -331,6 +331,19 @@ public class PanelFitTest
 			.netPerTrip(Arrays.asList(-12_400_000_000L, 5_000_000L))
 			.dryness(dryness)
 			.polish(polish)
+			// The Lifetime tab's loot and supplies cards, with every stat at its longest (item grids need the client's
+			// item icons, so they're left empty)
+			.loot(Collections.<ItemView>emptyList())
+			.supplies(Collections.<ItemView>emptyList())
+			.supplyCategories(Arrays.asList(
+				new SupplyCategory("Charges", 99_999_999_000L),
+				new SupplyCategory("Runes", 99_999_999_000L),
+				new SupplyCategory("Potions", 99_999_999_000L),
+				new SupplyCategory("Food", 99_999_999_000L),
+				new SupplyCategory("Other", 99_999_999_000L)))
+			.allTimeLoot(Collections.<ItemView>emptyList())
+			.allTimeLootValue(123_456_789_000L)
+			.allTimeSince(1_785_447_588_633L)
 			.build();
 
 		// 1 kill per hour for 12,000 hours: KPH and the time to goal are at their longest

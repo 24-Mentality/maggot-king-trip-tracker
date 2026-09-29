@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.swing.BorderFactory;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
@@ -40,6 +41,16 @@ class ItemSection extends JPanel
 	 */
 	ItemSection(ItemManager itemManager, String title, List<ItemView> items, String emptyText, List<SectionStat> stats)
 	{
+		this(itemManager, title, items, emptyText, stats, null);
+	}
+
+	/**
+	 * @param titleExtra shown in the title row between the title and the eye (e.g. a Tracked / All-time switch);
+	 * null for none
+	 */
+	ItemSection(ItemManager itemManager, String title, List<ItemView> items, String emptyText, List<SectionStat> stats,
+		JComponent titleExtra)
+	{
 		this.title = title;
 		setLayout(new BorderLayout(0, 3));
 		setOpaque(false);
@@ -63,6 +74,10 @@ class ItemSection extends JPanel
 		JPanel titleRow = new JPanel(new BorderLayout());
 		titleRow.setOpaque(false);
 		titleRow.add(titleLabel, BorderLayout.WEST);
+		if (titleExtra != null)
+		{
+			titleRow.add(titleExtra, BorderLayout.CENTER);
+		}
 		titleRow.add(eye, BorderLayout.EAST);
 
 		JPanel header = new JPanel(new BorderLayout(0, 1));

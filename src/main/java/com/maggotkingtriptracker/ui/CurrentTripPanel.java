@@ -21,7 +21,6 @@ class CurrentTripPanel extends JPanel
 	private final JLabel status = new JLabel();
 	private final TripSummaryCard summary = new TripSummaryCard();
 	private final LuckCard luckCard;
-	private final DropChancesCard dropChances;
 	/**
 	 * The share card's luck section as a panel card; shown instead of the classic Luck card by default.
 	 */
@@ -36,7 +35,6 @@ class CurrentTripPanel extends JPanel
 		this.itemManager = itemManager;
 		this.luckCard = new LuckCard(onSetLastUniqueKc, onClearLastUniqueKc);
 		this.goalCard = new GoalCard(itemManager, onSetGoal, onPause, onResetGoal);
-		this.dropChances = new DropChancesCard(itemManager);
 		this.luckOverview = new LuckOverviewCard(itemManager, onSetLastUniqueKc, onClearLastUniqueKc);
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		setBackground(ColorScheme.DARK_GRAY_COLOR);
@@ -56,17 +54,16 @@ class CurrentTripPanel extends JPanel
 		goalSpacer.setAlignmentX(LEFT_ALIGNMENT);
 		goalSpacer.setBorder(BorderFactory.createEmptyBorder(0, 0, 2, 0));
 
+		// This trip first (goal, times and profit, then its loot and supplies), then all-time luck, which collapses
+		// to its title row with the eye icon. Drop chances are on the Lifetime tab
 		add(goalCard);
 		add(goalSpacer);
 		add(status);
 		add(summary);
+		add(detailsHolder);
 		luckHolder.setOpaque(false);
 		luckHolder.setAlignmentX(LEFT_ALIGNMENT);
 		luckHolder.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
-		JPanel dropHolder = new JPanel(new BorderLayout());
-		dropHolder.setOpaque(false);
-		dropHolder.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
-		dropHolder.add(dropChances, BorderLayout.CENTER);
 		// One of the two Luck cards is visible, per the "Luck card" setting
 		JPanel cards = new JPanel();
 		cards.setLayout(new BoxLayout(cards, BoxLayout.Y_AXIS));
@@ -76,9 +73,7 @@ class CurrentTripPanel extends JPanel
 		cards.add(luckOverview);
 		cards.add(luckCard);
 		luckHolder.add(cards, BorderLayout.CENTER);
-		luckHolder.add(dropHolder, BorderLayout.SOUTH);
 		add(luckHolder);
-		add(detailsHolder);
 
 		// Right-click a card to put its numbers on the overlay
 		CanvasMenu.attach(goalCard, CanvasSection.GOAL, actions);
@@ -98,7 +93,6 @@ class CurrentTripPanel extends JPanel
 		if (state.getLifetime() != null)
 		{
 			luckCard.update(state.getLifetime().getDryness(), state.getBoss());
-			dropChances.update(state.getLifetime().getDryness(), state.getBoss());
 			luckOverview.update(state.getLifetime().getDryness(), state.getBoss());
 			boolean classic = state.getLuckCardStyle() == LuckCardStyle.CLASSIC;
 			luckCard.setVisible(classic);
