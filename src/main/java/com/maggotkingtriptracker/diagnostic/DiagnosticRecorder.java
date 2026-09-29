@@ -98,6 +98,7 @@ public class DiagnosticRecorder
 	private final ConfigManager configManager;
 	private boolean enabled;
 	private boolean everywhere;
+	private boolean keysPending = true;
 	private boolean inLair;
 	private boolean nearLair;
 	private int templateRegionId = -1;
@@ -265,9 +266,15 @@ public class DiagnosticRecorder
 		{
 			record("GAMESTATE", state.name());
 		}
-		if (state == GameState.LOGGED_IN)
+		// The game reports LOGGED_IN again after every loading screen; list the keys once per login
+		if (state == GameState.LOGGED_IN && keysPending)
 		{
+			keysPending = false;
 			recordRecordKeys();
+		}
+		else if (state == GameState.LOGIN_SCREEN || state == GameState.HOPPING)
+		{
+			keysPending = true;
 		}
 
 		if (state == GameState.LOGIN_SCREEN || state == GameState.HOPPING)
