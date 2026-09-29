@@ -8,12 +8,13 @@ import lombok.Data;
  * Everything stored for one account. Serialized with Gson to one JSON file per account.
  * Schema 1 kept the Maggot King's data at the top level; schema 2 keeps each boss's data under its id
  * (see HistoryMigrator); schema 3 is the same layout with Scythe of Vitur charges repriced (see
- * SupplyCorrections).
+ * SupplyCorrections); schema 4 adds fields for raids (Kill.teamUniques, BossHistory.gameDryStreak and two trip end
+ * reasons) with no change to existing data.
  */
 @Data
 public class AccountHistory
 {
-	public static final int CURRENT_SCHEMA_VERSION = 3;
+	public static final int CURRENT_SCHEMA_VERSION = 4;
 
 	private int schemaVersion = CURRENT_SCHEMA_VERSION;
 	private long accountHash;

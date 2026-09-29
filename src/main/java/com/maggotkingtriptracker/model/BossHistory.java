@@ -22,6 +22,12 @@ public class BossHistory
 	 */
 	private Integer lastUniqueKc;
 	/**
+	 * The game's own count of raids since your last unique ("You are on a personal dry streak of 7.", Theatre of
+	 * Blood), and your kill count when it was seen; null if never seen. Added in schema 4.
+	 */
+	private Integer gameDryStreak;
+	private Integer gameDryStreakKc;
+	/**
 	 * Every egg popped, anywhere (Maggot King only).
 	 */
 	private List<EggPop> eggPops = new ArrayList<>();

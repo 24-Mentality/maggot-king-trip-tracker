@@ -11,6 +11,7 @@ import com.maggotkingtriptracker.boss.MaggotKingBoss;
 import com.maggotkingtriptracker.model.AccountHistory;
 import com.maggotkingtriptracker.model.BossHistory;
 import com.maggotkingtriptracker.model.ItemEntry;
+import com.maggotkingtriptracker.model.Kill;
 import com.maggotkingtriptracker.model.Trip;
 import com.maggotkingtriptracker.model.TripEndReason;
 import com.maggotkingtriptracker.model.TripMath;
@@ -146,5 +147,27 @@ public class HistoryCodecTest
 		assertEquals(AccountHistory.CURRENT_SCHEMA_VERSION, decoded.getHistory().getSchemaVersion());
 		assertEquals(110_400, decoded.getHistory().getBosses().get("nightmare").getTrips().get(0).getSupplies().get(0)
 			.getPriceEach());
+	}
+
+	@Test
+	public void schemaThreeFilesGainTheRaidFieldsEmpty()
+	{
+		// Schema 3: a Phosani's kill and the last-unique KC, from before raids were tracked
+		HistoryCodec.Decoded decoded = HistoryCodec.decode(gson, "{\"schemaVersion\":3,\"bosses\":{\"nightmare\":{"
+			+ "\"lastUniqueKc\":120,\"trips\":[{\"id\":\"t\",\"startedAt\":1,\"endedAt\":2,\"endReason\":\"TELEPORT\","
+			+ "\"kills\":[{\"killCount\":129,\"variant\":\"phosani\",\"loot\":[{\"itemId\":24422,\"quantity\":1,"
+			+ "\"priceEach\":1}]}]}]}}}");
+		assertEquals(3, decoded.getSourceVersion());
+		assertTrue(decoded.isMigrated());
+		assertEquals(AccountHistory.CURRENT_SCHEMA_VERSION, decoded.getHistory().getSchemaVersion());
+
+		BossHistory nightmare = decoded.getHistory().getBosses().get("nightmare");
+		assertEquals(Integer.valueOf(120), nightmare.getLastUniqueKc());
+		assertNull(nightmare.getGameDryStreak());
+		Kill kill = nightmare.getTrips().get(0).getKills().get(0);
+		assertEquals(Integer.valueOf(129), kill.getKillCount());
+		assertEquals(24422, kill.getLoot().get(0).getItemId());
+		assertTrue(kill.getTeamUniques().isEmpty());
+		assertEquals(TripEndReason.TELEPORT, nightmare.getTrips().get(0).getEndReason());
 	}
 }

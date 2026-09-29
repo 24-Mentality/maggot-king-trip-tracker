@@ -8,7 +8,8 @@ import lombok.Data;
 public class Kill
 {
 	/**
-	 * Kill count from the game's kill-count message; null if the message was missed.
+	 * Kill count from the game's kill-count message; null if the message was missed. For the Theatre of Blood, the
+	 * Normal and Hard Mode completions together (the raids that can give purples); null for Entry Mode.
 	 */
 	private Integer killCount;
 	private long endedAt;
@@ -29,5 +30,10 @@ public class Kill
 	 */
 	private Integer partySize;
 	private List<ItemEntry> loot = new ArrayList<>();
+	/**
+	 * Uniques anyone in the raid received (Theatre of Blood purples, yours included), from the game's broadcast.
+	 * Item ids only: who received them is never stored. Added in schema 4.
+	 */
+	private List<Integer> teamUniques = new ArrayList<>();
 	private boolean pet;
 }

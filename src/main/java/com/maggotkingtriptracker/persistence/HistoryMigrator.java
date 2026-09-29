@@ -47,7 +47,8 @@ public final class HistoryMigrator
 			v1ToV2(root);
 		}
 		// 2 to 3 changes no layout: the scythe prices it corrects need GE prices, so the tracker fixes them after
-		// loading (SupplyCorrections), knowing the file's version from the load result
+		// loading (SupplyCorrections), knowing the file's version from the load result.
+		// 3 to 4 only adds fields, which are empty in older files
 		if (from < AccountHistory.CURRENT_SCHEMA_VERSION || !root.has("schemaVersion"))
 		{
 			root.addProperty("schemaVersion", Math.max(from, AccountHistory.CURRENT_SCHEMA_VERSION));
