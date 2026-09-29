@@ -384,3 +384,14 @@ These come from diagnostic.log and take precedence over the assumptions above.
   of 2+ damage (53, 83, 84, 132) don't fit all four either. Both deaths show
   "Payment has been taken from your bank: 60,000 x Coins" and were recorded
   with a 60,000 fee.
+- Eye of Ayak and blowpipe at Phosani's (2026-09-29, KC 137, log kept as
+  charge-test-ayak.log): Check "The Eye of Ayak has been charged with demon
+  tears. It currently has 4,152 charges." then the automatic "The Eye of Ayak
+  has 4,100 charges remaining." (same tick as the cast that used the charge):
+  52 used, exactly the VFX_AYAK_PLAYER_NORMAL_SPOTANIM (3366) casting
+  graphics. Its attack animation (12397) only showed on 21 of those casts.
+  Blowpipe Check: "Darts: Dragon dart x 503. Scales: 1,308 (7.9%)." (no
+  second reading). Its attack animation (5061) showed 5 times for 7 shots at
+  sleepwalkers, so shots are counted from hitsplats while it's wielded. The
+  user wears an Imbued Saradomin or Infernal cape with it, so every dart is
+  lost (no Ava's device).

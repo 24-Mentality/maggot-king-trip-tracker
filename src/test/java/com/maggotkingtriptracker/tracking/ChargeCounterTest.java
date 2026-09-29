@@ -22,7 +22,8 @@ public class ChargeCounterTest
 {
 	private static final Set<Integer> WEAPONS = ImmutableSet.of(
 		ItemID.NIGHTMARE_STAFF_HARMONISED, ItemID.WILD_CAVE_WEBWEAVER_CHARGED, ItemID.ELDER_MAUL,
-		ItemID.SCYTHE_OF_VITUR, ItemID.TUMEKENS_SHADOW, ItemID.CRIMSON_KISTEN, ItemID.HALLOWFELL, ItemID.BLISTERWOOD_STAKE);
+		ItemID.SCYTHE_OF_VITUR, ItemID.TUMEKENS_SHADOW, ItemID.CRIMSON_KISTEN, ItemID.HALLOWFELL, ItemID.BLISTERWOOD_STAKE,
+		ItemID.EYE_OF_AYAK, ItemID.TOXIC_BLOWPIPE_LOADED);
 	private static final Set<Integer> AMULETS = ImmutableSet.of(ItemID.BLOOD_AMULET, 34428);
 
 	private static final Pattern TICK = Pattern.compile("^tick=(\\d+) \\S+ \\S+ (\\w+) (.*)$");
@@ -57,6 +58,18 @@ public class ChargeCounterTest
 
 		assertEquals(Integer.valueOf(36), used.get(ChargeType.SCYTHE_OF_VITUR));
 		assertEquals(Integer.valueOf(46), used.get(ChargeType.TUMEKENS_SHADOW));
+	}
+
+	/**
+	 * Phosani's Nightmare between an Eye of Ayak Check (4,152) and the game's "4,100 charges remaining" message, which
+	 * comes in the same tick as the cast that used the charge (2026-09-29).
+	 */
+	@Test
+	public void replayedEyeOfAyakMatchesCheckMessages() throws Exception
+	{
+		Map<ChargeType, Integer> used = replay("charge-test-ayak.log");
+
+		assertEquals(Integer.valueOf(52), used.get(ChargeType.EYE_OF_AYAK));
 	}
 
 	/**
@@ -147,13 +160,19 @@ public class ChargeCounterTest
 		Map<ChargeType, Integer> used = new EnumMap<>(ChargeType.class);
 		ChargeCounter counter = new ChargeCounter(id -> false);
 
+		// One shot per tick with a hitsplat (hit or miss) while the blowpipe is wielded; the animation only plays at the
+		// first shot
 		counter.gearChanged(1, new ChargeCounter.Gear(ItemID.TOXIC_BLOWPIPE_LOADED, -1, -1, ItemID.DIZANAS_QUIVER_INFINITE));
-		counter.animation(2, AnimationID.SNAKEBOSS_BLOWPIPE_ATTACK);
-		counter.animation(4, AnimationID.SNAKEBOSS_BLOWPIPE_ATTACK);
+		counter.animation(1, AnimationID.SNAKEBOSS_BLOWPIPE_ATTACK);
+		counter.hitsplat(2, HitsplatID.DAMAGE_ME, 10);
+		counter.hitsplat(4, HitsplatID.BLOCK_ME, 0);
 		counter.gearChanged(5, new ChargeCounter.Gear(ItemID.TOXIC_BLOWPIPE_LOADED, -1, -1, ItemID.ANMA_50_REWARD));
-		counter.animation(6, AnimationID.SNAKEBOSS_BLOWPIPE_ATTACK);
+		counter.hitsplat(6, HitsplatID.DAMAGE_ME, 10);
 		counter.gearChanged(7, new ChargeCounter.Gear(ItemID.TOXIC_BLOWPIPE_LOADED, -1, -1, ItemID.INFERNAL_CAPE));
-		counter.animation(8, AnimationID.SNAKEBOSS_BLOWPIPE_ATTACK);
+		counter.hitsplat(8, HitsplatID.DAMAGE_ME, 10);
+		// Hits with another weapon don't count
+		counter.gearChanged(10, new ChargeCounter.Gear(ItemID.EYE_OF_AYAK, -1, -1, ItemID.INFERNAL_CAPE));
+		counter.hitsplat(12, HitsplatID.DAMAGE_ME, 30);
 		counter.process(20, (type, n) -> used.merge(type, n, Integer::sum));
 
 		assertEquals(Integer.valueOf(4), used.get(ChargeType.TOXIC_BLOWPIPE_SCALES));

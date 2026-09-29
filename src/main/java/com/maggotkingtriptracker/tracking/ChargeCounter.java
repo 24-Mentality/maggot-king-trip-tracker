@@ -62,8 +62,6 @@ class ChargeCounter
 	static final Set<Integer> AYAK_SPOTANIMS = ImmutableSet.of(
 		SpotanimID.VFX_AYAK_PLAYER_NORMAL_SPOTANIM, SpotanimID.VFX_AYAK_PLAYER_SPECIAL_SPOTANIM);
 	static final Set<Integer> BLOWPIPES = ImmutableSet.of(ItemID.TOXIC_BLOWPIPE_LOADED, ItemID.TOXIC_BLOWPIPE_LOADED_ORNAMENT);
-	static final Set<Integer> BLOWPIPE_ANIMATIONS = ImmutableSet.of(AnimationID.SNAKEBOSS_BLOWPIPE_ATTACK,
-		AnimationID.SNAKEBOSS_BLOWPIPE_ATTACK_ORNAMENT, AnimationID.TOXIC_BLOWPIPE_SPECIAL_UPDATED);
 	/**
 	 * Capes that save 80% of blowpipe darts: Ava's assembler, Dizana's quiver and their max capes.
 	 */
@@ -119,6 +117,10 @@ class ChargeCounter
 		final Set<Integer> spotAnims = new HashSet<>();
 		final Set<Integer> animations = new HashSet<>();
 		boolean animation;
+		/**
+		 * Any hitsplat the player dealt, misses included.
+		 */
+		boolean anyHit;
 		int damagingHits;
 	}
 
@@ -173,6 +175,7 @@ class ChargeCounter
 	 */
 	void hitsplat(int tick, int type, int amount)
 	{
+		events(tick).anyHit = true;
 		if (amount > 0 && DAMAGE_HITSPLATS.contains(type))
 		{
 			events(tick).damagingHits++;
@@ -241,7 +244,8 @@ class ChargeCounter
 			listener.chargesUsed(ChargeType.TUMEKENS_SHADOW, 1);
 		}
 
-		// From the wiki's Phosani's gear; the signals are RuneLite's names for them, not yet seen in a log
+		// From the wiki's Phosani's gear. The Eye of Ayak's cast graphic matched a Check exactly (52 of 52); its
+		// attack animation doesn't restart on every cast, so it's not used. The others aren't in a log yet
 		if (events.spotAnims.stream().anyMatch(SANGUINESTI_SPOTANIMS::contains) && worn(SANGUINESTI_STAVES, gear, previousWeapon))
 		{
 			listener.chargesUsed(ChargeType.SANGUINESTI_STAFF, 1);
@@ -259,7 +263,9 @@ class ChargeCounter
 		{
 			listener.chargesUsed(ChargeType.EYE_OF_AYAK, 1);
 		}
-		if (events.animations.stream().anyMatch(BLOWPIPE_ANIMATIONS::contains) && worn(BLOWPIPES, gear, previousWeapon))
+		// The blowpipe's animation only plays when it starts shooting, not on every shot (5 animations for 7 shots in
+		// the log), but every shot lands a hitsplat, a hit or a miss. Unverified against a Check
+		if (events.anyHit && worn(BLOWPIPES, gear, previousWeapon))
 		{
 			listener.chargesUsed(ChargeType.TOXIC_BLOWPIPE_SCALES, 1);
 			listener.chargesUsed(DART_SAVE_80.contains(gear.getCape()) ? ChargeType.TOXIC_BLOWPIPE_DARTS_80
