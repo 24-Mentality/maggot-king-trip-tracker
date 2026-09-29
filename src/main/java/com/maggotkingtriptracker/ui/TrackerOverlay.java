@@ -62,7 +62,7 @@ public class TrackerOverlay extends OverlayPanel
 		- (ROWS_AND_ICON_BORDER.x + ROWS_AND_ICON_BORDER.width) - ICON_WIDTH - ROWS_AND_ICON_GAP;
 	private static final Color BAR_BACKGROUND = new Color(61, 56, 49);
 	// Row labels
-	static final String KILLS_PER_HOUR = "Kills/Hr:";
+	static final String KILLS_PER_HOUR = "KC/Hr:";
 	static final String TIME_TO_GOAL = "TTG:";
 	static final String KC_DONE = "KC Done:";
 	static final String KC_LEFT = "KC Left:";
