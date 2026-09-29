@@ -218,6 +218,12 @@ RuneLite does not accept new high-end PvM helper plugins.
     runes (at the GE price then) per 100 charges, after backing up the v2 file;
     older exports get the same correction when imported.
 
+17. Dry streak with no unique ever (2026-09-29): when neither RuneLite's
+    all-time Loot Tracker record nor this plugin has a unique and no
+    last-unique KC was entered, the dry streak (and so the longest dry
+    streak) is the whole kill count from Chat Commands, not the kills since
+    tracking began.
+
 ## Observed in-game (diagnostic test trips, 2026-09-27)
 These come from diagnostic.log and take precedence over the assumptions above.
 - Lair template region is always 11645; the real instance region changes per

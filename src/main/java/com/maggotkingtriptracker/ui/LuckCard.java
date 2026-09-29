@@ -205,7 +205,11 @@ class LuckCard extends JPanel
 		}
 
 		String sinceWhat;
-		if (dryness.isSinceFromEnteredKc())
+		if (dryness.isSinceWholeKillCount())
+		{
+			sinceWhat = "your first kill: you haven't had a unique yet (RuneLite's Loot Tracker has none either)";
+		}
+		else if (dryness.isSinceFromEnteredKc())
 		{
 			sinceWhat = "the kill count you entered for your last unique (KC " + String.format(Locale.ROOT, "%,d", lastKc)
 				+ "). Kills between that and the start of tracking are counted from your kill count, so they aren't"

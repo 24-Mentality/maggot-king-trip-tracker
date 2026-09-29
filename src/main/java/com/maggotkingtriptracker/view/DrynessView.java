@@ -53,6 +53,11 @@ public class DrynessView
 	 */
 	boolean sinceFromEnteredKc;
 	/**
+	 * No unique has ever been received (RuneLite's all-time record included), so the dry streak is the whole kill
+	 * count from Chat Commands.
+	 */
+	boolean sinceWholeKillCount;
+	/**
 	 * Longest gap between uniques whose kill count is known (tracked, or entered by you), by kill count, or the
 	 * current streak if that is longer.
 	 */

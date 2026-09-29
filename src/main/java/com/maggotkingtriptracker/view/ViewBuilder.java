@@ -358,13 +358,26 @@ public class ViewBuilder
 		DryStreak.Result streak = DryStreak.compute(kills, boss::countsForLuck,
 			kill -> kill.getLoot().stream().anyMatch(e -> boss.isUnique(e.getItemId())),
 			history.getLastUniqueKc(), allTime == null ? null : allTime.getKillCount());
+		DrynessView.AllTime allTimeView = allTime(boss, uniqueDrops, allTime, kills, currentKc,
+			petsFromKills + petsFromEggs, eggPetExpected);
+
+		// Never had a unique at all (RuneLite's all-time record, this plugin, and no KC entered): the streak is the
+		// whole kill count, not just the kills since tracking began
+		int since = streak.getSince();
+		boolean wholeKillCount = allTimeView != null && allTimeView.getKillCount() != null
+			&& allTimeView.getUniquesReceived() == 0 && uniquesReceived == 0 && history.getLastUniqueKc() == null;
+		if (wholeKillCount)
+		{
+			since = Math.max(since, allTimeView.getKillCount());
+		}
 
 		return DrynessView.builder()
 			.luckKills(luckKills)
-			.killsSinceUnique(streak.getSince())
+			.killsSinceUnique(since)
 			.sinceFromEnteredKc(streak.isFromEnteredKc())
-			.longestDryStreak(DryStreak.longest(uniqueKcs, history.getLastUniqueKc(), streak.getSince()))
-			.chanceThisDry(Math.pow(1 - anyRate, streak.getSince()))
+			.sinceWholeKillCount(wholeKillCount)
+			.longestDryStreak(DryStreak.longest(uniqueKcs, history.getLastUniqueKc(), since))
+			.chanceThisDry(Math.pow(1 - anyRate, since))
 			.anyUniqueRate(anyRate)
 			.uniquesReceived(uniquesReceived)
 			.expectedUniques(expectedAny)
@@ -378,7 +391,7 @@ public class ViewBuilder
 			.lastUniqueKc(streak.getLastUniqueKc())
 			.firstTrackedKc(firstTrackedKc)
 			.enteredLastUniqueKc(history.getLastUniqueKc())
-			.allTime(allTime(boss, uniqueDrops, allTime, kills, currentKc, petsFromKills + petsFromEggs, eggPetExpected))
+			.allTime(allTimeView)
 			.build();
 	}
 

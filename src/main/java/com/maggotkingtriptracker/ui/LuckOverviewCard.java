@@ -200,8 +200,10 @@ class LuckOverviewCard extends JPanel
 		String expected = String.format(Locale.ROOT, luck.getExpected() >= 10 ? "%.1f" : "%.2f", luck.getExpected());
 		set(uniques, "Uniques", luck.getReceived() + " / " + expected, null, "Uniques received vs expected.");
 		set(since, "Dry streak", String.format(Locale.ROOT, "%,d kc", dryness.getKillsSinceUnique()), null,
-			"Kills since your last unique" + (dryness.isSinceFromEnteredKc() && dryness.getLastUniqueKc() != null
-				? String.format(Locale.ROOT, " (KC %,d, as you entered it)", dryness.getLastUniqueKc()) : "")
+			(dryness.isSinceWholeKillCount()
+				? "You haven't had a unique yet (RuneLite's Loot Tracker has none either), so this is your whole kill count"
+				: "Kills since your last unique" + (dryness.isSinceFromEnteredKc() && dryness.getLastUniqueKc() != null
+				? String.format(Locale.ROOT, " (KC %,d, as you entered it)", dryness.getLastUniqueKc()) : ""))
 				+ ". Right-click to set the kill count of your last unique.");
 		set(longest, "Longest dry streak", String.format(Locale.ROOT, "%,d kc", dryness.getLongestDryStreak()), null,
 			"The longest gap between two of your uniques, by kill count, counting the uniques this plugin tracked and"

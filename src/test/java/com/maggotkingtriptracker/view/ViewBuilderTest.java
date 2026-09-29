@@ -140,6 +140,36 @@ public class ViewBuilderTest
 	}
 
 	@Test
+	public void neverHavingAUniqueMakesTheWholeKillCountTheDryStreak()
+	{
+		// Take the tracked fang away: no unique tracked, none in the Loot Tracker, no KC entered
+		history.getTrips().get(0).getKills().get(0).getLoot().clear();
+		AllTimeCounts none = new AllTimeCounts(2630, 2700, 1_785_447_588_633L, 0, ImmutableMap.<Integer, Integer>of());
+		DrynessView dryness = builder.lifetime(boss, history, null, none, false, 0).getDryness();
+		assertTrue(dryness.isSinceWholeKillCount());
+		assertEquals(2700, dryness.getKillsSinceUnique());
+		assertEquals(2700, dryness.getLongestDryStreak());
+		assertEquals(Math.pow(1 - 1 / 205.6, 2700), dryness.getChanceThisDry(), DELTA);
+
+		// A unique in the Loot Tracker's record: back to counting from tracking
+		AllTimeCounts one = new AllTimeCounts(2630, 2700, 1_785_447_588_633L, 0, ImmutableMap.of(ItemID.CRIMSON_KISTEN, 1));
+		dryness = builder.lifetime(boss, history, null, one, false, 0).getDryness();
+		assertFalse(dryness.isSinceWholeKillCount());
+		assertEquals(4, dryness.getKillsSinceUnique());
+
+		// A last-unique KC entered by hand takes over too
+		history.setLastUniqueKc(2600);
+		dryness = builder.lifetime(boss, history, null, none, false, 0).getDryness();
+		assertFalse(dryness.isSinceWholeKillCount());
+
+		// Without all-time records there's no kill count to use
+		history.setLastUniqueKc(null);
+		dryness = builder.lifetime(boss, history, null, null, false, 0).getDryness();
+		assertFalse(dryness.isSinceWholeKillCount());
+		assertEquals(4, dryness.getKillsSinceUnique());
+	}
+
+	@Test
 	public void tracksDropsTheLootTrackerHasNotSavedYet()
 	{
 		// Saved before the fixture's first kill: the fang at 2601 and all four Open-stomach kills are newer
