@@ -335,6 +335,20 @@ These come from diagnostic.log and take precedence over the assumptions above.
   animation 9493 with the TUMEKENS_SHADOW_CASTING graphic (2125), 135 of each.
   One charge per attack or cast; priced as a vial of blood + 300 blood runes
   per 100 scythe charges and 2 soul + 5 chaos runes per shadow charge (OSRS
-  Wiki). Not yet checked against in-game Check messages. Hallowfell, the
+  Wiki). Hallowfell, the
   Crimson kisten and the Confliction gauntlets have no uncharged variants, so
   they aren't treated as charged.
+- Charge Checks at Phosani's (2026-09-28, 22:03 to 22:10, log kept as the
+  test fixture charge-test-phosani-check.log): Tumeken's shadow 1,988 ->
+  1,942 = 46, exactly the casting graphics counted (also 12 of 12 between the
+  automatic "2,000 charges remaining" message and the first Check). Scythe
+  1,638 -> 1,602 = 36 from 38 attack animations: the 2 attacks where every
+  hit missed (all BLOCK_ME 0) used no charge; the same rule gives 62 of 62
+  between "Your scythe has 1,700 charges remaining." and the first Check
+  (that message comes in the same tick as the attack that used the charge).
+  Scythe hits land the tick after the attack; small hits 4-5 ticks later are
+  damage over time. Blood fury 9,989 -> 9,899 = 90 used; shield-phase hits
+  are DAMAGE_ME_CYAN (18) / DAMAGE_MAX_ME_CYAN (44), which the fury count
+  missed (it recorded 14). Counting them gives 117, still about 30% over, so
+  blood fury at the Nightmare is not solved; the Maggot King's 17 still
+  matches.

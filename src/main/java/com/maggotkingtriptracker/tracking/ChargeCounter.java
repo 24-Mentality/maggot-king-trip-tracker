@@ -18,7 +18,8 @@ import net.runelite.api.gameval.SpotanimID;
  * <ul>
  * <li>Tome of fire: a fire spell casting graphic on the player while the tome is worn.</li>
  * <li>Revenant bows: a revenant bow launch graphic on the player (one ether per shot or special).</li>
- * <li>Scythe of Vitur: its attack animation while a charged scythe is worn (blocks use another animation).</li>
+ * <li>Scythe of Vitur: its attack animation while a charged scythe is worn (blocks use another animation), unless
+ * every hit of that attack misses.</li>
  * <li>Tumeken's shadow: its casting graphic on the player while the shadow is worn.</li>
  * <li>Blood fury: each damaging hitsplat the player deals while wearing the amulet, if the player's last
  * attack before the hit was with a melee weapon. That excludes ranged and magic hits still in flight
@@ -45,7 +46,12 @@ class ChargeCounter
 		SpotanimID.FX_WEBWEAVER01_LAUNCH_SPOTANIM
 	);
 
-	static final Set<Integer> DAMAGE_HITSPLATS = ImmutableSet.of(HitsplatID.DAMAGE_ME, HitsplatID.DAMAGE_MAX_ME);
+	/**
+	 * The Nightmare's shield phases show your damage in cyan.
+	 */
+	static final Set<Integer> DAMAGE_HITSPLATS = ImmutableSet.of(HitsplatID.DAMAGE_ME, HitsplatID.DAMAGE_MAX_ME,
+		HitsplatID.DAMAGE_ME_CYAN, HitsplatID.DAMAGE_MAX_ME_CYAN);
+
 
 	/**
 	 * Charged scythes, ornamented ones included.
@@ -77,6 +83,10 @@ class ChargeCounter
 	}
 
 	private final IntPredicate isMeleeWeapon;
+	/**
+	 * A scythe attack waiting for its hits: it only uses a charge if one of them does damage.
+	 */
+	private Integer pendingScytheTick;
 	private final TreeMap<Integer, Gear> gearByTick = new TreeMap<>();
 	private final TreeMap<Integer, TickEvents> pending = new TreeMap<>();
 	private Boolean lastAttackMelee;
@@ -91,6 +101,7 @@ class ChargeCounter
 		gearByTick.clear();
 		pending.clear();
 		lastAttackMelee = null;
+		pendingScytheTick = null;
 	}
 
 	/**
@@ -163,13 +174,25 @@ class ChargeCounter
 			listener.chargesUsed(ChargeType.WILDERNESS_WEAPON, 1);
 		}
 
+		// A scythe attack whose hits all miss uses no charge (checked against the game's Check messages), so it's
+		// decided when the hits land, the tick after the attack
+		// Its hits land the next tick; damage a tick later is something else (e.g. a bleed)
+		if (pendingScytheTick != null && tick > pendingScytheTick)
+		{
+			if (tick == pendingScytheTick + 1 && events.damagingHits > 0)
+			{
+				listener.chargesUsed(ChargeType.SCYTHE_OF_VITUR, 1);
+			}
+			pendingScytheTick = null;
+		}
+
 		// The weapon may be switched in the same tick, before or after the attack: either counts
 		Map.Entry<Integer, Gear> before = gearByTick.lowerEntry(tick);
 		int previousWeapon = before != null ? before.getValue().getWeapon() : -1;
 		if (events.animations.contains(AnimationID.SCYTHE_OF_VITUR_ATTACK)
 			&& (SCYTHES.contains(gear.getWeapon()) || SCYTHES.contains(previousWeapon)))
 		{
-			listener.chargesUsed(ChargeType.SCYTHE_OF_VITUR, 1);
+			pendingScytheTick = tick;
 		}
 
 		if (events.spotAnims.contains(SpotanimID.TUMEKENS_SHADOW_CASTING)
@@ -179,6 +202,8 @@ class ChargeCounter
 		}
 
 		// Hits land at least a tick after the attack, so judge them by attacks from earlier ticks
+		// Unverified at the Nightmare: there this counts about 30% more than the Check messages show (117 vs 90 on
+		// 2026-09-28); the Maggot King's count matched exactly
 		if (events.damagingHits > 0 && Boolean.TRUE.equals(lastAttackMelee) && gear.getAmulet() == ItemID.BLOOD_AMULET)
 		{
 			listener.chargesUsed(ChargeType.BLOOD_FURY, events.damagingHits);

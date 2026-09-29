@@ -47,35 +47,54 @@ public class ChargeCounterTest
 	}
 
 	/**
-	 * Diagnostic log of two Phosani's Nightmare kills and a death (2026-09-28), switching between the scythe,
-	 * Tumeken's shadow and other weapons: every scythe attack animation and every shadow casting graphic counts,
-	 * none are lost to the switches. (Not yet checked against in-game Check messages.)
+	 * Phosani's Nightmare between two in-game Check readings (2026-09-28): Scythe of Vitur 1,638 -> 1,602 and
+	 * Tumeken's shadow 1,988 -> 1,942. Of 38 scythe attack animations, 2 missed with every hit, which uses no charge.
 	 */
 	@Test
-	public void replayedPhosanisTripCountsEveryScytheAttackAndShadowCast() throws Exception
+	public void replayedPhosanisKillMatchesCheckMessages() throws Exception
+	{
+		Map<ChargeType, Integer> used = replay("charge-test-phosani-check.log");
+
+		assertEquals(Integer.valueOf(36), used.get(ChargeType.SCYTHE_OF_VITUR));
+		assertEquals(Integer.valueOf(46), used.get(ChargeType.TUMEKENS_SHADOW));
+	}
+
+	/**
+	 * Two Phosani's Nightmare kills and a death (2026-09-28), switching between the scythe, Tumeken's shadow and
+	 * other weapons: no attack is lost to the switches. 132 scythe attacks, 8 of them missing with every hit.
+	 */
+	@Test
+	public void replayedPhosanisTripSurvivesWeaponSwitches() throws Exception
 	{
 		Map<ChargeType, Integer> used = replay("charge-test-phosani.log");
 
-		assertEquals(Integer.valueOf(132), used.get(ChargeType.SCYTHE_OF_VITUR));
+		assertEquals(Integer.valueOf(124), used.get(ChargeType.SCYTHE_OF_VITUR));
 		assertEquals(Integer.valueOf(135), used.get(ChargeType.TUMEKENS_SHADOW));
 	}
 
 	@Test
-	public void scytheBlocksAndUnchargedScythesUseNoCharge()
+	public void scytheBlocksMissesAndUnchargedScythesUseNoCharge()
 	{
 		Map<ChargeType, Integer> used = new EnumMap<>(ChargeType.class);
 		ChargeCounter counter = new ChargeCounter(id -> true);
 
 		counter.gearChanged(1, new ChargeCounter.Gear(ItemID.SCYTHE_OF_VITUR, -1, -1));
 		counter.animation(2, AnimationID.SCYTHE_OF_VITUR_ATTACK);
+		counter.hitsplat(3, HitsplatID.DAMAGE_ME_CYAN, 12);
 		counter.animation(3, AnimationID.HUMAN_SCYTHE_BLOCK);
 		// Switched to the scythe in the same tick as the attack
 		counter.gearChanged(5, new ChargeCounter.Gear(ItemID.TUMEKENS_SHADOW, -1, -1));
 		counter.animation(6, AnimationID.SCYTHE_OF_VITUR_ATTACK);
 		counter.gearChanged(6, new ChargeCounter.Gear(ItemID.SCYTHE_OF_VITUR, -1, -1));
-		counter.gearChanged(8, new ChargeCounter.Gear(ItemID.SCYTHE_OF_VITUR_UNCHARGED, -1, -1));
-		counter.animation(9, AnimationID.SCYTHE_OF_VITUR_ATTACK);
-		counter.process(10, (type, n) -> used.merge(type, n, Integer::sum));
+		counter.hitsplat(7, HitsplatID.DAMAGE_ME, 30);
+		// Every hit missed
+		counter.animation(10, AnimationID.SCYTHE_OF_VITUR_ATTACK);
+		counter.hitsplat(11, HitsplatID.BLOCK_ME, 0);
+		counter.hitsplat(11, HitsplatID.BLOCK_ME, 0);
+		counter.gearChanged(13, new ChargeCounter.Gear(ItemID.SCYTHE_OF_VITUR_UNCHARGED, -1, -1));
+		counter.animation(14, AnimationID.SCYTHE_OF_VITUR_ATTACK);
+		counter.hitsplat(15, HitsplatID.DAMAGE_ME, 5);
+		counter.process(20, (type, n) -> used.merge(type, n, Integer::sum));
 
 		assertEquals(Integer.valueOf(2), used.get(ChargeType.SCYTHE_OF_VITUR));
 	}

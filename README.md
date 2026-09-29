@@ -110,7 +110,8 @@ For the Maggot King:
   fury (one per damaging melee hit, priced from blood shards at 10,000 charges each), Tome
   of fire (one per fire spell, searing or burnt pages at 20 charges each, set by **Tome of
   fire pages**), revenant bows such as the Webweaver bow (one revenant ether per shot),
-  Scythe of Vitur (one per attack; a vial of blood and 300 blood runes per 100 charges) and
+  Scythe of Vitur (one per attack unless every hit misses; a vial of blood and 300 blood runes
+  per 100 charges) and
   Tumeken's shadow (one per cast; 2 soul runes and 5 chaos runes each). This applies at every
   supported boss.
 - Items you drop in the lair and don't pick up again are a "Dropped" cost. Zero-value items
