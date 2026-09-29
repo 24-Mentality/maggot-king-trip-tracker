@@ -358,7 +358,8 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 				.setDialogTitle("Import history")
 				.addExtensionFilter("JSON files", "json")
 				.showDialog(panel);
-			if (chosen.isEmpty())
+			// Null when the dialog is cancelled
+			if (chosen == null || chosen.isEmpty())
 			{
 				return;
 			}
@@ -402,7 +403,8 @@ public class MaggotKingTripTrackerPlugin extends Plugin
 				.addExtensionFilter(filterName, extension)
 				.setDefaultExtension(extension)
 				.showDialog(panel);
-			if (chosen.isEmpty())
+			// Null when the dialog is cancelled
+			if (chosen == null || chosen.isEmpty())
 			{
 				return;
 			}
