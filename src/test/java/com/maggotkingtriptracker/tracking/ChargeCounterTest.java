@@ -23,9 +23,10 @@ public class ChargeCounterTest
 	private static final Set<Integer> WEAPONS = ImmutableSet.of(
 		ItemID.NIGHTMARE_STAFF_HARMONISED, ItemID.WILD_CAVE_WEBWEAVER_CHARGED, ItemID.ELDER_MAUL,
 		ItemID.SCYTHE_OF_VITUR, ItemID.TUMEKENS_SHADOW, ItemID.CRIMSON_KISTEN, ItemID.HALLOWFELL, ItemID.BLISTERWOOD_STAKE,
-		ItemID.EYE_OF_AYAK, ItemID.TOXIC_BLOWPIPE_LOADED);
+		ItemID.EYE_OF_AYAK, ItemID.TOXIC_BLOWPIPE_LOADED, ItemID.TWISTED_BOW, ItemID.SULPHUR_BLADES, ItemID.DRAGON_CLAWS,
+		ItemID.CRYSTAL_HALBERD, ItemID.VERZIK_SPECIAL_WEAPON);
 	private static final Set<Integer> MELEE = ImmutableSet.of(ItemID.ELDER_MAUL, ItemID.SCYTHE_OF_VITUR, ItemID.HALLOWFELL,
-		ItemID.CRIMSON_KISTEN);
+		ItemID.CRIMSON_KISTEN, ItemID.SULPHUR_BLADES, ItemID.DRAGON_CLAWS, ItemID.CRYSTAL_HALBERD);
 	private static final Set<Integer> AMULETS = ImmutableSet.of(ItemID.BLOOD_AMULET, 34428);
 
 	private static final Pattern TICK = Pattern.compile("^tick=(\\d+) \\S+ \\S+ (\\w+) (.*)$");
@@ -86,6 +87,32 @@ public class ChargeCounterTest
 		// One short of the Check
 		assertEquals(Integer.valueOf(73), used.get(ChargeType.SCYTHE_OF_VITUR));
 		assertEquals(Integer.valueOf(14), used.get(ChargeType.BLOOD_FURY));
+	}
+
+	/**
+	 * A Normal Theatre of Blood raid (2026-09-29) between the Checks after the Phosani's kill above and fresh Checks
+	 * after the raid, with many switches between the scythe, twisted bow, sulphur blades, claws, halberd and the eye:
+	 * <ul>
+	 * <li>Scythe of Vitur 1,215 -> 1,066 (149), with "Your scythe has 1,200 / 1,100 charges remaining." at ticks 612
+	 * and 2226, each in the tick of the attack that used the charge (its count is settled a tick later)</li>
+	 * <li>Eye of Ayak 4,047 -> 4,041 (6)</li>
+	 * <li>Toxic blowpipe 1,303 -> 1,302 scales and no darts: one shot with Ava's assembler worn</li>
+	 * <li>Blood fury 9,525 -> "9,500 more hits" at tick 617 (25)</li>
+	 * </ul>
+	 */
+	@Test
+	public void replayedTheatreOfBloodMatchesCheckMessages() throws Exception
+	{
+		Map<ChargeType, Integer> used = replay("charge-test-tob.log");
+
+		assertEquals(Integer.valueOf(15), replay("charge-test-tob.log", 613).get(ChargeType.SCYTHE_OF_VITUR));
+		assertEquals(Integer.valueOf(115), replay("charge-test-tob.log", 2227).get(ChargeType.SCYTHE_OF_VITUR));
+		assertEquals(Integer.valueOf(149), used.get(ChargeType.SCYTHE_OF_VITUR));
+		assertEquals(Integer.valueOf(6), used.get(ChargeType.EYE_OF_AYAK));
+		assertEquals(Integer.valueOf(1), used.get(ChargeType.TOXIC_BLOWPIPE_SCALES));
+		assertEquals(Integer.valueOf(1), used.get(ChargeType.TOXIC_BLOWPIPE_DARTS_80));
+		// Two short of the amulet's message
+		assertEquals(Integer.valueOf(23), replay("charge-test-tob.log", 617).get(ChargeType.BLOOD_FURY));
 	}
 
 	/**
@@ -378,6 +405,8 @@ public class ChargeCounterTest
 		int weapon = worn.stream().filter(WEAPONS::contains).findFirst().orElse(-1);
 		int shield = worn.contains(ItemID.TOME_OF_FIRE) ? ItemID.TOME_OF_FIRE : -1;
 		int amulet = worn.stream().filter(AMULETS::contains).findFirst().orElse(-1);
-		return new ChargeCounter.Gear(weapon, shield, amulet);
+		int cape = worn.stream().filter(id -> ChargeCounter.DART_SAVE_80.contains(id) || ChargeCounter.DART_SAVE_72.contains(id)
+			|| ChargeCounter.DART_SAVE_60.contains(id)).findFirst().orElse(-1);
+		return new ChargeCounter.Gear(weapon, shield, amulet, cape);
 	}
 }

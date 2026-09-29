@@ -460,5 +460,11 @@ These come from diagnostic.log and take precedence over the assumptions above.
   - Record keys: loottracker "drops_EVENT_Theatre of Blood" (7 kills) and
     "drops_NPC_Verzik Vitur" (6); killcount "theatre of blood" (5 before this
     raid) and "theatre of blood entry mode" (1).
+  - Charges over the raid, against Checks before and after (log kept as
+    charge-test-tob.log): Scythe 149 of 149 (also exact at the automatic
+    1,200 and 1,100 messages), Eye of Ayak 6 of 6, blowpipe 1 shot = 1 scale
+    and no dart (Ava's assembler worn), blood fury 23 against 25 to the
+    automatic "9,500 more hits". Also seen: "Your crystal halberd has 2,116
+    charges remaining." (Check), for crystal-shard tracking.
   - Not seen yet: a claim at the vault chest itself, a purple (own or a
     teammate's broadcast), Hard Mode, and a wipe.
