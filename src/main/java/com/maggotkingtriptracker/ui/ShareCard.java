@@ -35,6 +35,10 @@ class ShareCard
 	{
 		long startedAt;
 		int kills;
+		/**
+		 * The boss's description of the trip (a raid's "Normal · team of 4"), shown instead of the kills; null if none.
+		 */
+		String detail;
 		long net;
 	}
 
@@ -64,6 +68,10 @@ class ShareCard
 	boolean allTime;
 	int dryKills;
 	int longestDryStreak;
+	/**
+	 * Raids since anyone in the team got a unique (Theatre of Blood); null for other bosses.
+	 */
+	Integer teamDryStreak;
 	/**
 	 * Kills until the average kills between uniques is reached; negative when overdue by that many.
 	 */
@@ -124,7 +132,7 @@ class ShareCard
 			{
 				break;
 			}
-			recent.add(new TripLine(trip.getStartedAt(), trip.getKills(), trip.getNetProfit()));
+			recent.add(new TripLine(trip.getStartedAt(), trip.getKills(), trip.getDetail(), trip.getNetProfit()));
 		}
 
 		String variant = null;
@@ -151,6 +159,7 @@ class ShareCard
 			.allTime(luck.isAllTime())
 			.dryKills(dryness.getKillsSinceUnique())
 			.longestDryStreak(dryness.getLongestDryStreak())
+			.teamDryStreak(dryness.getTeamDryStreak())
 			.dueInKills(LuckSummary.dueInKills(dryness))
 			.uniqueRate(dryness.getAnyUniqueRate())
 			.drops(drops)

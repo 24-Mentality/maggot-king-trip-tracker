@@ -9,6 +9,7 @@ import com.maggotkingtriptracker.boss.ExpectedDrop;
 import com.maggotkingtriptracker.boss.KillContext;
 import com.maggotkingtriptracker.boss.MaggotKingBoss;
 import com.maggotkingtriptracker.boss.NightmareBoss;
+import com.maggotkingtriptracker.boss.TheatreOfBloodBoss;
 import com.maggotkingtriptracker.model.LuckTier;
 import com.maggotkingtriptracker.view.DrynessView;
 import com.maggotkingtriptracker.view.LifetimeView;
@@ -137,6 +138,38 @@ public class ShareCardTest
 		// Eight uniques and the pet: two rows of icons instead of one
 		assertEquals(maggotKing.getHeight() + 26 * ShareCardRenderer.SCALE, image.getHeight());
 		ImageIO.write(image, "PNG", new File("build/share-card-nightmare.png"));
+	}
+
+	@Test
+	public void theatreCardShowsTheTeamDryStreak() throws Exception
+	{
+		PanelState base = state(5);
+		assertNull(ShareCard.from(base, true, NOW).getTeamDryStreak());
+
+		DrynessView dryness = base.getLifetime().getDryness().toBuilder().teamDryStreak(12_345).build();
+		PanelState state = base.toBuilder()
+			.boss(new TheatreOfBloodBoss())
+			.lifetime(base.getLifetime().toBuilder().dryness(dryness).build())
+			.build();
+		List<TripView> raids = new ArrayList<>();
+		for (TripView trip : base.getHistory())
+		{
+			raids.add(TripView.builder().id(trip.getId()).startedAt(trip.getStartedAt()).kills(1).detail("Normal · team of 4")
+				.bossStat(trip.getBossStat()).netProfit(trip.getNetProfit()).loot(trip.getLoot()).supplies(trip.getSupplies())
+				.dropped(trip.getDropped()).supplyCategories(trip.getSupplyCategories()).build());
+		}
+		state = state.toBuilder().history(raids).build();
+		ShareCard card = ShareCard.from(state, true, NOW);
+		assertEquals(Integer.valueOf(12_345), card.getTeamDryStreak());
+		// A raid's line shows its mode and team rather than "1 kill"
+		assertEquals("Normal · team of 4", card.getRecentTrips().get(0).getDetail());
+
+		// Beside the longest dry streak, so the card keeps its height
+		ShareCardRenderer renderer = new ShareCardRenderer(ZoneId.of("UTC"));
+		BufferedImage image = renderer.render(card, ShareCardTest::placeholderIcon);
+		assertEquals(renderer.render(ShareCard.from(base, true, NOW), ShareCardTest::placeholderIcon).getHeight(),
+			image.getHeight());
+		ImageIO.write(image, "PNG", new File("build/share-card-tob.png"));
 	}
 
 	private static Image placeholderIcon(int itemId)

@@ -144,6 +144,11 @@ final class ShareCardRenderer
 		}
 		pair(g, "Rate", "1/" + UiFormat.oneIn(card.getUniqueRate()), left + half, y + 54);
 		pair(g, "Longest dry streak", String.format(Locale.ROOT, "%,d kc", card.getLongestDryStreak()), left, y + 72);
+		if (card.getTeamDryStreak() != null)
+		{
+			// Anyone's purple resets it, unlike the dry streak above
+			pair(g, "Team dry streak", String.format(Locale.ROOT, "%,d kc", card.getTeamDryStreak()), left + half, y + 72);
+		}
 
 		// One icon and count per unique, then the pet
 		for (int i = 0; i < card.getDrops().size(); i++)
@@ -209,7 +214,8 @@ final class ShareCardRenderer
 		for (ShareCard.TripLine trip : card.getRecentTrips())
 		{
 			text(g, regular, TEXT, TRIP_DATE.format(Instant.ofEpochMilli(trip.getStartedAt()).atZone(zone)), left, row);
-			text(g, regular, TEXT, trip.getKills() + (trip.getKills() == 1 ? " kill" : " kills"), left + 150, row);
+			text(g, regular, TEXT, trip.getDetail() != null ? trip.getDetail()
+				: trip.getKills() + (trip.getKills() == 1 ? " kill" : " kills"), left + 150, row);
 			textRight(g, bold, UiFormat.profitColor(trip.getNet()), UiFormat.gp(trip.getNet()), right, row);
 			row += 16;
 		}
