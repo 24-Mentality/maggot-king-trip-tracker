@@ -207,6 +207,15 @@ RuneLite does not accept new high-end PvM helper plugins.
     to about a third high). The user chose this over an unproven rule or
     not counting it.
 
+16. Charged gear from the wiki's Phosani's strategies page (2026-09-28): the
+    Sanguinesti staff, Trident of the swamp / seas, Eye of Ayak and (at the
+    user's request) the Toxic blowpipe are counted from RuneLite's casting
+    graphics and attack animations, priced from the wiki's recharge costs.
+    Unverified until checked against the game's Check messages. The wiki
+    also corrected the Scythe to 200 blood runes per 100 charges (it had been
+    priced at 300 on five Nightmare trips of 2026-09-28, about 84k gp high in
+    total; those saved lines were left as they were).
+
 ## Observed in-game (diagnostic test trips, 2026-09-27)
 These come from diagnostic.log and take precedence over the assumptions above.
 - Lair template region is always 11645; the real instance region changes per

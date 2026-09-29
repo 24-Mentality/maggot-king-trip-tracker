@@ -53,6 +53,32 @@ class ChargeCounter
 		HitsplatID.DAMAGE_ME_CYAN, HitsplatID.DAMAGE_MAX_ME_CYAN);
 
 
+	static final Set<Integer> SANGUINESTI_STAVES = ImmutableSet.of(ItemID.SANGUINESTI_STAFF, ItemID.SANGUINESTI_STAFF_OR);
+	static final Set<Integer> SANGUINESTI_SPOTANIMS = ImmutableSet.of(
+		SpotanimID.SANGUINESTI_STAFF_CASTING, SpotanimID.SANGUINESTI_STAFF_CASTING_JUSTICIAR);
+	static final Set<Integer> SWAMP_TRIDENTS = ImmutableSet.of(
+		ItemID.TOXIC_TOTS_CHARGED, ItemID.TOXIC_TOTS_I_CHARGED, ItemID.TOXIC_TOTS_CHARGED_ORN);
+	static final Set<Integer> SEAS_TRIDENTS = ImmutableSet.of(ItemID.TOTS, ItemID.TOTS_CHARGED, ItemID.TOTS_I_CHARGED);
+	static final Set<Integer> AYAK_SPOTANIMS = ImmutableSet.of(
+		SpotanimID.VFX_AYAK_PLAYER_NORMAL_SPOTANIM, SpotanimID.VFX_AYAK_PLAYER_SPECIAL_SPOTANIM);
+	static final Set<Integer> BLOWPIPES = ImmutableSet.of(ItemID.TOXIC_BLOWPIPE_LOADED, ItemID.TOXIC_BLOWPIPE_LOADED_ORNAMENT);
+	static final Set<Integer> BLOWPIPE_ANIMATIONS = ImmutableSet.of(AnimationID.SNAKEBOSS_BLOWPIPE_ATTACK,
+		AnimationID.SNAKEBOSS_BLOWPIPE_ATTACK_ORNAMENT, AnimationID.TOXIC_BLOWPIPE_SPECIAL_UPDATED);
+	/**
+	 * Capes that save 80% of blowpipe darts: Ava's assembler, Dizana's quiver and their max capes.
+	 */
+	static final Set<Integer> DART_SAVE_80 = ImmutableSet.of(
+		ItemID.AVAS_ASSEMBLER, ItemID.AVAS_ASSEMBLER_TROUVER, ItemID.AVAS_ASSEMBLER_MASORI, ItemID.AVAS_ASSEMBLER_MASORI_TROUVER,
+		ItemID.SKILLCAPE_MAX_ASSEMBLER, ItemID.SKILLCAPE_MAX_ASSEMBLER_TROUVER, ItemID.SKILLCAPE_MAX_ASSEMBLER_MASORI,
+		ItemID.SKILLCAPE_MAX_ASSEMBLER_MASORI_TROUVER, ItemID.DIZANAS_QUIVER_CHARGED, ItemID.DIZANAS_QUIVER_CHARGED_TROUVER,
+		ItemID.DIZANAS_QUIVER_INFINITE, ItemID.DIZANAS_QUIVER_INFINITE_TROUVER, ItemID.SKILLCAPE_MAX_DIZANAS,
+		ItemID.SKILLCAPE_MAX_DIZANAS_TROUVER);
+	/**
+	 * Ava's accumulator (and Ava's max cape) saves 72%; Ava's attractor 60%.
+	 */
+	static final Set<Integer> DART_SAVE_72 = ImmutableSet.of(ItemID.ANMA_50_REWARD, ItemID.SKILLCAPE_MAX_ANMA);
+	static final Set<Integer> DART_SAVE_60 = ImmutableSet.of(ItemID.ANMA_30_REWARD);
+
 	/**
 	 * Charged scythes, ornamented ones included.
 	 */
@@ -67,11 +93,25 @@ class ChargeCounter
 	@Value
 	static class Gear
 	{
-		static final Gear NONE = new Gear(-1, -1, -1);
+		static final Gear NONE = new Gear(-1, -1, -1, -1);
 
 		int weapon;
 		int shield;
 		int amulet;
+		int cape;
+
+		Gear(int weapon, int shield, int amulet)
+		{
+			this(weapon, shield, amulet, -1);
+		}
+
+		Gear(int weapon, int shield, int amulet, int cape)
+		{
+			this.weapon = weapon;
+			this.shield = shield;
+			this.amulet = amulet;
+			this.cape = cape;
+		}
 	}
 
 	private static class TickEvents
@@ -201,6 +241,33 @@ class ChargeCounter
 			listener.chargesUsed(ChargeType.TUMEKENS_SHADOW, 1);
 		}
 
+		// From the wiki's Phosani's gear; the signals are RuneLite's names for them, not yet seen in a log
+		if (events.spotAnims.stream().anyMatch(SANGUINESTI_SPOTANIMS::contains) && worn(SANGUINESTI_STAVES, gear, previousWeapon))
+		{
+			listener.chargesUsed(ChargeType.SANGUINESTI_STAFF, 1);
+		}
+		if (events.spotAnims.contains(SpotanimID.TOXIC_TOTS_CASTING) && worn(SWAMP_TRIDENTS, gear, previousWeapon))
+		{
+			listener.chargesUsed(ChargeType.TRIDENT_OF_THE_SWAMP, 1);
+		}
+		if (events.spotAnims.contains(SpotanimID.SLAYER_TOTS_CASTING) && worn(SEAS_TRIDENTS, gear, previousWeapon))
+		{
+			listener.chargesUsed(ChargeType.TRIDENT_OF_THE_SEAS, 1);
+		}
+		if (events.spotAnims.stream().anyMatch(AYAK_SPOTANIMS::contains)
+			&& (gear.getWeapon() == ItemID.EYE_OF_AYAK || previousWeapon == ItemID.EYE_OF_AYAK))
+		{
+			listener.chargesUsed(ChargeType.EYE_OF_AYAK, 1);
+		}
+		if (events.animations.stream().anyMatch(BLOWPIPE_ANIMATIONS::contains) && worn(BLOWPIPES, gear, previousWeapon))
+		{
+			listener.chargesUsed(ChargeType.TOXIC_BLOWPIPE_SCALES, 1);
+			listener.chargesUsed(DART_SAVE_80.contains(gear.getCape()) ? ChargeType.TOXIC_BLOWPIPE_DARTS_80
+				: DART_SAVE_72.contains(gear.getCape()) ? ChargeType.TOXIC_BLOWPIPE_DARTS_72
+				: DART_SAVE_60.contains(gear.getCape()) ? ChargeType.TOXIC_BLOWPIPE_DARTS_60
+				: ChargeType.TOXIC_BLOWPIPE_DARTS_0, 1);
+		}
+
 		// Hits land at least a tick after the attack, so judge them by attacks from earlier ticks
 		// At the Nightmare this counts 13-36% more than the Check messages show (four readings on 2026-09-28), and
 		// the supply tooltip says so; the Maggot King's count matched exactly
@@ -213,6 +280,11 @@ class ChargeCounter
 		{
 			lastAttackMelee = isMeleeWeapon.test(gear.getWeapon());
 		}
+	}
+
+	private static boolean worn(Set<Integer> items, Gear gear, int previousWeapon)
+	{
+		return items.contains(gear.getWeapon()) || items.contains(previousWeapon);
 	}
 
 	private TickEvents events(int tick)

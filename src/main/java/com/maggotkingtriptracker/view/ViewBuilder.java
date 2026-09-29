@@ -537,7 +537,7 @@ public class ViewBuilder
 
 	private static String chargeNote(BossDefinition boss, ItemEntry entry)
 	{
-		ChargeType type = ChargeType.forSourceItem(entry.getItemId());
+		ChargeType type = ChargeType.forLine(entry.getItemId(), entry.getChargeItemId());
 		return type == null ? null : boss.getChargeNote(type);
 	}
 
@@ -546,7 +546,11 @@ public class ViewBuilder
 	 */
 	private String rechargeName(ItemEntry entry)
 	{
-		ChargeType type = ChargeType.forSourceItem(entry.getItemId());
+		ChargeType type = ChargeType.forLine(entry.getItemId(), entry.getChargeItemId());
+		if (type != null && type.isBlowpipeDarts())
+		{
+			return prices.name(entry.getChargeItemId()) + " lost (an Ava's device or Dizana's quiver saves most)";
+		}
 		if (type == null || type.getComponents().size() == 1)
 		{
 			return prices.name(entry.getChargeItemId());

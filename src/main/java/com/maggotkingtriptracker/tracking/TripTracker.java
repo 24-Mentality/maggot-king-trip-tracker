@@ -2,6 +2,7 @@ package com.maggotkingtriptracker.tracking;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
+import com.maggotkingtriptracker.EyeOfAyakCharge;
 import com.maggotkingtriptracker.MaggotKingTripTrackerConfig;
 import com.maggotkingtriptracker.boss.AllTimeSource;
 import com.maggotkingtriptracker.boss.BossDefinition;
@@ -889,8 +890,14 @@ public class TripTracker
 			return;
 		}
 
-		// Priced from everything one recharge takes (e.g. a vial of blood and 300 blood runes for 100 scythe charges)
-		int chargeItemId = type == ChargeType.TOME_OF_FIRE ? config.tomePage().getItemId() : type.getChargeItemId();
+		// Priced from everything one recharge takes (e.g. a vial of blood and 200 blood runes for 100 scythe charges)
+		if (type == ChargeType.EYE_OF_AYAK && config.eyeOfAyakCharge() == EyeOfAyakCharge.RUNES)
+		{
+			type = ChargeType.EYE_OF_AYAK_RUNES;
+		}
+		int chargeItemId = type == ChargeType.TOME_OF_FIRE ? config.tomePage().getItemId()
+			: type.isBlowpipeDarts() ? config.blowpipeDarts().getItemId()
+			: type.getChargeItemId();
 		long rechargePrice = 0;
 		for (ChargeType.Component component : type.getComponents())
 		{
@@ -912,7 +919,8 @@ public class TripTracker
 		return new ChargeCounter.Gear(
 			wornId(worn, EquipmentInventorySlot.WEAPON),
 			wornId(worn, EquipmentInventorySlot.SHIELD),
-			wornId(worn, EquipmentInventorySlot.AMULET));
+			wornId(worn, EquipmentInventorySlot.AMULET),
+			wornId(worn, EquipmentInventorySlot.CAPE));
 	}
 
 	private static int wornId(ItemContainer worn, EquipmentInventorySlot slot)

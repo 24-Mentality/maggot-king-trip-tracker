@@ -51,7 +51,9 @@ final class ItemEntries
 
 		for (ItemEntry entry : entries)
 		{
-			if (entry.getItemId() == added.getItemId() && entry.getChargeItemId() == added.getChargeItemId())
+			// Blowpipe dart lines for different capes share an item and dart but not the darts lost per 25 shots
+			if (entry.getItemId() == added.getItemId() && entry.getChargeItemId() == added.getChargeItemId()
+				&& entry.getChargesPerItem() == added.getChargesPerItem())
 			{
 				long total = entry.getQuantity() + added.getQuantity();
 				double value = (double) entry.getQuantity() * entry.getPriceEach() + (double) added.getQuantity() * added.getPriceEach();

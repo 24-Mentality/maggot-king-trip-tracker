@@ -117,6 +117,52 @@ public class ChargeCounterTest
 	}
 
 	@Test
+	public void wikiPhosanisMagicWeaponsCountOneChargePerCast()
+	{
+		Map<ChargeType, Integer> used = new EnumMap<>(ChargeType.class);
+		ChargeCounter counter = new ChargeCounter(id -> false);
+
+		counter.gearChanged(1, new ChargeCounter.Gear(ItemID.SANGUINESTI_STAFF, -1, -1));
+		counter.spotAnimsChanged(2, ImmutableSet.of(SpotanimID.SANGUINESTI_STAFF_CASTING));
+		counter.gearChanged(3, new ChargeCounter.Gear(ItemID.TOXIC_TOTS_CHARGED, -1, -1));
+		counter.spotAnimsChanged(4, ImmutableSet.of(SpotanimID.TOXIC_TOTS_CASTING));
+		counter.gearChanged(5, new ChargeCounter.Gear(ItemID.TOTS_CHARGED, -1, -1));
+		counter.spotAnimsChanged(6, ImmutableSet.of(SpotanimID.SLAYER_TOTS_CASTING));
+		counter.gearChanged(7, new ChargeCounter.Gear(ItemID.EYE_OF_AYAK, -1, -1));
+		counter.spotAnimsChanged(8, ImmutableSet.of(SpotanimID.VFX_AYAK_PLAYER_NORMAL_SPOTANIM));
+		counter.spotAnimsChanged(11, ImmutableSet.of(SpotanimID.VFX_AYAK_PLAYER_SPECIAL_SPOTANIM));
+		// A sanguinesti graphic with the eye worn isn't a sanguinesti cast
+		counter.spotAnimsChanged(14, ImmutableSet.of(SpotanimID.SANGUINESTI_STAFF_CASTING));
+		counter.process(20, (type, n) -> used.merge(type, n, Integer::sum));
+
+		assertEquals(Integer.valueOf(1), used.get(ChargeType.SANGUINESTI_STAFF));
+		assertEquals(Integer.valueOf(1), used.get(ChargeType.TRIDENT_OF_THE_SWAMP));
+		assertEquals(Integer.valueOf(1), used.get(ChargeType.TRIDENT_OF_THE_SEAS));
+		assertEquals(Integer.valueOf(2), used.get(ChargeType.EYE_OF_AYAK));
+	}
+
+	@Test
+	public void blowpipeShotsUseScalesAndDartsByCape()
+	{
+		Map<ChargeType, Integer> used = new EnumMap<>(ChargeType.class);
+		ChargeCounter counter = new ChargeCounter(id -> false);
+
+		counter.gearChanged(1, new ChargeCounter.Gear(ItemID.TOXIC_BLOWPIPE_LOADED, -1, -1, ItemID.DIZANAS_QUIVER_INFINITE));
+		counter.animation(2, AnimationID.SNAKEBOSS_BLOWPIPE_ATTACK);
+		counter.animation(4, AnimationID.SNAKEBOSS_BLOWPIPE_ATTACK);
+		counter.gearChanged(5, new ChargeCounter.Gear(ItemID.TOXIC_BLOWPIPE_LOADED, -1, -1, ItemID.ANMA_50_REWARD));
+		counter.animation(6, AnimationID.SNAKEBOSS_BLOWPIPE_ATTACK);
+		counter.gearChanged(7, new ChargeCounter.Gear(ItemID.TOXIC_BLOWPIPE_LOADED, -1, -1, ItemID.INFERNAL_CAPE));
+		counter.animation(8, AnimationID.SNAKEBOSS_BLOWPIPE_ATTACK);
+		counter.process(20, (type, n) -> used.merge(type, n, Integer::sum));
+
+		assertEquals(Integer.valueOf(4), used.get(ChargeType.TOXIC_BLOWPIPE_SCALES));
+		assertEquals(Integer.valueOf(2), used.get(ChargeType.TOXIC_BLOWPIPE_DARTS_80));
+		assertEquals(Integer.valueOf(1), used.get(ChargeType.TOXIC_BLOWPIPE_DARTS_72));
+		assertEquals(Integer.valueOf(1), used.get(ChargeType.TOXIC_BLOWPIPE_DARTS_0));
+	}
+
+	@Test
 	public void rangedHitAfterSwitchingToMeleeUsesNoBloodFuryCharge()
 	{
 		Map<ChargeType, Integer> used = new EnumMap<>(ChargeType.class);

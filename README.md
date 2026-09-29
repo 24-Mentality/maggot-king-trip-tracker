@@ -110,10 +110,14 @@ For the Maggot King:
   fury (one per damaging melee hit, priced from blood shards at 10,000 charges each), Tome
   of fire (one per fire spell, searing or burnt pages at 20 charges each, set by **Tome of
   fire pages**), revenant bows such as the Webweaver bow (one revenant ether per shot),
-  Scythe of Vitur (one per attack unless every hit misses; a vial of blood and 300 blood runes
-  per 100 charges) and
-  Tumeken's shadow (one per cast; 2 soul runes and 5 chaos runes each). This applies at every
-  supported boss.
+  Scythe of Vitur (one per attack unless every hit misses; a vial of blood and 200 blood runes
+  per 100 charges), Tumeken's shadow (one per cast; 2 soul runes and 5 chaos runes each),
+  Sanguinesti staff (2 blood runes a cast), Trident of the swamp (a death, a chaos, 5 fire
+  runes and a Zulrah's scale a cast) and of the seas (the same runes and 10 coins), Eye of
+  Ayak (a demon tear, or 2 death and a chaos rune, a cast: **Eye of Ayak charged with**) and
+  the Toxic blowpipe (2 Zulrah's scales every 3 shots, plus the darts lost: an Ava's
+  assembler or Dizana's quiver saves 80%, an accumulator 72%, an attractor 60%; the dart
+  priced is set by **Blowpipe darts**). This applies at every supported boss.
 - Items you drop in the lair and don't pick up again are a "Dropped" cost. Zero-value items
   such as empty vials are ignored.
 - Gravestone moves paid to the aranei scout are recorded as death costs.

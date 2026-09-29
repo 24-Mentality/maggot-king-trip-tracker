@@ -166,6 +166,31 @@ public interface MaggotKingTripTrackerConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "eyeOfAyakCharge",
+		name = "Eye of Ayak charged with",
+		description = "What your Eye of Ayak is charged with, for pricing its charges (one per cast)",
+		section = chargesSection,
+		position = 1
+	)
+	default EyeOfAyakCharge eyeOfAyakCharge()
+	{
+		return EyeOfAyakCharge.DEMON_TEARS;
+	}
+
+	@ConfigItem(
+		keyName = "blowpipeDarts",
+		name = "Blowpipe darts",
+		description = "Which darts are in your Toxic blowpipe, for pricing the darts it uses (an Ava's device or Dizana's"
+			+ " quiver saves most of them)",
+		section = chargesSection,
+		position = 2
+	)
+	default BlowpipeDart blowpipeDarts()
+	{
+		return BlowpipeDart.DRAGON;
+	}
+
+	@ConfigItem(
 		keyName = "alertUniques",
 		name = "Unique drops",
 		description = "Notify when you get a unique drop",
